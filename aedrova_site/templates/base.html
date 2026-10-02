@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Aedrova brings team communication, project context and AI coding into one workspace. Turn decisions into working software.">
+  <meta name="theme-color" content="#F5F5F7">
+  <title>{{ title }} · Aedrova</title>
+  <link rel="icon" href="/static/brand.png">
+  <link rel="preload" href="/static/instrument-serif-1.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="/static/site.css?v={{ asset_version }}">
+  <script src="/static/site.js?v={{ asset_version }}" defer></script>
+</head>
+<body class="{% block body_class %}inner-page{% endblock %}">
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <a class="wordmark" href="/" aria-label="Aedrova home"><img src="/static/brand.png" alt="" width="36" height="36"><span>Aedrova</span></a>
+  <nav class="desktop-nav liquid-glass" aria-label="Main navigation">
+    <a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a><a href="/account">Sign in</a>
+    <button class="theme-toggle" aria-label="Change color theme"><span aria-hidden="true">◐</span></button>
+    <a class="button small" href="/onboarding">Get started <span aria-hidden="true">↗</span></a>
+  </nav>
+  <button class="menu-toggle liquid-glass" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-menu"><span class="menu-lines" aria-hidden="true"></span></button>
+</header>
+<div id="mobile-menu" class="mobile-menu" hidden>
+  <nav aria-label="Mobile navigation"><a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a><a href="/account">Sign in</a><a href="/download">Mac download</a><a class="button" href="/onboarding">Get started ↗</a><button class="theme-toggle" aria-label="Change color theme">Change appearance ◐</button></nav>
+</div>
+<main id="main">{% block main %}{% endblock %}</main>
+<footer><div><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team. Your work. Connected.</p></div><div class="footer-links"><a href="/download">For Mac</a><a href="/enterprise">Let’s talk</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span class="footer-note">The workspace where teams and AI build together.</span></footer>
+<div class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
