@@ -23,6 +23,10 @@ class Config:
     webhook_secret: str = field(default="", repr=False)
     openai_key: str = field(default="", repr=False)
     anthropic_key: str = field(default="", repr=False)
+    meetings_enabled: bool = False
+    livekit_url: str = ""
+    livekit_api_key: str = field(default="", repr=False)
+    livekit_api_secret: str = field(default="", repr=False)
     checkout_enabled: bool = False
     gateway_enabled: bool = False
     plans: dict = field(default_factory=dict)
@@ -73,6 +77,13 @@ class Config:
                 raise ValueError(
                     "Configure the server encryption key in the deployment secret store."
                 )
+        if self.meetings_enabled:
+            media = urlparse(self.livekit_url)
+            if (media.scheme != 'wss' or not media.hostname or media.username
+                    or media.password or media.query or media.fragment
+                    or media.path not in {'', '/'} or not self.livekit_api_key
+                    or len(self.livekit_api_secret) < 32):
+                raise ValueError('Meetings require a secure LiveKit URL and server credentials.')
         if self.gateway_enabled:
             if not self.models:
                 raise ValueError("Managed AI requires approved models and rates.")

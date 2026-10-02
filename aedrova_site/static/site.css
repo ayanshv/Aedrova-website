@@ -48,3 +48,21 @@ figure{margin:0}.desktop-capture{max-width:1100px;margin:auto}.desktop-capture i
 .film-grain{position:absolute;inset:-12%;z-index:1;background-image:url('/static/film-grain.png');background-size:192px 192px;opacity:.045;mix-blend-mode:soft-light;pointer-events:none;animation:film-grain-shift .65s steps(3,end) infinite}
 .motion-paused .film-grain{animation-play-state:paused}
 @keyframes film-grain-shift{0%,100%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}}
+
+/* Center the sign-in card while keeping workspace account forms aligned. */
+.login-panel{text-align:center}
+.login-panel .google{display:flex;width:fit-content;max-width:100%;margin-inline:auto;justify-content:center}
+
+/* A quiet centered invitation to explore, with theme-aware glass. */
+.scene-controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:end}
+.scene-controls .motion-toggle{justify-self:start}
+.hero-scroll{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text);text-decoration:none}
+.scroll-arrow{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background .2s,transform .2s}
+.scroll-arrow svg{width:28px;height:28px;animation:scroll-invitation 2.4s ease-in-out infinite}
+.scroll-label{font-size:10px;letter-spacing:.03em;color:#F5F5F7}
+.scene-controls .hero-scroll:hover{color:var(--text)}
+.hero-scroll:hover .scroll-arrow{transform:scale(1.04);background:var(--surface)}
+.hero-scroll:focus-visible{outline:2px solid #fff;outline-offset:6px;border-radius:24px}
+@keyframes scroll-invitation{0%,100%{transform:translateY(-3px)}50%{transform:translateY(3px)}}
+@media(max-width:700px){.cinema-content{padding-bottom:185px}.scroll-arrow{width:44px;height:44px}.scroll-label{font-size:9px}.cinema-bottom{gap:18px}}
+@media(prefers-reduced-motion:reduce){.scroll-arrow svg{animation:none}}

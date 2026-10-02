@@ -3,7 +3,17 @@ name = "aedrova-site"
 version = "0.1.0"
 description = "Aedrova marketing, onboarding, subscriptions and managed AI gateway"
 requires-python = ">=3.12,<3.13"
-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "jinja2>=3.1,<4", "httpx>=0.28,<1", "stripe>=13,<15", "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "cryptography>=44,<47"]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "jinja2>=3.1,<4",
+    "httpx>=0.28,<1",
+    "stripe>=13,<15",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.2,<4",
+    "cryptography>=44,<47",
+    "livekit-api==1.1.0",
+]
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff", "playwright>=1.50,<2"]
 [tool.pytest.ini_options]

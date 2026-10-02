@@ -116,3 +116,10 @@ to .045 with soft-light blending. Video generation is unavailable in this sessio
 this is edited real footage. Autoplay is explicitly muted and inline. Saved pause
 state no longer suppresses motion on later visits. Rejected autoplay exposes a
 play control, media errors can be retried, and reduced motion remains respected.
+
+### Shared team context messaging
+
+Emphasized shared context in the hero, product introduction, context feature,
+meeting roadmap and FAQ. Current claims align with context retrieval: accessible
+chats, supported small text attachments and confirmed decisions. Video-call
+transcripts and connected design tools remain explicitly planned.

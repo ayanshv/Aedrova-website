@@ -172,3 +172,15 @@ References: [Stripe subscription webhooks](https://docs.stripe.com/billing/subsc
 [Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing),
 [Codex custom providers](https://learn.chatgpt.com/docs/config-file/config-advanced),
 [Claude secure deployment](https://code.claude.com/docs/en/agent-sdk/secure-deployment).
+
+## Milestone 10 meeting development
+
+M10 is in progress and its meeting credential endpoint is disabled by default.
+Create a LiveKit Cloud development project and configure AEDROVA_LIVEKIT_URL,
+AEDROVA_LIVEKIT_API_KEY and AEDROVA_LIVEKIT_API_SECRET locally in the desktop
+repository's gitignored .env.meetings for the two-peer transport probe. Keep
+AEDROVA_MEETINGS_ENABLED=false until device, revocation and network acceptance.
+Run the new desktop SQL migration 202610010001_meetings.sql in Supabase's SQL Editor.
+Full steps and remaining M10 scope are in the desktop docs/milestone-10-meetings.md.
+No custom domain is required for this development test. Never put LiveKit API
+credentials in frontend files or in the installed desktop app.

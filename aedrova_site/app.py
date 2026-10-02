@@ -8,6 +8,7 @@ import re
 import secrets
 from pathlib import Path
 from urllib.parse import urlencode
+from uuid import UUID
 
 import stripe
 from fastapi import FastAPI, HTTPException, Request
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 from aedrova_site.boundaries import BodyLimit
 from aedrova_site.config import Config
 from aedrova_site.gateway import authorize_run, inference
+from aedrova_site.meetings import issue_meeting_access
 from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.store import Denied, Store
@@ -43,6 +45,10 @@ class RunBody(BaseModel):
     workspace: str = Field(min_length=1, max_length=100)
     provider: str
     request_id: str = Field(min_length=16, max_length=100)
+
+
+class MeetingJoinBody(BaseModel):
+    meeting: UUID
 
 
 class InquiryBody(BaseModel):
@@ -377,6 +383,11 @@ def create_app(config=None):
         return FileResponse(
             path, filename="Aedrova.dmg", media_type="application/x-apple-diskimage"
         )
+
+    @app.post('/api/meetings/join')
+    def meeting_join(request: Request, body: MeetingJoinBody):
+        return issue_meeting_access(config, identity, store, auth(request, change=True),
+                                    body.meeting)
 
     @app.post("/api/runs")
     def create_run(request: Request, body: RunBody):
