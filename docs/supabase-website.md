@@ -10,7 +10,9 @@ Existing plan quotas, pause behavior, storage and backup limits still apply.
 1. In Supabase project `cpelagtufyocepnqcqqd` → SQL Editor → New query, paste and run
    `sql/supabase-website.sql` from this website repository. It creates `aedrova_website`
    without login and gives it ownership of only `aedrova_billing`. It does not alter any
-   chat table, workspace, existing login password or RLS policy. If it reports an existing
+   chat table, workspace, existing login password or RLS policy. The SQL grants the SQL
+   Editor administrator membership in the restricted website role so it can assign schema
+   ownership; it does not grant the website membership in the administrator role. If it reports an existing
    role/schema conflict, stop and report the error without secrets; do not drop anything.
 2. Generate a unique 32+ character password in your password manager for `aedrova_website`.
    You must personally enable its login and set its password in Supabase SQL Editor:

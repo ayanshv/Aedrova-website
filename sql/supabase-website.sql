@@ -24,6 +24,10 @@ BEGIN
     RAISE EXCEPTION 'Existing private schema has another owner; stop and review before migration.';
   END IF;
 END $$;
+-- Supabase postgres is not a superuser. Schema ownership and default privileges
+-- require it to SET ROLE to the website role. This is deliberately one-way:
+-- the administrator can assume the restricted role; the website gains no admin role.
+GRANT aedrova_website TO CURRENT_USER;
 CREATE SCHEMA IF NOT EXISTS aedrova_billing AUTHORIZATION aedrova_website;
 REVOKE ALL ON SCHEMA aedrova_billing FROM PUBLIC, anon, authenticated, service_role;
 GRANT CONNECT ON DATABASE postgres TO aedrova_website;
