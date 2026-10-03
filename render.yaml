@@ -16,6 +16,8 @@ services:
     envVars:
       - key: AEDROVA_ORIGIN
         value: https://aedrova.com
+      - key: AEDROVA_WAITLIST_ONLY
+        value: "true"
       - key: AEDROVA_PRODUCTION
         value: "true"
       - key: AEDROVA_DATABASE

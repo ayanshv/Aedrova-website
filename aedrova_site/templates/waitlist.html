@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="page-header"><span class="eyebrow">GOOD THINGS TAKE CARE</span><h1>Your team’s next chapter.</h1><p>We’re making room for something thoughtful.<br>Join the waitlist and hear when Aedrova is ready.</p></div>
+<section class="account-panel login-panel waitlist-panel" aria-label="Join the Aedrova waitlist">
+<div id="waitlist-entry"><h2>Be part of what’s next.</h2><p>Team conversations. Shared context. An agent that builds with you.</p>
+<form id="waitlist-form"><label class="form-label" for="waitlist-email">Your email</label><input id="waitlist-email" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@company.com"><label class="waitlist-consent"><input name="consent" type="checkbox" required><span>Let me know when Aedrova launches.</span></label><p id="waitlist-error" class="waitlist-error" role="alert" hidden></p><button class="button" type="submit">Join waitlist today <span aria-hidden="true">↗</span></button></form>
+<p class="subtle">No payment. No account to create. Your email is used for launch updates only. <a href="/privacy">Privacy information</a></p></div>
+<div id="waitlist-success" tabindex="-1" hidden><span class="eyebrow">YOU’RE ON THE LIST</span><h2>Thank you for being here.</h2><p>We’ve saved your place. We’ll email you when Aedrova is ready to welcome your team.</p><a class="button outline" href="/#features">Explore Aedrova <span aria-hidden="true">↗</span></a></div>
+</section>
+{% endblock %}

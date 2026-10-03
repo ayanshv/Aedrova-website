@@ -47,7 +47,12 @@ def check(config, *, probe=False, client=None):
                         or result.get("managed_ai_enabled") is not False
                     ):
                         raise ValueError("Unexpected public product gates.")
-            for path in ("/", "/onboarding", "/plans", "/welcome", "/download"):
+            paths = (
+                ("/", "/plans", "/waitlist")
+                if config.waitlist_only
+                else ("/", "/onboarding", "/plans", "/welcome", "/download")
+            )
+            for path in paths:
                 with client.stream("GET", config.origin.rstrip("/") + path) as response:
                     if response.status_code != 200:
                         raise ValueError("A public page is unavailable or redirected.")

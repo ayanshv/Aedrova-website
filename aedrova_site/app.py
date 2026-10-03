@@ -63,6 +63,11 @@ class MeetingJoinBody(BaseModel):
     meeting: UUID
 
 
+class WaitlistBody(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    consent: bool = False
+
+
 class InquiryBody(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=254)
@@ -205,6 +210,7 @@ def create_app(config=None):
                 "title": title,
                 "stripe_test_mode": config.stripe_test_mode,
                 "checkout_enabled": config.checkout_enabled,
+                "waitlist_only": config.waitlist_only,
                 "asset_version": asset_version,
                 **context,
             },
@@ -214,8 +220,36 @@ def create_app(config=None):
     def home(request: Request):
         return page(request, "home", "Talk. Build. Together")
 
+    @app.get("/waitlist")
+    def waitlist(request: Request):
+        return page(request, "waitlist", "Join the waitlist")
+
+    @app.post("/api/waitlist")
+    def join_waitlist(request: Request, body: WaitlistBody):
+        email = body.email.strip().lower()
+        if not body.consent or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            raise HTTPException(422, "Enter a valid email and agree to receive launch updates.")
+        if request.headers.get("origin") != config.origin:
+            raise HTTPException(403, "Join from the Aedrova website.")
+        store.rate_limit(
+            "waitlist:" + (request.client.host if request.client else "unknown"),
+            limit=300,
+            seconds=3600,
+        )
+        store.rate_limit(
+            "waitlist-email:" + hashlib.sha256(email.encode()).hexdigest(), limit=5, seconds=3600
+        )
+        store.session(
+            "waitlist:" + hashlib.sha256(email.encode()).hexdigest(),
+            {"kind": "waitlist", "email": email, "consent": "launch-updates-v1"},
+            lifetime=365 * 86400,
+        )
+        return {"ok": True}
+
     @app.get("/onboarding")
     def onboarding(request: Request):
+        if config.waitlist_only:
+            return RedirectResponse("/waitlist", status_code=303)
         return page(request, "onboarding", "Make room for your next idea")
 
     @app.get("/plans")
@@ -231,6 +265,8 @@ def create_app(config=None):
 
     @app.get("/account")
     def account(request: Request):
+        if config.waitlist_only:
+            return RedirectResponse("/waitlist", status_code=303)
         try:
             store.session(request.cookies.get("aedrova_session", ""))
             authenticated = True
@@ -247,10 +283,14 @@ def create_app(config=None):
 
     @app.get("/welcome")
     def welcome(request: Request):
+        if config.waitlist_only:
+            return RedirectResponse("/waitlist", status_code=303)
         return page(request, "welcome", "Welcome to what’s next")
 
     @app.get("/download")
     def download(request: Request):
+        if config.waitlist_only:
+            return RedirectResponse("/waitlist", status_code=303)
         return page(request, "download", "Aedrova for Mac", release_ready=config.release_ready)
 
     @app.get("/enterprise")
@@ -291,6 +331,8 @@ def create_app(config=None):
 
     @app.get("/auth/google")
     def google(request: Request):
+        if config.waitlist_only:
+            return RedirectResponse("/waitlist", status_code=303)
         store.rate_limit(
             "oauth:" + (request.client.host if request.client else "unknown"), limit=10
         )

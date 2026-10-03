@@ -270,3 +270,21 @@ if ($('[data-checkout-return]')) {
   button.addEventListener('click', event => busy(event.currentTarget, checkPayment));
   checkPayment().catch(() => { status.textContent = 'Sign in to your account to check this payment. Paid access is never enabled by this return page alone.'; });
 }
+
+const waitlistForm=$('#waitlist-form');
+if(waitlistForm){
+  waitlistForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(!waitlistForm.reportValidity())return;
+    const submit=waitlistForm.querySelector('button[type=submit]'),error=$('#waitlist-error');
+    if(submit.disabled)return;
+    error.hidden=true;submit.disabled=true;submit.setAttribute('aria-busy','true');
+    try{
+      const fields=new FormData(waitlistForm);
+      await api('/api/waitlist',{email:String(fields.get('email')).trim(),consent:fields.get('consent')==='on'});
+      $('#waitlist-entry').hidden=true;$('#waitlist-success').hidden=false;$('#waitlist-success').focus();
+      waitlistForm.reset();
+    }catch(problem){error.textContent=problem.message;error.hidden=false;}
+    finally{submit.disabled=false;submit.removeAttribute('aria-busy');}
+  });
+}

@@ -1,3 +1,27 @@
+## October 2 follow-up: waitlist launch, deployment paused
+
+The owner requested onboarding/hero repairs before publication and a waitlist-only public
+website. `AEDROVA_WAITLIST_ONLY=true` is set in the blueprint. Public onboarding, account,
+Google login, welcome and download pages redirect to the waitlist; existing internal beta
+flows remain available when the flag is false. Checkout, managed AI and meetings must be
+disabled in waitlist mode. Emails are encrypted in the existing private server session
+store for up to one year, deduplicated, consented and rate limited. No email provider is
+configured: signups are collected; launch messages must be sent separately when ready.
+Operator export: in the server environment with its database/encryption configuration,
+run `python -m scripts.export_waitlist /private/path/waitlist.csv`. The file is created
+owner-readable only and never overwritten; it contains waitlist entries, not auth sessions.
+Keep exported addresses private. Export does not send email.
+Privacy/business contact and removal procedures still need owner finalization before
+collecting real public addresses. No new Supabase SQL is needed for this website feature.
+
+Render web configuration is staged in a browser form, not deployed. Database form is
+staged at Oregon, PostgreSQL 18, $6/month compute + 1 GB at $0.30/month = $6.30/month
+shown by Render, autoscaling disabled. No purchase or service creation occurred. The owner
+must review and submit Create database/payment steps personally. GitHub already contains
+the prior tested deployment baseline; the waitlist/UI changes are prepared for the authorized GitHub deployment push.
+Render currently shows an empty workspace; the persistent database still has to be created
+by the owner before importing the website blueprint. DNS/HTTPS acceptance is pending.
+
 # aedrova.com — Cloudflare DNS and Render deployment
 
 October 2, 2026. Owner bought aedrova.com through Cloudflare, confirms registrar email

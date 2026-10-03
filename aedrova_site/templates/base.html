@@ -16,16 +16,16 @@
 <header class="nav">
   <a class="wordmark" href="/" aria-label="Aedrova home"><img src="/static/brand.png" alt="" width="36" height="36"><span>Aedrova</span></a>
   <nav class="desktop-nav liquid-glass" aria-label="Main navigation">
-    <a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a><a href="/account">Sign in</a>
+    <a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a>{% if not waitlist_only %}<a href="/account">Sign in</a>{% endif %}
     <button class="theme-toggle" aria-label="Change color theme"><span aria-hidden="true">◐</span></button>
-    <a class="button small" href="/onboarding">Get started <span aria-hidden="true">↗</span></a>
+    <a class="button small" href="{{ "/waitlist" if waitlist_only else "/onboarding" }}">{{ "Join waitlist today" if waitlist_only else "Get started" }} <span aria-hidden="true">↗</span></a>
   </nav>
   <button class="menu-toggle liquid-glass" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-menu"><span class="menu-lines" aria-hidden="true"></span></button>
 </header>
 <div id="mobile-menu" class="mobile-menu" hidden>
-  <nav aria-label="Mobile navigation"><a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a><a href="/account">Sign in</a><a href="/download">Mac download</a><a class="button" href="/onboarding">Get started ↗</a><button class="theme-toggle" aria-label="Change color theme">Change appearance ◐</button></nav>
+  <nav aria-label="Mobile navigation"><a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/plans">Plans</a>{% if not waitlist_only %}<a href="/account">Sign in</a>{% endif %}<a href="/download">Mac download</a><a class="button" href="{{ "/waitlist" if waitlist_only else "/onboarding" }}">{{ "Join waitlist today" if waitlist_only else "Get started" }} ↗</a><button class="theme-toggle" aria-label="Change color theme">Change appearance ◐</button></nav>
 </div>
-<main id="main">{% if stripe_test_mode %}<div class="notice sandbox-notice" role="status">Stripe sandbox · Test payments only. No real charges. This does not unlock paid AI or a public download.</div>{% endif %}{% block main %}{% endblock %}</main>
+<main id="main">{% if stripe_test_mode %}<aside class="sandbox-badge" role="status">Stripe sandbox · Test payments only</aside>{% endif %}{% block main %}{% endblock %}</main>
 <footer><div><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team. Your work. Connected.</p></div><div class="footer-links"><a href="/download">For Mac</a><a href="/enterprise">Let’s talk</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span class="footer-note">The workspace where teams and AI build together.</span></footer>
 <div class="toast" role="status" aria-live="polite"></div>
 </body>

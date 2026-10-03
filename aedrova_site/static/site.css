@@ -88,7 +88,7 @@ button:disabled{opacity:.55;transform:none!important;box-shadow:none!important}
 .desktop-nav{font-size:13px;gap:22px;padding:6px 6px 6px 24px}
 .desktop-nav>a:not(.button){padding:10px 0;transition:opacity .2s}
 .desktop-nav>a:not(.button):hover{opacity:.7}
-.desktop-nav>a[aria-current=page]{text-decoration:underline;text-underline-offset:6px}
+.desktop-nav>a[aria-current=page]:not(.button){text-decoration:underline;text-underline-offset:6px}
 .theme-toggle,.menu-toggle{min-width:44px;min-height:44px}
 .home-page .desktop-nav{background:rgba(0,0,0,.28);backdrop-filter:blur(20px)}
 .home-page .nav a:focus-visible,.home-page .theme-toggle:focus-visible{outline-color:#fff}
@@ -223,3 +223,15 @@ footer p,.footer-note{font-size:12px;line-height:1.7}
 
 .sandbox-notice{max-width:var(--page-width,1200px);margin:24px auto;padding:16px 24px;text-align:center;border:1px solid var(--border);border-radius:16px}
 #billing-plan{margin-top:12px}#payment-status{margin-block:24px}
+
+/* Test disclosures never displace the full-bleed hero. */
+.sandbox-badge{position:fixed;right:16px;bottom:16px;z-index:40;background:var(--glass);color:var(--text);border:1px solid var(--edge);border-radius:12px;backdrop-filter:blur(16px);padding:10px 14px;font-size:11px;max-width:calc(100% - 32px)}
+.waitlist-panel{max-width:620px}
+.waitlist-panel form{max-width:440px;margin:28px auto 0;text-align:left}
+.waitlist-panel .button{display:flex;width:fit-content;margin:24px auto 0}
+.waitlist-panel .subtle{margin-top:28px}
+.waitlist-consent{display:flex;align-items:flex-start;gap:12px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--muted);cursor:pointer}
+.waitlist-consent input{width:18px;height:18px;min-height:18px;margin:2px 0 0;flex-shrink:0;accent-color:var(--blue)}
+.waitlist-error{color:#C43139;font-size:13px!important;margin-top:18px}
+:root[data-theme=dark] .waitlist-error{color:#FF858A}
+#waitlist-success:focus{outline:none}

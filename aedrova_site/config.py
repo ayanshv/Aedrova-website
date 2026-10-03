@@ -18,6 +18,7 @@ class Config:
     origin: str = "http://127.0.0.1:8090"
     database: str = "sqlite:///work/site.sqlite3"
     production: bool = False
+    waitlist_only: bool = False
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_pool_timeout: int = 5
@@ -105,6 +106,12 @@ class Config:
                 raise ValueError(
                     "Configure the server encryption key in the deployment secret store."
                 )
+        if self.waitlist_only and (
+            self.checkout_enabled or self.gateway_enabled or self.meetings_enabled
+        ):
+            raise ValueError(
+                "Waitlist launch must keep checkout, managed AI and meetings disabled."
+            )
         if self.meetings_enabled:
             media = urlparse(self.livekit_url)
             if (

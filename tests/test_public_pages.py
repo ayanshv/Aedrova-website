@@ -12,6 +12,7 @@ from aedrova_site.config import Config
 PAGES = [
     "/",
     "/onboarding",
+    "/waitlist",
     "/plans",
     "/account",
     "/welcome",
