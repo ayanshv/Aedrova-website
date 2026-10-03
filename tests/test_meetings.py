@@ -2,6 +2,7 @@ from uuid import UUID, uuid4
 
 import jwt
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
 from aedrova_site.app import create_app
@@ -32,7 +33,8 @@ class Store:
 
 
 def configured():
-    return Config(meetings_enabled=True, livekit_url='wss://example.livekit.cloud',
+    return Config(encryption_key=Fernet.generate_key().decode(),
+                  meetings_enabled=True, livekit_url='wss://example.livekit.cloud',
                   livekit_api_key='test-media-key', livekit_api_secret='fixture-only-' * 4)
 
 

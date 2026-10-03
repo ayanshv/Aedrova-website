@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from aedrova_site.meeting_leases import LEASE_SCHEMA, RESERVE_LEASE
 from aedrova_site.store import SCHEMA
 
 
@@ -16,7 +17,13 @@ def main():
     args = parser.parse_args()
     with TemporaryDirectory(prefix="aedrova-billing-schema-") as folder:
         path = Path(folder)
-        (path / "schema.json").write_text(json.dumps(SCHEMA))
+        reserve = RESERVE_LEASE
+        for name, value in {'room': "'test-room'", 'user': "'test-user'",
+                            'meeting': "'test-meeting'", 'token': "'fixture'",
+                            'expires': '100', 'now': '50'}.items():
+            reserve = reserve.replace(':' + name, value)
+        (path / "schema.json").write_text(json.dumps(SCHEMA + LEASE_SCHEMA))
+        (path / "reserve.json").write_text(json.dumps(reserve))
         runner = path / "check.mjs"
         runner.write_text(
             "import {PGlite} from " + json.dumps(args.pglite.resolve().as_uri()) + ";\n"
@@ -29,12 +36,20 @@ def main():
             'const tables=await db.query("SELECT count(*)::int AS n '
             "FROM information_schema.tables "
             "WHERE table_schema='aedrova_billing'\");\n"
-            "if (tables.rows[0].n!==10) throw new Error('Missing private tables');\n"
-            "console.log('PASS private PostgreSQL ledger schema; "
+            "if (tables.rows[0].n!==12) throw new Error('Missing private tables');\n"
+            "const reserve=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));\n"
+            "if ((await db.query(reserve)).rows.length!==1) throw new Error('Reserve failed');\n"
+            "if ((await db.query(reserve)).rows.length!==0) throw new Error('Duplicate allowed');\n"
+            "await db.exec(\"UPDATE meeting_leases SET state='revoked',expires=60\");\n"
+            "if ((await db.query(reserve)).rows.length!==0) throw new Error('Grace bypassed');\n"
+            "await db.exec(\"UPDATE meeting_leases SET expires=0\");\n"
+            "if ((await db.query(reserve)).rows.length!==1) throw new Error('Rejoin failed');\n"
+            "console.log('PASS private PostgreSQL ledger/meeting schema and atomic lease SQL; "
             "networked concurrency remains a live acceptance gate');\n"
             "}finally{await db.close();}\n"
         )
-        subprocess.run([args.node, str(runner), str(path / "schema.json")], check=True)
+        subprocess.run([args.node, str(runner), str(path / "schema.json"),
+                        str(path / 'reserve.json')], check=True)
 
 
 if __name__ == "__main__":

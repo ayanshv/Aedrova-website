@@ -4,11 +4,14 @@ import asyncio
 import hashlib
 import json
 import math
+import time
 
 import httpx
 from fastapi import Request
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import Response, StreamingResponse
 
+from aedrova_site.observability import emit
 from aedrova_site.store import Denied
 
 
@@ -59,14 +62,26 @@ def usage_from_events(data, provider):
             event = json.loads(line[6:])
         except ValueError:
             continue
+        if not isinstance(event, dict):
+            raise ValueError("Invalid provider event.")
         kind = event.get("type")
         if provider == "codex" and kind == "response.completed":
-            usage, completed = event.get("response", {}).get("usage", {}), True
+            response = event.get("response", {})
+            if not isinstance(response, dict):
+                raise ValueError("Invalid provider completion.")
+            usage, completed = response.get("usage", {}), True
         elif provider == "claude_code":
             if kind == "message_start":
-                usage.update(event.get("message", {}).get("usage", {}))
+                message = event.get("message", {})
+                update = message.get("usage", {}) if isinstance(message, dict) else None
+                if not isinstance(update, dict):
+                    raise ValueError("Invalid provider usage.")
+                usage.update(update)
             elif kind == "message_delta":
-                usage.update(event.get("usage", {}))
+                update = event.get("usage", {})
+                if not isinstance(update, dict):
+                    raise ValueError("Invalid provider usage.")
+                usage.update(update)
             elif kind == "message_stop":
                 completed = True
     return usage, completed
@@ -78,14 +93,14 @@ async def authorize_run(request: Request, provider, config, store, identity):
     token = request.headers.get("authorization", "").removeprefix("Bearer ") or request.headers.get(
         "x-api-key", ""
     )
-    run = store.run(token)
+    run = await asyncio.to_thread(store.run, token)
     if run["provider"] != provider:
         raise Denied("This build token cannot access that provider.")
-    session = store.session(token)
+    session = await asyncio.to_thread(store.session, token)
     user = await asyncio.to_thread(identity.require, session["access_token"], run["workspace"])
     if user["id"] != run["user_id"]:
         raise Denied("Build account changed.")
-    store.rate_limit("inference:" + run["id"], limit=120)
+    await asyncio.to_thread(store.rate_limit, "inference:" + run["id"], limit=120)
     return run
 
 
@@ -98,7 +113,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
         body = json.loads(raw)
         if not isinstance(body, dict):
             raise ValueError()
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:
         raise Denied("Invalid model request.") from exc
     if not isinstance(body.get("tools", []), list) or any(
         not isinstance(tool, dict) for tool in body.get("tools", [])
@@ -184,7 +199,9 @@ async def inference(request: Request, provider, config, store, identity, *, comp
         / 1_000_000
     )
     fingerprint = (b"compact:" if compact else b"response:") + encoded
-    identifier, cached = store.reserve(run, hashlib.sha256(fingerprint).hexdigest(), reserve)
+    identifier, cached = await asyncio.to_thread(
+        store.reserve, run, hashlib.sha256(fingerprint).hexdigest(), reserve
+    )
     streaming = body.get("stream", False)
     media = "text/event-stream" if streaming else "application/json"
     if cached is not None:
@@ -193,14 +210,18 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     async def generate():
         result = bytearray()
         settled = False
+        started = time.monotonic()
         try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(180, connect=15), follow_redirects=False
-            ) as client:
+            async with (
+                asyncio.timeout(config.provider_deadline_seconds),
+                httpx.AsyncClient(
+                    timeout=httpx.Timeout(180, connect=15), follow_redirects=False
+                ) as client,
+            ):
                 async with client.stream("POST", url, headers=headers, content=encoded) as upstream:
                     if upstream.status_code != 200:
                         # Explicit rejection: no completed inference; keep diagnostics private.
-                        store.settle(identifier, 0)
+                        await asyncio.to_thread(store.settle, identifier, 0)
                         settled = True
                         failure = {
                             "error": {
@@ -228,22 +249,38 @@ async def inference(request: Request, provider, config, store, identity, *, comp
                 usage, complete = usage_from_events(bytes(result), provider)
             else:
                 response = json.loads(result)
+                if not isinstance(response, dict):
+                    raise ValueError("Invalid provider response.")
                 usage = response.get("usage", {})
                 complete = not response.get("error") and (
                     provider != "codex"
                     or response.get("status") == "completed"
                     or (compact and response.get("object") == "response.compaction")
                 )
-            store.settle(
+            await asyncio.to_thread(
+                store.settle,
                 identifier,
                 cost(usage, model) if complete else None,
                 bytes(result) if complete else None,
                 usage,
             )
             settled = True
+            emit(
+                "ai_settled",
+                provider=provider,
+                complete=complete,
+                input_tokens=usage.get("input_tokens")
+                if type(usage.get("input_tokens")) is int
+                else None,
+                output_tokens=usage.get("output_tokens")
+                if type(usage.get("output_tokens")) is int
+                else None,
+                duration_ms=round((time.monotonic() - started) * 1000, 2),
+            )
             if not streaming:
                 yield bytes(result)
-        except (httpx.HTTPError, ValueError, Denied):
+        except (httpx.HTTPError, ValueError, RecursionError, Denied, TimeoutError, SQLAlchemyError):
+            emit("ai_interrupted", provider=provider)
             if streaming:
                 yield (
                     b'event: error\ndata: {"error":{"message":"Managed model '
@@ -255,7 +292,10 @@ async def inference(request: Request, provider, config, store, identity, *, comp
         finally:
             if not settled:
                 # Never refund an uncertain upstream request or replay it silently.
-                store.settle(identifier, None)
+                try:
+                    await asyncio.shield(asyncio.to_thread(store.settle, identifier, None))
+                except SQLAlchemyError:
+                    emit("ai_settlement_deferred", provider=provider)
 
     return StreamingResponse(
         generate(),

@@ -394,3 +394,100 @@ def test_workspace_creation_transfers_nickname_through_existing_onboarding_rpc(c
         "p_nickname": "Atlas",
         "p_provider": "codex",
     }
+
+
+def test_total_deadline_stops_trickling_provider_and_keeps_uncertain_accounting(
+    client, monkeypatch
+):
+    import asyncio
+
+    access = begin(client)
+    client.app.state.config.provider_deadline_seconds = 0.01
+
+    class Stream:
+        status_code = 200
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        async def aiter_bytes(self):
+            await asyncio.sleep(0.04)
+            yield b"private-provider-output"
+
+    class Provider:
+        def __init__(self, **kw):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        def stream(self, *a, **kw):
+            return Stream()
+
+    monkeypatch.setattr("aedrova_site.gateway.httpx.AsyncClient", Provider)
+    result = client.post(
+        "/gateway/codex/v1/responses",
+        json={"stream": True, "input": "test"},
+        headers={"Authorization": "Bearer " + access["token"]},
+    )
+    assert "interrupted" in result.text and "private-provider-output" not in result.text
+    balance = client.app.state.store.balance("space-a")
+    assert balance["reserved"] == 0 and balance["spent"] > 0
+
+
+def test_closing_stream_mid_response_settles_once_without_replaying(client, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from aedrova_site.gateway import inference
+
+    access = begin(client)
+    upstream(monkeypatch, b'data: {"type":"response.created"}\n\n')
+
+    async def body():
+        return b'{"stream":true,"input":"test"}'
+
+    async def disconnected():
+        return False
+
+    request = SimpleNamespace(
+        headers={"authorization": "Bearer " + access["token"]},
+        body=body,
+        is_disconnected=disconnected,
+    )
+
+    async def close_after_first_chunk():
+        response = await inference(
+            request,
+            "codex",
+            client.app.state.config,
+            client.app.state.store,
+            client.app.state.identity,
+        )
+        assert await anext(response.body_iterator)
+        await response.body_iterator.aclose()
+
+    asyncio.run(close_after_first_chunk())
+    balance = client.app.state.store.balance("space-a")
+    assert balance["reserved"] == 0 and balance["spent"] > 0
+
+
+@pytest.mark.parametrize(
+    "data", [b"data: []\n\n", b'data: {"type":"response.completed","response":null}\n\n']
+)
+def test_malformed_provider_metadata_fails_without_exposing_diagnostics(client, monkeypatch, data):
+    access = begin(client)
+    upstream(monkeypatch, data)
+    result = client.post(
+        "/gateway/codex/v1/responses",
+        json={"stream": True, "input": "test"},
+        headers={"Authorization": "Bearer " + access["token"]},
+    )
+    assert "interrupted" in result.text
+    assert client.app.state.store.balance("space-a")["reserved"] == 0

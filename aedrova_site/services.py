@@ -13,23 +13,34 @@ from aedrova_site.store import Denied
 
 
 class Identity:
-    def __init__(self, config):
+    def __init__(self, config, *, transport=None):
         self.config = config
+        self.client = httpx.Client(
+            timeout=httpx.Timeout(15, connect=5, pool=5),
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            follow_redirects=False,
+            trust_env=False,
+            transport=transport,
+        )
+
+    def close(self):
+        self.client.close()
 
     def request(self, path, token="", *, method="GET", data=None):
         headers = {"apikey": self.config.supabase_key}
         if token:
             headers["Authorization"] = "Bearer " + token
         try:
-            response = httpx.request(
+            response = self.client.request(
                 method,
                 self.config.supabase_url + path,
                 headers=headers,
                 json=data,
-                timeout=15,
-                follow_redirects=False,
             )
             response.raise_for_status()
+            # PostgREST void RPCs (presence/leave/end) succeed with HTTP 204.
+            if response.status_code == 204:
+                return None
             return response.json()
         except (httpx.HTTPError, ValueError) as exc:
             raise Denied(
@@ -79,6 +90,18 @@ class Payments:
     def __init__(self, config, store):
         self.config, self.store = config, store
 
+    def checkout_branding(self):
+        settings = {
+            "display_name": "Aedrova",
+            "background_color": "#F5F5F7",
+            "button_color": "#0066CC",
+            "border_style": "pill",
+            "font_family": "default",
+        }
+        if self.config.stripe_icon_file:
+            settings["icon"] = {"type": "file", "file": self.config.stripe_icon_file}
+        return settings
+
     def checkout(self, workspace, plan, request_id):
         config = self.config
         if not config.checkout_enabled or plan not in config.plans:
@@ -89,6 +112,7 @@ class Payments:
             not price.get("active")
             or price.get("unit_amount") != approved["amount_cents"]
             or price.get("currency") != "usd"
+            or not price.get("recurring")
             or price["recurring"]["interval"] != approved["interval"]
             or price["recurring"].get("interval_count", 1) != 1
         ):
@@ -108,9 +132,16 @@ class Payments:
             row = self.store.customer(workspace, customer["id"])
         if row["status"] in {"active", "trialing"}:
             raise Denied("This workspace already has a plan. Use Manage subscription.")
+        if row["subscription"]:
+            current = stripe.Subscription.retrieve(row["subscription"], api_key=config.stripe_key)
+            if current.get("status") != "canceled":
+                raise Denied("This workspace already has a subscription. Use Manage subscription.")
         identifier = hashlib.sha256((workspace + plan + request_id).encode()).hexdigest()
+        checkout_expiry = int(time.time()) + 1800
         with self.store.tx() as db:
-            self.store.billing_lock(db, workspace)
+            locked = self.store.billing_lock(db, workspace)
+            if locked["status"] == "active":
+                raise Denied("This workspace already has a plan. Use Manage subscription.")
 
             prior = (
                 db.execute(text("SELECT * FROM checkout WHERE id=:id"), {"id": identifier})
@@ -120,30 +151,37 @@ class Payments:
             if prior:
                 if prior["url"] and prior["expires"] > int(time.time()):
                     return prior["url"]
-                raise Denied("Checkout is already being prepared or expired. Try a new checkout.")
+                if prior["expires"] <= int(time.time()):
+                    raise Denied("Checkout expired. Start a new checkout.")
+                # Retry uncertain network failures with the exact same Stripe idempotency key.
+                # A different request is still blocked while this reservation is pending.
             waiting = db.execute(
                 text("SELECT id FROM checkout WHERE workspace=:w AND expires>:now"),
                 {"w": workspace, "now": int(time.time())},
             ).first()
-            if waiting:
+            if waiting and not prior:
                 raise Denied(
                     "A checkout is already open for this workspace. Finish "
                     "it or wait for it to expire."
                 )
-            db.execute(
-                text("INSERT INTO checkout VALUES(:id,:w,:p,NULL,:expires)"),
-                {"id": identifier, "w": workspace, "p": plan, "expires": int(time.time()) + 1800},
-            )
+            if not prior:
+                db.execute(
+                    text("INSERT INTO checkout VALUES(:id,:w,:p,NULL,:expires)"),
+                    {"id": identifier, "w": workspace, "p": plan, "expires": checkout_expiry},
+                )
         session = stripe.checkout.Session.create(
             mode="subscription",
+            branding_settings=self.checkout_branding(),
             customer=row["customer"],
             line_items=[{"price": approved["price_id"], "quantity": 1}],
             client_reference_id=workspace,
             metadata={"workspace": workspace, "plan": plan},
             subscription_data={"metadata": {"workspace": workspace, "plan": plan}},
             success_url=config.origin + "/welcome?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=config.origin + "/plans?cancelled=1",
-            expires_at=int(time.time()) + 1800,
+            cancel_url=config.origin
+            + "/account?"
+            + urlencode({"cancelled": "1", "workspace": workspace, "plan": plan}),
+            expires_at=prior["expires"] if prior else checkout_expiry,
             allow_promotion_codes=False,
             idempotency_key="aedrova-checkout-" + identifier,
             api_key=config.stripe_key,
@@ -196,6 +234,7 @@ class Payments:
             )
         session = stripe.checkout.Session.create(
             mode="payment",
+            branding_settings=self.checkout_branding(),
             customer=customer,
             line_items=[{"price": self.config.topup_price_id, "quantity": 1}],
             metadata={"workspace": workspace, "kind": "ai_credits"},
@@ -285,8 +324,13 @@ class Payments:
             customer = row["customer"]
         result = stripe.billing_portal.Session.create(
             customer=customer,
-            return_url=self.config.origin + "/account",
+            return_url=self.config.origin + "/account?" + urlencode({"workspace": workspace}),
             api_key=self.config.stripe_key,
+            **(
+                {"configuration": self.config.stripe_portal_configuration}
+                if self.config.stripe_portal_configuration
+                else {}
+            ),
         )
         return result["url"]
 
@@ -294,6 +338,13 @@ class Payments:
         if not self.config.webhook_secret:
             raise Denied("Webhook verification is not configured.")
         event = stripe.Webhook.construct_event(payload, signature, self.config.webhook_secret)
+        if self.config.stripe_test_mode and event.get("livemode") is not False:
+            raise Denied("Live events cannot activate sandbox billing.")
+        if (
+            self.config.stripe_key.startswith(("sk_live_", "rk_live_"))
+            and event.get("livemode") is not True
+        ):
+            raise Denied("Test events cannot activate live billing.")
         kind = event["type"]
         if kind in {"checkout.session.completed", "charge.refunded", "charge.dispute.created"}:
             self.credit_webhook(event)
@@ -332,7 +383,10 @@ class Payments:
         ):
             raise Denied("Subscription pricing does not match an approved plan.")
         invoice = current.get("latest_invoice") or {}
-        paid = isinstance(invoice, dict) and invoice.get("paid") is True
+        # Recent Stripe API versions use invoice.status instead of invoice.paid.
+        paid = isinstance(invoice, dict) and (
+            invoice.get("status") == "paid" or invoice.get("paid") is True
+        )
         status = current["status"] if paid and current["status"] == "active" else "inactive"
         start = lines[0].get("current_period_start", current.get("current_period_start", 0))
         end = lines[0].get("current_period_end", current.get("current_period_end", 0))

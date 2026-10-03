@@ -48,3 +48,8 @@ def test_production_rejects_local_database_and_unencrypted_sessions():
             origin="https://aedrova.example",
             database="postgresql+psycopg://example",
         ).validate()
+
+
+def test_invalid_encryption_key_is_rejected_before_server_startup():
+    with pytest.raises(ValueError, match='Fernet key'):
+        Config(encryption_key='invalid-fixture-not-a-key').validate()

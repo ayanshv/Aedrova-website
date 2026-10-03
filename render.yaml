@@ -1,0 +1,36 @@
+# Initial website deployment only. No paid resources or product release gates are enabled.
+# Supply an external private PostgreSQL connection when importing this Blueprint.
+services:
+  - type: web
+    name: aedrova-website
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: checksPass
+    healthCheckPath: /health/ready
+    maxShutdownDelaySeconds: 300
+    domains:
+      - aedrova.com
+    envVars:
+      - key: AEDROVA_ORIGIN
+        value: https://aedrova.com
+      - key: AEDROVA_PRODUCTION
+        value: "true"
+      - key: AEDROVA_DATABASE
+        sync: false
+      - key: AEDROVA_ENCRYPTION_KEY
+        sync: false
+      - key: AEDROVA_CHECKOUT_ENABLED
+        value: "false"
+      - key: AEDROVA_GATEWAY_ENABLED
+        value: "false"
+      - key: AEDROVA_MEETINGS_ENABLED
+        value: "false"
+      - key: AEDROVA_RELEASE_READY
+        value: "false"
+      - key: AEDROVA_LEGAL_READY
+        value: "false"
+      - key: AEDROVA_STRIPE_TEST_MODE
+        value: "false"

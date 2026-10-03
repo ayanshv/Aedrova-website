@@ -62,6 +62,17 @@ SCHEMA = [
 ]
 
 
+SCHEMA += [
+    "CREATE INDEX IF NOT EXISTS runs_workspace_active ON runs(workspace,state,expires)",
+    "CREATE INDEX IF NOT EXISTS runs_user_active ON runs(user_id,state,expires)",
+    "CREATE INDEX IF NOT EXISTS inference_run_state ON inference(run_id,state)",
+    "CREATE INDEX IF NOT EXISTS inference_state_created ON inference(state,created)",
+    "CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires)",
+    "CREATE INDEX IF NOT EXISTS limits_expiry ON limits(expires)",
+    "CREATE INDEX IF NOT EXISTS checkout_workspace_expiry ON checkout(workspace,expires)",
+]
+
+
 def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
@@ -70,17 +81,32 @@ class Denied(ValueError):
     pass
 
 
+class RateLimited(Denied):
+    def __init__(self, retry_after=60):
+        super().__init__("Too many requests. Wait a minute and try again.")
+        self.retry_after = retry_after
+
+
 class Store:
-    def __init__(self, url, encryption_key=""):
+    def __init__(self, url, encryption_key="", *, pool_size=5, max_overflow=5, pool_timeout=5):
         if url.startswith("sqlite:///"):
             path = Path(url.removeprefix("sqlite:///"))
             path.parent.mkdir(parents=True, exist_ok=True)
         self.engine = create_engine(
-            url, connect_args={"timeout": 10} if url.startswith("sqlite") else {}
+            url,
+            connect_args={"timeout": 10} if url.startswith("sqlite") else {},
+            pool_pre_ping=True,
+            pool_recycle=300,
+            **(
+                {"pool_size": pool_size, "max_overflow": max_overflow, "pool_timeout": pool_timeout}
+                if url.startswith("postgresql")
+                else {}
+            ),
         )
         if self.engine.dialect.name == "postgresql":
             # Keep billing/auth tables outside Supabase's exposed public schema.
             with self.engine.begin() as db:
+                db.execute(text("SELECT pg_advisory_xact_lock(73114011)"))
                 db.execute(text("CREATE SCHEMA IF NOT EXISTS aedrova_billing"))
                 db.execute(text("REVOKE ALL ON SCHEMA aedrova_billing FROM PUBLIC"))
             self.engine.dispose()
@@ -89,10 +115,14 @@ class Store:
             def private_schema(connection, _record):
                 with connection.cursor() as cursor:
                     cursor.execute("SET search_path TO aedrova_billing")
+                    cursor.execute("SET statement_timeout TO '15s'")
+                    cursor.execute("SET lock_timeout TO '5s'")
                 connection.commit()
 
         self.cipher = Fernet(encryption_key.encode() if encryption_key else Fernet.generate_key())
         with self.tx() as db:
+            if self.engine.dialect.name == "postgresql":
+                db.execute(text("SELECT pg_advisory_xact_lock(73114011)"))
             for statement in SCHEMA:
                 db.execute(text(statement))
             columns = {column["name"] for column in inspect(db).get_columns("inference")}
@@ -110,9 +140,9 @@ class Store:
             path.chmod(0o600)
 
     @contextmanager
-    def tx(self):
+    def tx(self, *, write=True):
         with self.engine.connect() as db:
-            if self.engine.dialect.name == "sqlite":
+            if self.engine.dialect.name == "sqlite" and write:
                 db.exec_driver_sql("BEGIN IMMEDIATE")
             else:
                 db.begin()
@@ -330,6 +360,20 @@ class Store:
         now = int(time.time())
         run_id, token = secrets.token_urlsafe(24), secrets.token_urlsafe(48)
         with self.tx() as db:
+            if self.engine.dialect.name == "postgresql":
+                db.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:u,1))"), {"u": user}
+                )
+            active = db.execute(
+                text(
+                    "SELECT count(*) FROM runs WHERE user_id=:u AND state='active' AND expires>:now"
+                ),
+                {"u": user, "now": now},
+            ).scalar()
+            if active >= 2:
+                raise Denied(
+                    "Your account already has two active builds. Finish or close one first."
+                )
             row = self.billing_lock(db, workspace)
             if row["status"] not in {"active", "trialing"} or row["period_end"] <= now:
                 raise Denied("An active Aedrova plan is required.")
@@ -376,7 +420,7 @@ class Store:
         return {"id": run_id, "token": token, "expires": now + 7200}
 
     def run(self, token):
-        with self.tx() as db:
+        with self.tx(write=False) as db:
             row = (
                 db.execute(
                     text(
@@ -437,6 +481,13 @@ class Store:
                 )
             if row["status"] not in {"active", "trialing"} or row["period_end"] <= int(time.time()):
                 raise Denied("Your subscription is not active.")
+            if db.execute(
+                text("SELECT id FROM inference WHERE run_id=:run AND state='pending' LIMIT 1"),
+                {"run": run["id"]},
+            ).first():
+                raise Denied(
+                    "This build already has a model request running. Wait before retrying."
+                )
             wallet = self.wallet(db, run["workspace"])
             if wallet["balance"] < 0:
                 raise Denied("AI credits require billing review after a refund or dispute.")
@@ -548,7 +599,7 @@ class Store:
                 text(
                     "SELECT inference.id FROM inference JOIN runs ON "
                     "runs.id=inference.run_id WHERE "
-                    "inference.state='pending' AND runs.expires<:now"
+                    "inference.state='pending' AND runs.expires<:now LIMIT 500"
                 ),
                 {"now": int(time.time())},
             ).all()
@@ -568,12 +619,11 @@ class Store:
             )
             count = db.execute(text("SELECT count FROM limits WHERE id=:id"), {"id": key}).scalar()
             if count > limit:
-                raise Denied("Too many requests. Wait a minute and try again.")
-            db.execute(text("DELETE FROM limits WHERE expires<:now"), {"now": now})
+                raise RateLimited(seconds - now % seconds)
 
     def session(self, token, payload=None, lifetime=3600):
         identifier = digest(token)
-        with self.tx() as db:
+        with self.tx(write=payload is not None) as db:
             if payload is not None:
                 encrypted = self.cipher.encrypt(json.dumps(payload).encode()).decode()
                 db.execute(

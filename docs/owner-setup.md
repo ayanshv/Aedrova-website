@@ -1,17 +1,41 @@
 # Owner setup: required to finish live Milestone 9 acceptance
 
+Domain update, October 2: owner bought aedrova.com at Cloudflare and selected Render.
+Follow [domain-deployment.md](domain-deployment.md) and the root `render.yaml` for the
+first website-only deployment. Hosting authorization, persistent private PostgreSQL,
+server secret setup, DNS/TLS and live-domain OAuth acceptance remain pending. Buying the
+domain alone does not deploy the site. Checkout, included AI, meetings and public app
+downloads stay gated; Apple setup remains in M13.
+
+October 2 scheduling update: M12 is approved. Defer Apple Developer enrollment,
+Developer ID certificates and notarization setup until M13's final public installer gate.
+Defer a purchased domain until launch, or omit it; a stable hosting-provider HTTPS URL
+works for interim website, OAuth, webhooks and shared meeting acceptance. Signing and
+notarization still must pass before the public Mac download is enabled.
+
+Current pre-M11 task: follow [stripe-sandbox-setup.md](stripe-sandbox-setup.md) for the
+isolated checkout acceptance. It needs only a local test secret and the port-8092 Google
+callback allowlist; real paid activation remains gated. The older full-launch checklist
+below applies later. Remaining M10 hosting/media/transcription is deferred to M12.
+
+For meeting staging without a purchased domain, follow [meeting-hosting.md](meeting-hosting.md).
+The API and independent access guard share a private database and stable encryption key.
+M10 is currently blocked on hosting and a second Mac; the owner confirms neither is
+available yet. Meeting staging keeps paid AI/checkout/release switches disabled.
+
 Local code/tests do not make this a live paid release. Leave checkout disabled until the
 following work and the acceptance checks pass. Never send secret keys in chat.
 
-## 1. Domain, Python host and private database
+## 1. HTTPS host and private database
 
-Choose the real website domain and a Python server host. Configure HTTPS and a reverse proxy
-that supports unbuffered SSE, an upstream timeout above 180 seconds, an 8 MiB request-body
+Choose a Python server host and its stable HTTPS address. A purchased domain is optional.
+Configure HTTPS and a reverse proxy
+that supports unbuffered SSE, an upstream timeout above 270 seconds, an 8 MiB request-body
 limit, header-size limits and public request rate limits. Keep access logs disabled for
 OAuth callbacks, gateway requests and credential-bearing URLs. Trust forwarded IP headers
 only from your actual proxy. No browser script needs third-party API access.
 
-Set `AEDROVA_ORIGIN=https://YOUR_DOMAIN`, `AEDROVA_PRODUCTION=true` and
+Set `AEDROVA_ORIGIN=https://YOUR_HOST_ADDRESS`, `AEDROVA_PRODUCTION=true` and
 `AEDROVA_DATABASE=postgresql+psycopg://...` in the server secret store. Use a dedicated database
 login with permission to own/create the `aedrova_billing` schema and its tables, rather than
 an anonymous Supabase API key or a customer's database credentials. Prefer a separate private
@@ -184,3 +208,66 @@ Run the new desktop SQL migration 202610010001_meetings.sql in Supabase's SQL Ed
 Full steps and remaining M10 scope are in the desktop docs/milestone-10-meetings.md.
 No custom domain is required for this development test. Never put LiveKit API
 credentials in frontend files or in the installed desktop app.
+
+## M10 native calls — development acceptance
+
+Native channel calls and an encrypted durable access guard are implemented. They are
+not yet accepted for physical devices or public release. The developer prepared the
+ignored `.env.meeting-server` with a persistent encryption key and meetings disabled;
+never paste that key or LiveKit credentials into chat. The three existing LiveKit
+values in `../Aedrova/.env.meetings` and the existing Meetings SQL are still used. No
+additional hosted SQL migration is required for this task. Server leases use the
+private server database; they do not enter Supabase's public schema.
+
+Required now: in the rebuilt Mac app, sign in, open Meetings → Check meeting devices,
+and explicitly test camera, microphone, speaker tone and screen preview. Approve
+only those macOS permissions. If screen access is denied, use System Settings →
+Privacy & Security → Screen & System Audio Recording, enable Aedrova and restart it.
+Reply with which checks worked. This blocks physical-device acceptance, not local tests.
+After that confirmation the developer can enable the local meeting server and help
+run a call with two accounts in the same workspace/channel (preferably two Macs).
+Do not enable public meetings merely because synthetic transport passes.
+
+Local service commands after hardware preflight (stop the older port-8090 server):
+
+```sh
+cd /Users/ayanshvarma/Documents/Aedrova_site
+uv run --env-file ../Aedrova/.env.meetings --env-file .env.meeting-server uvicorn aedrova_site.app:create_app --factory --host 127.0.0.1 --port 8090
+```
+
+Set `AEDROVA_MEETINGS_ENABLED=true` in the ignored `.env.meeting-server` only when
+starting the approved live acceptance. Keep the encryption key stable across restarts.
+The desktop public managed origin must be `http://127.0.0.1:8090` for this local test.
+For a second Mac, localhost does not point to the first Mac: use an approved HTTPS
+shared development server and configure that Mac's public managed origin accordingly.
+Do not expose the local HTTP server publicly. The custom domain remains deferred.
+
+For production, run the lease guard as a separately supervised process with the same
+private database, encryption key and LiveKit Cloud configuration:
+
+```sh
+uv run --env-file ../Aedrova/.env.meetings --env-file .env.meeting-server python -m scripts.meeting_guard
+```
+
+The API has an embedded guard as well. A stopped HTTP process cannot revoke a malicious
+RTC client on its own; the independent guard and restart supervision are release
+requirements. Losing LiveKit connectivity can delay forced removal; durable pending
+revocations are retried and new joins fail closed when monitoring is unhealthy.
+Do not claim immediate removal under an outage. Physical echo, reconnect after real
+network loss, logout, host end, membership removal and two-Mac acceptance remain required.
+
+
+### Internal desktop AI mode and meeting service
+
+A configured meeting/website service URL does not itself enable included AI. The
+internal Apple Development package uses AEDROVA_AI_ACCESS_MODE=local with the user's
+existing provider access. For gateway acceptance, explicitly package with
+AEDROVA_AI_ACCESS_MODE=included after completing section 4 and the test subscription
+setup. Public Developer ID packages require included mode and reject local mode;
+there is no automatic personal-provider fallback for gateway outages or quota failures.
+Provider keys stay exclusively on the server. A custom domain is not required for
+private HTTPS hosted acceptance; a hosting provider's secure service URL is sufficient.
+
+
+Production audit, new Supabase SQL, maintenance, logging and deployment bounds:
+[production-readiness-audit.md](production-readiness-audit.md). No capacity or public-launch acceptance is implied.

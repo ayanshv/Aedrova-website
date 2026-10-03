@@ -1,0 +1,12 @@
+# Allowlist prevents accidental secret, credential, screenshot or database inclusion.
+**
+!Dockerfile
+!pyproject.toml
+!uv.lock
+!aedrova_site/
+!aedrova_site/**
+!scripts/
+!scripts/*.py
+!config/
+!config/plans.example.json
+!config/models.beta.json

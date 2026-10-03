@@ -1,0 +1,55 @@
+name: Website checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked dependencies
+        run: |
+          python -m pip install uv==0.12.6
+          uv sync --locked
+      - name: Check Python source
+        run: |
+          uv run ruff check aedrova_site scripts tests
+          uv run python -m compileall -q aedrova_site scripts
+      - name: Run backend and website tests
+        run: uv run pytest -q
+      - name: Build deployment image
+        run: docker build --tag aedrova-website:check .
+      - name: Check image startup and database readiness
+        run: |
+          python - <<'PY'
+          import json, subprocess, time, urllib.request
+          subprocess.run([
+              "docker", "run", "--detach", "--name", "aedrova-smoke",
+              "--publish", "127.0.0.1:18090:8090",
+              "--env", "AEDROVA_DATABASE=sqlite:////tmp/aedrova-smoke.sqlite3",
+              "aedrova-website:check",
+          ], check=True)
+          try:
+              for attempt in range(30):
+                  try:
+                      with urllib.request.urlopen("http://127.0.0.1:18090/health/ready", timeout=2) as r:
+                          assert json.load(r) == {"status": "ready"}
+                      break
+                  except Exception:
+                      if attempt == 29:
+                          raise RuntimeError("Deployment image did not become ready") from None
+                      time.sleep(1)
+          finally:
+              subprocess.run(["docker", "rm", "--force", "aedrova-smoke"], check=True)
+          PY
