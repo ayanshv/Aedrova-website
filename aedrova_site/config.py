@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from cryptography.fernet import Fernet
+from sqlalchemy.engine import make_url
 
 from aedrova_site.policy import PLAN_POLICY
 
@@ -19,6 +20,7 @@ class Config:
     database: str = "sqlite:///work/site.sqlite3"
     production: bool = False
     waitlist_only: bool = False
+    supabase_database: bool = False
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_pool_timeout: int = 5
@@ -105,6 +107,28 @@ class Config:
             if not self.encryption_key:
                 raise ValueError(
                     "Configure the server encryption key in the deployment secret store."
+                )
+        if self.supabase_database:
+            try:
+                database = make_url(self.database)
+                database_port = database.port
+            except Exception:
+                raise ValueError(
+                    "Configure a valid private Supabase database connection."
+                ) from None
+            if (
+                database.drivername != "postgresql+psycopg"
+                or database.username != "aedrova_website.cpelagtufyocepnqcqqd"
+                or not database.password
+                or not (database.host or "").endswith(".pooler.supabase.com")
+                or database_port != 5432
+                or database.database != "postgres"
+                or database.query.get("sslmode") not in {"require", "verify-ca", "verify-full"}
+                or self.db_pool_size + self.db_max_overflow > 3
+            ):
+                raise ValueError(
+                    "Use the restricted Aedrova website role, Supabase session pooler "
+                    "on port 5432, TLS and at most three pooled connections."
                 )
         if self.waitlist_only and (
             self.checkout_enabled or self.gateway_enabled or self.meetings_enabled

@@ -1,5 +1,5 @@
 # Initial website deployment only. No paid resources or product release gates are enabled.
-# Supply an external private PostgreSQL connection when importing this Blueprint.
+# Use the existing Supabase session pooler and restricted website database role.
 services:
   - type: web
     name: aedrova-website
@@ -20,6 +20,12 @@ services:
         value: "true"
       - key: AEDROVA_PRODUCTION
         value: "true"
+      - key: AEDROVA_SUPABASE_DATABASE
+        value: "true"
+      - key: AEDROVA_DB_POOL_SIZE
+        value: "2"
+      - key: AEDROVA_DB_MAX_OVERFLOW
+        value: "1"
       - key: AEDROVA_DATABASE
         sync: false
       - key: AEDROVA_ENCRYPTION_KEY

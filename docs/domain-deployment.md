@@ -12,15 +12,13 @@ run `python -m scripts.export_waitlist /private/path/waitlist.csv`. The file is 
 owner-readable only and never overwritten; it contains waitlist entries, not auth sessions.
 Keep exported addresses private. Export does not send email.
 Privacy/business contact and removal procedures still need owner finalization before
-collecting real public addresses. No new Supabase SQL is needed for this website feature.
+collecting real public addresses. The private website schema now needs the Supabase setup SQL below.
 
-Render web configuration is staged in a browser form, not deployed. Database form is
-staged at Oregon, PostgreSQL 18, $6/month compute + 1 GB at $0.30/month = $6.30/month
-shown by Render, autoscaling disabled. No purchase or service creation occurred. The owner
-must review and submit Create database/payment steps personally. GitHub already contains
-the prior tested deployment baseline; the waitlist/UI changes are prepared for the authorized GitHub deployment push.
-Render currently shows an empty workspace; the persistent database still has to be created
-by the owner before importing the website blueprint. DNS/HTTPS acceptance is pending.
+The owner selected the existing Supabase database instead of purchasing Render Postgres.
+Run `sql/supabase-website.sql` and follow [the restricted Supabase setup](supabase-website.md).
+This adds a private website schema and login; the public publishable key cannot be used
+as a PostgreSQL password. No new paid database should be created. The earlier staged
+Render database form is obsolete. Render deployment and DNS/HTTPS acceptance are pending.
 
 # aedrova.com — Cloudflare DNS and Render deployment
 
@@ -57,16 +55,11 @@ Google sign-in, payments, private database access controls or two-device meeting
    account, review/accept its terms yourself. When connecting repositories, install/authorize
    Render only for `ayanshv/Aedrova-website` rather than all repositories. The assistant has
    not clicked Authorize, accepted terms, granted repository access or created services.
-2. Arrange a persistent private PostgreSQL database. Existing Supabase chat SQL and its
-   public publishable key do not supply a server SQL connection. A separate Render Postgres
-   database is the straightforward option; select/review its actual charges yourself.
-   Use its internal connection URL for the web service and restrict external access. A
-   dedicated restricted billing database/role on an existing PostgreSQL service is another
-   option. Do not use an expiring free database as a durable production billing ledger.
-3. Make the current website source and deployment files available on the linked GitHub
-   branch, after tests and a secret review. The local repository has uncommitted product
-   changes; nothing in this domain-setup task has been committed or pushed yet. Never add
-   `.env*`, local databases, work/ reports or provider credentials. `.env.example` is public.
+2. Follow [Supabase website setup](supabase-website.md): run the SQL, personally set the
+   dedicated role password and copy the actual session-pooler hostname. Keep the private
+   schema out of Data API exposed schemas. Do not create a separate Render database.
+3. The tested waitlist source is already on GitHub main. Configuration changes are committed
+   only after tests. Never add `.env*`, local databases, work reports or provider credentials.
 4. Render → New → Blueprint → choose `ayanshv/Aedrova-website`, branch `main`. Import
    `render.yaml`, inspect its resource/cost summary and supply the two prompted secrets:
    `AEDROVA_DATABASE=postgresql+psycopg://...` (replace an ordinary `postgresql://` prefix

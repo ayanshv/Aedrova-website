@@ -107,7 +107,11 @@ class Store:
             # Keep billing/auth tables outside Supabase's exposed public schema.
             with self.engine.begin() as db:
                 db.execute(text("SELECT pg_advisory_xact_lock(73114011)"))
-                db.execute(text("CREATE SCHEMA IF NOT EXISTS aedrova_billing"))
+                # A restricted Supabase login owns the pre-created private schema,
+                # but deliberately cannot CREATE schemas in the shared database.
+                missing = db.scalar(text("SELECT to_regnamespace('aedrova_billing') IS NULL"))
+                if missing:
+                    db.execute(text("CREATE SCHEMA aedrova_billing"))
                 db.execute(text("REVOKE ALL ON SCHEMA aedrova_billing FROM PUBLIC"))
             self.engine.dispose()
 
