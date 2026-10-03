@@ -1,5 +1,12 @@
 # M10 shared meeting staging
 
+
+**October 3 owner deferral:** the owner actions below are scheduled for **M14**, the
+latest hosted meeting activation milestone. Do not request paid service setup, secrets
+or a second Mac during current development. Prepared files remain available; no paid
+service is authorized by this deferral. Public meetings and transcription stay gated
+pending M14 live/consent acceptance. M12 local implementation can continue separately.
+
 October 3 update: the waitlist website is deployed on Render at aedrova.com using the
 existing restricted Supabase schema. Shared meetings require separate always-on API and
 worker services; the free website does not satisfy that gate. Follow `render-meetings.md`

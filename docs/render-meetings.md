@@ -1,5 +1,12 @@
 # M12B — shared Render meeting staging
 
+
+**October 3 owner deferral:** the owner actions below are scheduled for **M14**, the
+latest hosted meeting activation milestone. Do not request paid service setup, secrets
+or a second Mac during current development. Prepared files remain available; no paid
+service is authorized by this deferral. Public meetings and transcription stay gated
+pending M14 live/consent acceptance. M12 local implementation can continue separately.
+
 Prepared October 3, 2026. The owner approved the next shared meeting deployment task.
 The waitlist website is live at aedrova.com. This task does not enable meetings on the
 public website, transcription, checkout, managed AI or app downloads.
@@ -20,7 +27,7 @@ maximum 3 plus these 2 is at most 5 per steady-state deployment. Rolling deploy 
 can temporarily exceed that role budget and fail connections; acceptance must check this.
 The guard now honors those limits and sanitizes fatal startup errors.
 
-## Owner actions required before live acceptance
+## Owner actions deferred to M14 before live acceptance
 
 1. Approve the two always-on Render services. Published base compute is currently $7/month
    each, about $14/month total, excluding bandwidth, taxes and LiveKit/Supabase usage.
