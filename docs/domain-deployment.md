@@ -29,7 +29,7 @@ website. Buying a domain does not upload or run the local Python application.
 ## Prepared locally
 
 `render.yaml` describes one Docker web service, custom domain aedrova.com, database
-readiness health checks, a 300-second shutdown grace and deployment after GitHub checks
+readiness health checks and deployment after GitHub checks
 pass. It explicitly selects free web compute for the first preview rather than silently
 creating a paid subscription. Free compute can sleep and is not the target for paid AI,
 meetings or dependable production response times; review paid compute before those gates.

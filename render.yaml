@@ -10,7 +10,6 @@ services:
     dockerContext: .
     autoDeployTrigger: checksPass
     healthCheckPath: /health/ready
-    maxShutdownDelaySeconds: 300
     domains:
       - aedrova.com
     envVars:
