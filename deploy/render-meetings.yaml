@@ -1,0 +1,74 @@
+# MANUAL IMPORT ONLY: two paid always-on services. Review charges before deployment.
+# Does not modify the free website Blueprint. No secrets belong here.
+# First create the aedrova-meeting-staging environment group in Render.
+# API database health permits startup; /health/meetings additionally requires the guard.
+services:
+  - type: web
+    name: aedrova-meetings
+    runtime: docker
+    plan: 0.5c-512mb
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m scripts.serve
+    autoDeployTrigger: checksPass
+    healthCheckPath: /health/ready
+    envVars:
+      - fromGroup: aedrova-meeting-staging
+      - key: AEDROVA_PRODUCTION
+        value: "true"
+      - key: AEDROVA_SUPABASE_DATABASE
+        value: "true"
+      - key: AEDROVA_DB_POOL_SIZE
+        value: "1"
+      - key: AEDROVA_DB_MAX_OVERFLOW
+        value: "0"
+      - key: AEDROVA_WAITLIST_ONLY
+        value: "false"
+      - key: AEDROVA_MEETINGS_ENABLED
+        value: "true"
+      - key: AEDROVA_GATEWAY_ENABLED
+        value: "false"
+      - key: AEDROVA_CHECKOUT_ENABLED
+        value: "false"
+      - key: AEDROVA_RELEASE_READY
+        value: "false"
+      - key: AEDROVA_LEGAL_READY
+        value: "false"
+      - key: AEDROVA_STRIPE_TEST_MODE
+        value: "false"
+  - type: worker
+    name: aedrova-meeting-guard
+    runtime: docker
+    plan: 0.5c-512mb
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m scripts.meeting_guard
+    autoDeployTrigger: checksPass
+    envVars:
+      - fromGroup: aedrova-meeting-staging
+      - key: AEDROVA_PRODUCTION
+        value: "true"
+      - key: AEDROVA_SUPABASE_DATABASE
+        value: "true"
+      - key: AEDROVA_DB_POOL_SIZE
+        value: "1"
+      - key: AEDROVA_DB_MAX_OVERFLOW
+        value: "0"
+      - key: AEDROVA_WAITLIST_ONLY
+        value: "false"
+      - key: AEDROVA_MEETINGS_ENABLED
+        value: "true"
+      - key: AEDROVA_GATEWAY_ENABLED
+        value: "false"
+      - key: AEDROVA_CHECKOUT_ENABLED
+        value: "false"
+      - key: AEDROVA_RELEASE_READY
+        value: "false"
+      - key: AEDROVA_LEGAL_READY
+        value: "false"
+      - key: AEDROVA_STRIPE_TEST_MODE
+        value: "false"

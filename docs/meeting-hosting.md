@@ -1,7 +1,10 @@
 # M10 shared meeting staging
 
-Deployment preparation is implemented. No host account, HTTPS deployment or second Mac is
-available as of October 1. These are live acceptance blockers, not failed local tests.
+October 3 update: the waitlist website is deployed on Render at aedrova.com using the
+existing restricted Supabase schema. Shared meetings require separate always-on API and
+worker services; the free website does not satisfy that gate. Follow `render-meetings.md`
+and the separately imported `deploy/render-meetings.yaml`. Paid deployment approval,
+server secret setup and a second Mac remain live acceptance blockers.
 Transcription and meeting-to-agent retrieval are not implemented or enabled; M10 is not complete.
 The owner authorized continuing all of M10. No repeated approval is needed to resume that scope
 when the setup below is ready. Paid hosting/account commitments still belong to the owner.
@@ -20,7 +23,8 @@ when the setup below is ready. Paid hosting/account commitments still belong to 
 3. In **both services' secret/environment settings**, configure the names in
    `deploy/meetings.env.example`. Use the same private PostgreSQL URL and persistent Fernet
    encryption key for both. The DB login needs schema/table ownership in `aedrova_billing`.
-   Keep this schema outside Supabase's exposed API schemas. Prefer a separate private database.
+   Keep this schema outside Supabase's exposed API schemas. The owner selected the existing
+   restricted Supabase role; use its session pooler, shared encryption key and bounded pools.
    Transfer the existing LiveKit values from the local `.env.meetings` directly into the host's
    secret store. Keep credentials out of chat, GitHub, Docker build arguments and the Mac app.
    The existing private `.env.meeting-server` key can be retained for this staging service;
