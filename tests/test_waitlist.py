@@ -120,3 +120,13 @@ def test_export_neutralizes_spreadsheet_formulas(client, tmp_path):
     path = tmp_path / "formula.csv"
     assert export(store, path) == 1
     assert "'=2+2@example.com" in path.read_text()
+
+
+def test_waitlist_publishes_owner_contact_and_deletion_instructions(client):
+    for path in ("/", "/privacy", "/terms"):
+        page = client.get(path)
+        assert 'href="mailto:aedrovaai@gmail.com"' in page.text
+    privacy = client.get("/privacy").text
+    assert "requests to remove your waitlist registration" in privacy
+    assert "not used as AI build context" in privacy
+    assert "Accounts, payments and app downloads are not open" in privacy
