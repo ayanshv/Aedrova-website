@@ -1,7 +1,8 @@
 'use strict';
 const $ = (selector) => document.querySelector(selector);
 const storage = {get(key, fallback=null){try{return JSON.parse(localStorage.getItem(key)) ?? fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch{}}};
-const theme = storage.get('aedrova-theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+const savedTheme = storage.get('aedrova-theme');
+const theme = savedTheme === 'dark' ? 'dark' : 'light';
 document.documentElement.dataset.theme=theme;
 document.querySelectorAll('.theme-toggle').forEach(button=>button.addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;storage.set('aedrova-theme',next);}));
 document.querySelectorAll('.desktop-nav a,.mobile-menu a').forEach(link=>{if(link.getAttribute('href')===location.pathname&&location.pathname!=='/')link.setAttribute('aria-current','page');});
