@@ -195,3 +195,28 @@ def test_city_video_supports_browser_range_loading(client):
     assert response.headers['content-range'].startswith('bytes 0-1023/')
     assert len(response.content) == 1024
     assert b'ftyp' in response.content[:32]
+
+
+def test_meeting_showcase_uses_real_captures_and_honest_availability(client):
+    page = client.get("/").text
+    assert 'id="meetings"' in page
+    assert "Implemented in the desktop preview" in page
+    assert "Public rollout pending" in page
+    assert "audio transcription requires current consent from every participant" in page
+    assert "AI reuse is a separate choice" in page
+    assert "does not give the agent automatic visual understanding" in page
+    for asset in (
+        "meetings-light.png", "meetings-dark.png", "devices-light.png", "devices-dark.png"
+    ):
+        assert asset in page
+        response = client.get("/static/" + asset)
+        assert response.status_code == 200
+        assert response.content.startswith(b"\x89PNG")
+    assert "Planned video calls" not in page
+
+
+def test_meeting_links_and_plan_disclosures_preserve_release_gate(client):
+    assert '/#meetings' in client.get("/").text
+    assert "public availability and any meeting limits will be confirmed" in (
+        client.get("/plans").text
+    )

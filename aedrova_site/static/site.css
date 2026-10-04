@@ -235,3 +235,19 @@ footer p,.footer-note{font-size:12px;line-height:1.7}
 .waitlist-error{color:#C43139;font-size:13px!important;margin-top:18px}
 :root[data-theme=dark] .waitlist-error{color:#FF858A}
 #waitlist-success:focus{outline:none}
+
+/* Real desktop meeting captures and readable, responsive feature details. */
+.meeting-overview{align-self:center}.meeting-overview img{border-radius:20px}
+.meeting-details,.meeting-device-section{max-width:1280px;margin:0 auto;padding:0 55px 90px}
+.meeting-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px}
+.meeting-details article{border-top:1px solid var(--edge);padding-top:25px}
+.meeting-details h3{font-family:var(--serif);font-size:32px;font-weight:400;line-height:1.15;margin:22px 0 15px}
+.meeting-details p,.meeting-device-section p{font-size:14px;line-height:1.85}
+.meeting-device-section{display:grid;grid-template-columns:1.2fr .8fr;gap:70px;align-items:center}
+.meeting-device-capture{max-width:390px;margin-left:auto}.meeting-device-section small{display:block;font-size:11px;line-height:1.8;color:var(--muted)}
+@media(max-width:1000px){.meeting-details,.meeting-device-section{padding-left:35px;padding-right:35px}.meeting-details{gap:25px}.meeting-device-section{gap:40px}}
+@media(max-width:700px){.meeting-details,.meeting-device-section{grid-template-columns:1fr;padding:0 23px 65px;gap:30px}.meeting-device-capture{max-width:390px;margin:auto}.meeting-details h3{font-size:30px}.meeting-device-section h2{font-size:47px}.meeting-overview img{border-radius:10px}}
+
+.meeting-image-dark{display:none!important}
+html[data-theme="dark"] .meeting-image-dark{display:block!important}
+html[data-theme="dark"] .meeting-image-light{display:none!important}
