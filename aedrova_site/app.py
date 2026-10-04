@@ -14,6 +14,7 @@ from uuid import UUID
 
 import stripe
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -35,6 +36,7 @@ from aedrova_site.observability import (
 )
 from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.services import Identity, Payments, random_token
+from aedrova_site.speech import SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
 
 ROOT = Path(__file__).parent
@@ -68,6 +70,40 @@ class WaitlistBody(BaseModel):
     consent: bool = False
 
 
+class MeetingConsentBody(MeetingJoinBody):
+    transcription: bool = Field(default=False, strict=True)
+    ai_context: bool = Field(default=False, strict=True)
+
+
+class MeetingTextBody(MeetingJoinBody):
+    identifier: UUID
+    revision: int = Field(ge=1, strict=True)
+    roster: list[UUID] = Field(min_length=1, max_length=100)
+    body: str = Field(min_length=1, max_length=2000)
+    offset_ms: int = Field(default=0, ge=0, le=86400000, strict=True)
+
+
+class MeetingSpeechBody(MeetingJoinBody):
+    model_config = {"extra": "forbid"}
+    identifier: UUID
+    revision: int = Field(ge=1, strict=True)
+    roster: list[UUID] = Field(min_length=1, max_length=100)
+    offset_ms: int = Field(default=0, ge=0, le=86400000, strict=True)
+    audio: str = Field(min_length=1, max_length=427000)
+
+
+class MeetingReviewBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    identifier: UUID
+    version: int = Field(ge=0, strict=True)
+    body: str = Field(min_length=1, max_length=2000)
+    decision: bool = Field(default=False, strict=True)
+
+
+class MeetingWithdrawBody(MeetingJoinBody):
+    delete: bool = Field(default=False, strict=True)
+
+
 class InquiryBody(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=254)
@@ -96,6 +132,7 @@ def create_app(config=None):
     payments = Payments(config, store)
     templates = Jinja2Templates(directory=ROOT / "templates")
     leases = MeetingLeases(store, require_external=config.production)
+    speech = SpeechService(config, store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -112,12 +149,14 @@ def create_app(config=None):
                 with suppress(asyncio.CancelledError):
                     await guard
             await asyncio.to_thread(identity.close)
+            await asyncio.to_thread(speech.close)
             await asyncio.to_thread(store.engine.dispose)
 
     app = FastAPI(
         title="Aedrova", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.meeting_leases = leases
+    app.state.speech = speech
     app.state.config, app.state.store, app.state.identity, app.state.payments = (
         config,
         store,
@@ -159,6 +198,13 @@ def create_app(config=None):
     app.add_middleware(BodyLimit)
     app.add_middleware(Admission, maximum=config.gateway_max_concurrency)
     app.add_middleware(RequestEvents)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_request, _exc):
+        # Pydantic's default response includes input values (including audio/tokens).
+        return JSONResponse(
+            {"error": "Some request fields are invalid. Check your input."}, status_code=422
+        )
 
     @app.exception_handler(RateLimited)
     async def limited(_request, exc):
@@ -588,6 +634,117 @@ def create_app(config=None):
             raise Denied("Meetings are being prepared.")
         return auth(request, change=True)
 
+    @app.get("/api/meetings/capabilities")
+    def meeting_capabilities(request: Request):
+        token = meeting_token(request)
+        identity.user(token)
+        return {
+            "meeting_text": config.meeting_context_enabled,
+            "audio_transcription": config.speech_enabled,
+        }
+
+    def meeting_context_token(request):
+        if not config.meeting_context_enabled:
+            raise Denied("Meeting text is being prepared. No transcription was started.")
+        return meeting_token(request)
+
+    @app.post("/api/meetings/speech")
+    def meeting_speech(request: Request, body: MeetingSpeechBody):
+        if not config.speech_enabled:
+            raise Denied("Audio transcription is not enabled.")
+        token = meeting_context_token(request)
+        user = identity.user(token)
+        # Server-owned PostgreSQL reservation checks scope/consent before provider I/O.
+        return speech.transcribe(user["id"], body)
+
+    @app.get("/api/meetings/transcript/{meeting}")
+    def meeting_transcript(request: Request, meeting: UUID, page: int = 0):
+        token = meeting_context_token(request)
+        if not 0 <= page <= 199:
+            raise Denied("Invalid transcript page.")
+        return identity.request(
+            "/rest/v1/meeting_transcript_segments?meeting_id=eq."
+            + str(meeting)
+            + "&select=*&order=offset_ms.asc,id.asc&limit=50&offset="
+            + str(page * 50),
+            token,
+        )
+
+    @app.get("/api/meetings/history/{channel}")
+    def meeting_history(request: Request, channel: UUID):
+        token = meeting_context_token(request)
+        return identity.request(
+            "/rest/v1/meetings?channel_id=eq."
+            + str(channel)
+            + "&select=id,title,started_at,ended_at&order=started_at.desc&limit=50",
+            token,
+        )
+
+    @app.post("/api/meetings/transcript/review")
+    def meeting_review(request: Request, body: MeetingReviewBody):
+        token = meeting_context_token(request)
+        version = identity.request(
+            "/rest/v1/rpc/review_meeting_segment",
+            token,
+            method="POST",
+            data={
+                "p_id": str(body.identifier),
+                "p_version": body.version,
+                "p_body": body.body,
+                "p_decision": body.decision,
+            },
+        )
+        return {"version": version}
+
+    @app.post("/api/meetings/consent")
+    def meeting_consent(request: Request, body: MeetingConsentBody):
+        token = meeting_context_token(request)
+        identity.request(
+            "/rest/v1/rpc/set_meeting_consent",
+            token,
+            method="POST",
+            data={
+                "p_meeting": str(body.meeting),
+                "p_transcription": body.transcription,
+                "p_ai": body.ai_context,
+            },
+        )
+        return identity.request(
+            "/rest/v1/rpc/meeting_consent_snapshot",
+            token,
+            method="POST",
+            data={"p_meeting": str(body.meeting)},
+        )
+
+    @app.post("/api/meetings/text")
+    def meeting_text(request: Request, body: MeetingTextBody):
+        token = meeting_context_token(request)
+        identifier = identity.request(
+            "/rest/v1/rpc/append_meeting_text",
+            token,
+            method="POST",
+            data={
+                "p_meeting": str(body.meeting),
+                "p_id": str(body.identifier),
+                "p_revision": body.revision,
+                "p_roster": sorted(str(u) for u in body.roster),
+                "p_body": body.body,
+                "p_offset": body.offset_ms,
+            },
+        )
+        return {"id": identifier}
+
+    @app.post("/api/meetings/text/withdraw")
+    def meeting_withdraw(request: Request, body: MeetingWithdrawBody):
+        token = meeting_context_token(request)
+        identity.request(
+            "/rest/v1/rpc/withdraw_meeting_text",
+            token,
+            method="POST",
+            data={"p_meeting": str(body.meeting), "p_delete": body.delete},
+        )
+        return {"ok": True}
+
     @app.get("/api/meetings/channel/{channel}")
     def meeting_list(request: Request, channel: UUID):
         token = meeting_token(request)
@@ -690,7 +847,6 @@ def create_app(config=None):
 
     @app.post("/gateway/claude_code/v1/messages/count_tokens")
     async def count_tokens(request: Request):
-        # Count-only requests spend no provider credits but require the same live access.
         await authorize_run(request, "claude_code", config, store, identity)
         body = await request.body()
         try:

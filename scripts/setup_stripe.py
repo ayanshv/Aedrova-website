@@ -10,19 +10,22 @@ from aedrova_site.config import Config
 from aedrova_site.policy import PLAN_POLICY
 
 
-def provision(config, output):
-    if not config.stripe_key.startswith(("sk_test_", "rk_test_")):
-        raise ValueError("Only Stripe test keys are accepted by this setup command.")
+def provision(config, output, *, live=False):
+    environment = "live" if live else "sandbox"
+    prefixes = ("sk_live_", "rk_live_") if live else ("sk_test_", "rk_test_")
+    if not config.stripe_key.startswith(prefixes):
+        mode = "live" if live else "test"
+        raise ValueError(f"Only Stripe {mode} keys are accepted by this setup command.")
     product = stripe.Product.create(
         name="Aedrova workspace",
         description="Private team workspace with a named coding agent and shared AI allowance.",
-        metadata={"application": "aedrova", "environment": "sandbox"},
-        idempotency_key="aedrova-sandbox-product-v1",
+        metadata={"application": "aedrova", "environment": environment},
+        idempotency_key=f"aedrova-{environment}-product-v1",
         api_key=config.stripe_key,
     )
     plans = {}
     for name, policy in PLAN_POLICY.items():
-        lookup = "aedrova_sandbox_" + name + "_v1"
+        lookup = "aedrova_" + environment + "_" + name + "_v1"
         found = stripe.Price.list(lookup_keys=[lookup], active=True, api_key=config.stripe_key)
         if found["data"]:
             price = found["data"][0]
@@ -34,29 +37,29 @@ def provision(config, output):
                 recurring={"interval": policy["interval"], "interval_count": 1},
                 lookup_key=lookup,
                 nickname="Aedrova " + name,
-                metadata={"application": "aedrova", "environment": "sandbox"},
-                idempotency_key="aedrova-sandbox-price-" + name + "-v1",
+                metadata={"application": "aedrova", "environment": environment},
+                idempotency_key="aedrova-" + environment + "-price-" + name + "-v1",
                 api_key=config.stripe_key,
             )
-        validate_price(price, policy)
+        validate_price(price, policy, live=live)
         plans[name] = {**policy, "price_id": price["id"]}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plans, indent=2) + "\n")
     output.chmod(0o600)
-    print("Sandbox weekly/monthly prices saved to " + str(output))
+    print(environment.capitalize() + " weekly/monthly prices saved to " + str(output))
 
 
-def validate_price(price, policy):
+def validate_price(price, policy, *, live=False):
     recurring = price.get("recurring") or {}
     if (
-        price.get("livemode") is not False
+        price.get("livemode") is not live
         or not price.get("active")
         or price.get("unit_amount") != policy["amount_cents"]
         or price.get("currency") != "usd"
         or recurring.get("interval") != policy["interval"]
         or recurring.get("interval_count") != 1
     ):
-        raise ValueError("Sandbox price differs from the approved $10/week or $49/month plan.")
+        raise ValueError("Stripe price differs from the approved mode, $10/week or $49/month plan.")
 
 
 def provision_branding(config, output):

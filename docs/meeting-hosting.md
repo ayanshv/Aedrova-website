@@ -98,3 +98,23 @@ is separate from audio transcription. No existing call is being recorded or sent
 
 Build guidance: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/).
 Deployment startup guidance: [Docker dependency health checks](https://docs.docker.com/compose/how-tos/startup-order/).
+
+
+## M12D speech and review (local implementation, M14 activation)
+
+See the desktop repository `docs/milestone-12-speech-review.md` for owner steps,
+privacy boundaries and verification. Apply both October 3 meeting migrations before
+staging activation; the new speech functions grant execute only to the existing
+restricted `aedrova_website` database role. Speech uses that direct private database
+connection for authorization/reservation and user JWTs for transcript reads/review.
+No service-role key is shipped. Keep the public waitlist flags false.
+
+Configure `AEDROVA_SPEECH_ENABLED=true` and `AEDROVA_SPEECH_KEY` only on the meeting API,
+after cost/provider/privacy approval and real-account acceptance at M14. This is an
+OpenAI API key with approved speech access, independent of Codex/Claude subscriptions.
+The guard does not need the speech key. The example file deliberately leaves it blank.
+The server currently uses `whisper-1`, ten-second mono PCM chunks, one active request
+per account, four per API process, and a durable one-hour combined workspace allowance
+in a rolling 24-hour window. Failed reservations consume allowance; there are no
+client retries or overage purchases. This is a staging bound, not an approved paid
+plan entitlement or a claim about measured provider cost.

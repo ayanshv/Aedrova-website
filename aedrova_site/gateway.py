@@ -123,12 +123,19 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     # Remote image/file references can incur unbounded input costs. This beta accepts
     # text and locally supplied tool results; reject hosted multimedia references.
     def remote_content(value):
-        if isinstance(value, dict):
-            if value.get("type") in {"input_image", "input_file", "image", "document"}:
-                return True
-            return any(remote_content(item) for item in value.values())
-        if isinstance(value, list):
-            return any(remote_content(item) for item in value)
+        stack = [(value, 0)]
+        visited = 0
+        while stack:
+            value, depth = stack.pop()
+            visited += 1
+            if depth > 100 or visited > 100000:
+                raise Denied("Model request exceeds its nesting or item limit.")
+            if isinstance(value, dict):
+                if value.get("type") in {"input_image", "input_file", "image", "document"}:
+                    return True
+                stack.extend((item, depth + 1) for item in value.values())
+            elif isinstance(value, list):
+                stack.extend((item, depth + 1) for item in value)
         return False
 
     if remote_content(body):

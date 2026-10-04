@@ -191,3 +191,12 @@ meeting/commercial AI release gates. No specific supported user count is establi
 
 References: [SQLAlchemy pooling](https://docs.sqlalchemy.org/en/20/core/pooling.html),
 [PostgreSQL full-text indexes](https://www.postgresql.org/docs/current/textsearch-indexes.html).
+# October 3 M13A follow-up
+
+Workspace storage quota accounting and service-only leased orphan cleanup are implemented
+locally in desktop `202610030003_storage_retention.sql` and this repository's
+`aedrova_site/storage_cleanup.py`. Safe local snapshot/context retention and Claude shell
+network-denial/deadline handling are also implemented. See `docs/storage-cleanup.md` and
+desktop `docs/milestone-13a-release-hardening.md`. These supersede the earlier missing-code
+items below, but hosted migration/job activation, representative load, backup/restore,
+Linux image validation and physical/paid-provider acceptance remain M14 release gates.

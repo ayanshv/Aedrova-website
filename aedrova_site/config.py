@@ -37,6 +37,9 @@ class Config:
     openai_key: str = field(default="", repr=False)
     anthropic_key: str = field(default="", repr=False)
     meetings_enabled: bool = False
+    meeting_context_enabled: bool = False
+    speech_enabled: bool = False
+    speech_key: str = field(default="", repr=False)
     livekit_url: str = ""
     livekit_api_key: str = field(default="", repr=False)
     livekit_api_secret: str = field(default="", repr=False)
@@ -136,6 +139,12 @@ class Config:
             raise ValueError(
                 "Waitlist launch must keep checkout, managed AI and meetings disabled."
             )
+        if self.meeting_context_enabled and not self.meetings_enabled:
+            raise ValueError("Meeting context requires the enabled meeting service.")
+        if self.speech_enabled and (not self.meeting_context_enabled
+                or not self.supabase_database or not self.speech_key):
+            raise ValueError("Speech needs meeting context, restricted Supabase PostgreSQL "
+                             "and a server-only speech key.")
         if self.meetings_enabled:
             media = urlparse(self.livekit_url)
             if (

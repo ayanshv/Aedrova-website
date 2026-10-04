@@ -49,7 +49,10 @@ The guard now honors those limits and sanitizes fatal startup errors.
    to that exact HTTPS origin and redeploy both. No Cloudflare DNS is required.
 4. Wait for both services to start. Do not assume a worker's "Live" status means successful
    revocation. The agent must check /health/meetings and scoped joins/guard failure/recovery.
-   The shared SQL already applied supplies meeting tables; no additional SQL is needed now.
+   The shared SQL already applied supplies ordinary meeting tables. Keep meeting-context
+   disabled. M14 text-context activation additionally requires desktop migration
+   `supabase/migrations/202610030001_meeting_context.sql`, retention maintenance and
+   consent/isolation acceptance. No new SQL or owner action is required now.
 5. Send only the public API hostname and whether both services started. The agent can then
    run HTTPS preflight and update the internal Mac build's meeting origin. Google Cloud's
    Supabase callback and desktop loopback redirects remain unchanged. Website sign-in on
