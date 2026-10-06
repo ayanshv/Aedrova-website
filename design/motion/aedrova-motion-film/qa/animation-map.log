@@ -1,0 +1,86 @@
+[BrowserManager] Browser launched (HeadlessChrome/152.0.7977.30, screenshot, gl=--use-gl=angle --use-angle=swiftshader, headlessShell=true, platform=darwin)
+[initSession:screenshot] page.goto start (0ms)
+[HyperFrames] render runtime fps {"canonicalFps":30,"source":"default","rawFpsSource":"default","rawFps":30,"fallbackReason":"missing"}
+[initSession:screenshot] page.goto complete (93ms)
+[initSession:screenshot] GSAP proxy flush complete (102ms)
+[initSession:screenshot] pollHfReady complete (103ms)
+[initSession:screenshot] pollSubCompositionTimelines complete (ready) (105ms)
+[initSession:screenshot] applyVideoMetadataHints complete (105ms)
+[initSession:screenshot] media + fonts + tailwind ready (209ms)
+[initSession:screenshot] static-frame dedup: disabled (static-dedup frame analysis limit (1000000)) (213ms)
+
+Animation map: 68/68 tweens (skipped 0 micro-tweens)
+  offscreen: 12
+  collision: 20
+  paced-slow: 10
+Timeline (28.8s, each char ≈ 0.48s):
+  0s                                                    29s
+  ┼───────────────────────────────────────────────────────────┤
+  ██                                                            div.aura opacity+scale
+  █                                                             #dot1 scale+opacity
+  ██                                                            #title1 scale+filter+opacity
+  ██                                                            #sub1 y+opacity
+   ████                                                         div.aura y+scale
+      ██                                                        #s1 opacity+filter
+      ██                                                        #s2 opacity+filter
+       ██                                                       div.aura opacity+scale
+       ██                                                       #title2 y+scale+filter+opacity
+       ██                                                       #rule2 scaleX
+       ██                                                       #sub2 x+opacity
+        ███                                                     div.aura y+scale
+          ██                                                    #s2 opacity+filter
+          ██                                                    #s3 opacity+filter
+          ███                                                   div.aura opacity+scale
+          ███                                                   #logo3 rotationY+scale+opacity
+           ██                                                   #name3 y+opacity
+           ██                                                   #sub3 opacity+x
+            ███                                                 div.aura y+scale
+              ██                                                #s3 opacity+filter
+              ██                                                #s4 opacity+filter
+               ██                                               div.aura.side opacity+scale
+               ██                                               #title4 y+opacity
+               ███                                              #frame4 x+rotationY+rotationX+scale+opacity
+                ████████                                        div.aura.side y+scale
+                ██                                              #label4 opacity+y
+                 ██████                                         #frame4 rotationY+rotationX+scale
+                       █                                        #s4 opacity+filter
+                       ██                                       #s5 opacity+filter
+                       ██                                       div.aura opacity+scale
+                       ██                                       #title5 scale+opacity+filter
+                       ███                                      #frame5 x+rotationY+scale+opacity
+                        ██                                      #label5 opacity+y
+                        ███████                                 div.aura y+scale
+                         █████                                  #frame5 x+rotationY
+                              █                                 #s5 opacity+filter
+                              ██                                #s6 opacity+filter
+                              ██                                div.aura.side opacity+scale
+                              ██                                #title6 x+opacity
+                              ███                               #frame6 x+rotationY+rotationX+opacity+scale
+                               ██                               #label6 opacity+y
+                               ███████                          div.aura.side y+scale
+                                █████                           #frame6 rotationY+scale
+                                     ██                         #s6 opacity+filter
+                                     ██                         #s7 opacity+filter
+                                     ███                        div.aura opacity+scale
+                                     ██                         #title7 y+opacity
+                                      ██                        #frame7 rotationY+x+scale+opacity
+                                       ████████                 div.aura y+scale
+                                       ██                       #label7 x+opacity
+                                       ███████                  #frame7 rotationY+rotationX+scale
+                                              █                 #s7 opacity+filter
+                                              ██                #s8 opacity+filter
+                                              ██                div.aura.side opacity+scale
+                                              ██                #title8 y+opacity
+                                               ██               #frame8 y+scale+filter+opacity
+                                               ██               #label8 opacity+x
+                                               ███████          div.aura.side y+scale
+                                                █████           #frame8 scale
+                                                     █          #s8 opacity+filter
+                                                     ██         #s9 opacity+filter
+                                                     ██         div.aura opacity+scale
+                                                     ███        #logo9 scale+rotationY+opacity
+                                                      ██        #name9 y+opacity
+                                                      ████████  div.aura y+scale
+                                                      ███       #title9 opacity+filter+scale
+                                                       ██       #rule9 scaleX
+                                                        ██      #cta9 opacity+y

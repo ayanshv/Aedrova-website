@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Aedrova — From a thought to a thing</title><script src="gsap.min.js"></script>
+<style>
+:root{--black:#000000;--panel:#1C1C1E;--white:#F5F5F7;--secondary:#A0A0A8;--blue:#0A84FF}
+*{box-sizing:border-box}body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--black);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#main{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--black)}
+.scene{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:var(--black);perspective:2200px}.scene:not(:first-of-type){opacity:0}
+.scene-content{width:100%;height:100%;padding:76px 110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}
+h1,h2,p{margin:0}h1{font-size:108px;font-weight:500;letter-spacing:-4.7px;line-height:1.1;text-align:center;max-width:1600px}h2{font-size:66px;font-weight:500;letter-spacing:-2.6px;line-height:1.15;text-align:center}.sub{font-size:30px;line-height:1.4;color:var(--secondary)}.accent{color:var(--blue)}.italic{font-style:italic;font-weight:400}.dot{width:18px;height:18px;border-radius:50%;background:var(--blue);flex-shrink:0}.large{font-size:166px;letter-spacing:-6px}
+.aura{position:absolute;width:900px;height:360px;bottom:-225px;left:510px;background:var(--blue);filter:blur(110px);opacity:.14;border-radius:50%;pointer-events:none}.aura.side{bottom:200px;left:1500px;opacity:.06;width:480px;height:600px}.grain{position:absolute;inset:0;z-index:30;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch' seed='17'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E")}
+.logo{width:255px;height:270px;object-fit:contain}.wordmark{font-size:92px;letter-spacing:-4px;font-weight:500}.lockup{display:flex;align-items:center;gap:22px}.lockup img{width:72px;height:76px;object-fit:contain}.lockup span{font-size:48px;font-weight:500;letter-spacing:-1.8px}.eyebrow{font-size:24px;letter-spacing:.5px;color:var(--secondary)}
+.product-content{padding:64px 110px;gap:22px}.product-frame{border-radius:26px;overflow:hidden;background:var(--panel);border:1px solid #303033;transform-style:preserve-3d;flex-shrink:0;width:1330px;height:650px}.product-frame img{width:100%;height:100%;object-fit:cover;display:block}.workspace-frame{width:1190px;height:778px;border-radius:22px}.preview-label{font-size:24px;line-height:1.25;color:var(--secondary)}
+#s4 h2{font-size:56px}#s4 .scene-content{padding:40px 100px;gap:14px}
+.mention-frame{width:1570px;height:360px;border-radius:24px}.mention-frame video{width:100%;height:100%;object-fit:cover;display:block}.context-frame{width:1080px;height:714px}.context-frame video,.review-frame video{width:100%;height:100%;object-fit:cover;display:block}.review-frame{width:1370px;height:735px}.result-frame{width:1570px;height:425px;border-radius:22px}.result-frame video{width:100%;height:100%;object-fit:cover;display:block}
+#s5 .scene-content{gap:46px}#s7 .scene-content{gap:22px}.caption-pair{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center}.tiny-dot{width:6px;height:6px;border-radius:50%;background:var(--secondary)}
+#s9 .logo{width:230px;height:244px}#s9 h2{font-size:88px;letter-spacing:-3.2px}.cta{font-size:30px;line-height:1.4;color:var(--white)}.rule{width:90px;height:2px;background:var(--blue)}
+</style></head><body>
+<div data-hf-id="hf-iqsh" id="main" data-composition-id="main" data-start="0" data-duration="28.8" data-width="1920" data-height="1080">
+<section data-hf-id="hf-mcnq" id="s1" class="scene"><div data-hf-id="hf-maf8" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-cn5c" class="scene-content"><div data-hf-id="hf-klg1" id="dot1" class="dot"></div><h1 data-hf-id="hf-syw6" id="title1">You already talked <span data-hf-id="hf-ulzl" class="italic accent">it through.</span></h1><p data-hf-id="hf-5t6p" id="sub1" class="sub">The idea. The details. The next step.</p></div></section>
+<section data-hf-id="hf-iejp" id="s2" class="scene"><div data-hf-id="hf-4eik" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-o0eg" class="scene-content"><h1 data-hf-id="hf-gf24" id="title2" class="large">Make it <span data-hf-id="hf-oulz" class="accent">real.</span></h1><div data-hf-id="hf-4vzg" id="rule2" class="rule"></div><p data-hf-id="hf-famq" id="sub2" class="sub">Right where the team works.</p></div></section>
+<section data-hf-id="hf-hmvw" id="s3" class="scene"><div data-hf-id="hf-37lh" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-mthd" class="scene-content"><img data-hf-id="hf-qkf5" id="logo3" class="logo" src="assets/logo.png" alt="Aedrova logo"><div data-hf-id="hf-zgu5" id="name3" class="wordmark">Aedrova</div><p data-hf-id="hf-xoke" id="sub3" class="sub">Where teams and AI build together.</p></div></section>
+<section data-hf-id="hf-54df" id="s4" class="scene"><div data-hf-id="hf-1nab" class="aura side" data-layout-ignore=""></div><div data-hf-id="hf-gtj9" class="scene-content product-content"><h2 data-hf-id="hf-04bx" id="title4">Start with the <span data-hf-id="hf-qhya" class="accent">conversation.</span></h2><div data-hf-id="hf-x3st" id="frame4" class="product-frame workspace-frame"><img data-hf-id="hf-lrcl" src="assets/workspace.png" alt="Actual Aedrova desktop workspace capture"></div><p data-hf-id="hf-2xdn" id="label4" class="preview-label">Desktop preview · Your team, in one workspace.</p></div></section>
+<section data-hf-id="hf-yynm" id="s5" class="scene"><div data-hf-id="hf-3lwi" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-n7se" class="scene-content"><h1 data-hf-id="hf-jcr0" id="title5">One <span data-hf-id="hf-oztp" class="italic accent">mention.</span></h1><div data-hf-id="hf-bcrx" id="frame5" class="product-frame mention-frame"><video data-hf-id="hf-rxcy" id="mention" src="assets/mention-detail.mp4" data-start="10.4" data-duration="3.5" data-media-start="1" data-track-index="1" muted playsinline></video></div><p data-hf-id="hf-5ele" id="label5" class="preview-label">Desktop preview · Ask Aedrova to build.</p></div></section>
+<section data-hf-id="hf-v0jl" id="s6" class="scene"><div data-hf-id="hf-67mr" class="aura side" data-layout-ignore=""></div><div data-hf-id="hf-9mmx" class="scene-content product-content"><h2 data-hf-id="hf-cjjb" id="title6">Bring the <span data-hf-id="hf-j9zk" class="accent">context.</span></h2><div data-hf-id="hf-o6h9" id="frame6" class="product-frame context-frame"><video data-hf-id="hf-2i5n" id="context" src="assets/context.mp4" data-start="13.7" data-duration="3.8" data-media-start="1.5" data-track-index="2" muted playsinline></video></div><p data-hf-id="hf-biju" id="label6" class="preview-label">Desktop preview · Search sources. Confirm decisions.</p></div></section>
+<section data-hf-id="hf-u8vs" id="s7" class="scene"><div data-hf-id="hf-5lfn" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-atk0" class="scene-content product-content"><h2 data-hf-id="hf-x6s6" id="title7">See what <span data-hf-id="hf-vsox" class="accent">changed.</span></h2><div data-hf-id="hf-5qsr" id="frame7" class="product-frame review-frame"><video data-hf-id="hf-lal1" id="review" src="assets/review.mp4" data-start="17.2" data-duration="4.5" data-media-start=".6" data-track-index="3" muted playsinline></video></div><p data-hf-id="hf-xzxk" id="label7" class="preview-label">Desktop preview · Real changes, ready for your review.</p></div></section>
+<section data-hf-id="hf-yv67" id="s8" class="scene"><div data-hf-id="hf-5tbq" class="aura side" data-layout-ignore=""></div><div data-hf-id="hf-m0vb" class="scene-content"><h2 data-hf-id="hf-do6d" id="title8">Built. Checked. <span data-hf-id="hf-9ap4" class="accent">Yours to review.</span></h2><div data-hf-id="hf-11ej" id="frame8" class="product-frame result-frame"><video data-hf-id="hf-nvi5" id="result" src="assets/result-detail.mp4" data-start="21.4" data-duration="3.5" data-media-start=".3" data-track-index="4" muted playsinline></video></div><p data-hf-id="hf-glts" id="label8" class="preview-label">Recorded local build · Six Python checks passed in this build.</p></div></section>
+<section data-hf-id="hf-ux26" id="s9" class="scene"><div data-hf-id="hf-5zqo" class="aura" data-layout-ignore=""></div><div data-hf-id="hf-mf6c" class="scene-content"><img data-hf-id="hf-00j7" id="logo9" class="logo" src="assets/logo-end.png" alt="Aedrova logo"><div data-hf-id="hf-6shf" id="name9" class="wordmark">Aedrova</div><h2 data-hf-id="hf-dz3l" id="title9">From a thought to a thing.</h2><div data-hf-id="hf-m49r" id="rule9" class="rule"></div><p data-hf-id="hf-n7g4" id="cta9" class="cta">Join the waitlist · aedrova.com</p></div></section>
+<div data-hf-id="hf-ryn8" class="grain" data-layout-ignore=""></div>
+<audio data-hf-id="hf-smsb" id="music" src="assets/soundtrack-master.wav" data-start="0" data-duration="28.8" data-track-index="5" data-volume=".85"></audio>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({paused:true});
+const starts=[0,2.35,4.15,6.15,10.25,13.6,17.1,21.3,24.65];
+// Scene containers dissolve as the visual handoff; foreground elements never exit early.
+starts.slice(1).forEach((t,i)=>{
+  tl.to('#s'+(i+1),{opacity:0,filter:'blur(8px)',duration:.3,ease:'power2.inOut'},t);
+  tl.fromTo('#s'+(i+2),{opacity:0,filter:'blur(6px)'},{opacity:1,filter:'blur(0px)',duration:.34,ease:'sine.inOut',immediateRender:false},t);
+});
+starts.forEach((t,i)=>{
+  tl.from('#s'+(i+1)+' .aura',{opacity:0,scale:.85,duration:.6,ease:'sine.out'},t+.12);
+  tl.to('#s'+(i+1)+' .aura',{y:-34,scale:1.08,duration:Math.max(.8,(starts[i+1]||28.8)-t-.8),ease:'sine.inOut'},t+.7);
+});
+tl.from('#dot1',{scale:0,opacity:0,duration:.3,ease:'back.out(1.5)'},.12);
+tl.from('#title1',{scale:1.14,filter:'blur(10px)',opacity:0,duration:.62,ease:'expo.out'},.2);
+tl.from('#sub1',{y:14,opacity:0,duration:.45,ease:'sine.out'},.48);
+tl.from('#title2',{y:50,scale:.92,filter:'blur(6px)',opacity:0,duration:.45,ease:'power4.out'},2.49);
+tl.from('#rule2',{scaleX:0,duration:.32,ease:'expo.out'},2.69);
+tl.from('#sub2',{x:-24,opacity:0,duration:.4,ease:'sine.out'},2.79);
+tl.from('#logo3',{rotationY:-32,scale:.65,opacity:0,duration:.62,ease:'expo.out'},4.28);
+tl.from('#name3',{y:24,opacity:0,duration:.5,ease:'power3.out'},4.53);
+tl.from('#sub3',{opacity:0,x:20,duration:.42,ease:'sine.out'},4.77);
+tl.from('#title4',{y:26,opacity:0,duration:.45,ease:'expo.out'},6.3);
+tl.from('#frame4',{x:-140,rotationY:-14,rotationX:5,scale:.82,opacity:0,duration:.85,ease:'power3.out'},6.4);
+tl.to('#frame4',{rotationY:4,rotationX:-1,scale:1.03,duration:2.6,ease:'sine.inOut'},7.35);
+tl.from('#label4',{opacity:0,y:8,duration:.36,ease:'sine.out'},6.94);
+tl.from('#title5',{scale:1.12,opacity:0,filter:'blur(6px)',duration:.44,ease:'expo.out'},10.39);
+tl.from('#frame5',{x:160,rotationY:10,scale:.88,opacity:0,duration:.62,ease:'power4.out'},10.54);
+tl.to('#frame5',{x:-24,rotationY:-3,duration:2.1,ease:'sine.inOut'},11.25);
+tl.from('#label5',{opacity:0,y:12,duration:.45,ease:'sine.out'},10.85);
+tl.from('#title6',{x:-40,opacity:0,duration:.45,ease:'expo.out'},13.76);
+tl.from('#frame6',{x:200,rotationY:16,rotationX:5,opacity:0,scale:.86,duration:.68,ease:'power3.out'},13.89);
+tl.to('#frame6',{rotationY:-4,scale:1.035,duration:2.15,ease:'sine.inOut'},14.62);
+tl.from('#label6',{opacity:0,y:10,duration:.45,ease:'sine.out'},14.15);
+tl.from('#title7',{y:-24,opacity:0,duration:.43,ease:'expo.out'},17.25);
+tl.from('#frame7',{rotationY:-17,x:-170,scale:.88,opacity:0,duration:.75,ease:'power4.out'},17.36);
+tl.to('#frame7',{rotationY:5,rotationX:-2,scale:1.035,duration:2.8,ease:'sine.inOut'},18.19);
+tl.from('#label7',{x:25,opacity:0,duration:.4,ease:'sine.out'},17.85);
+tl.from('#title8',{y:35,opacity:0,duration:.48,ease:'expo.out'},21.46);
+tl.from('#frame8',{y:60,scale:1.1,filter:'blur(6px)',opacity:0,duration:.64,ease:'power3.out'},21.60);
+tl.to('#frame8',{scale:1.025,duration:1.95,ease:'sine.inOut'},22.3);
+tl.from('#label8',{opacity:0,x:-20,duration:.4,ease:'sine.out'},21.99);
+tl.from('#logo9',{scale:.6,rotationY:-18,opacity:0,duration:.7,ease:'expo.out'},24.82);
+tl.from('#name9',{y:22,opacity:0,duration:.52,ease:'power3.out'},25.10);
+tl.from('#title9',{opacity:0,filter:'blur(5px)',scale:.96,duration:.55,ease:'sine.out'},25.42);
+tl.from('#rule9',{scaleX:0,duration:.45,ease:'power4.out'},25.70);
+tl.from('#cta9',{opacity:0,y:12,duration:.5,ease:'sine.out'},25.94);
+window.__timelines['main']=tl;
+</script>
+</body></html>

@@ -1,0 +1,4 @@
+'hyperframes validate' is deprecated and will be removed in a future release. Use 'hyperframes check' instead.
+◆  Validating aedrova-motion-film in headless Chrome
+[hyperframes] browserGpuMode probe → hardware (WebGL renderer vendor="Google Inc. (Apple)" renderer="ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)")
+◇  No console errors · 14 text elements pass WCAG AA

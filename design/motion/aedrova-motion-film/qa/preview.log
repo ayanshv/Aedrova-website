@@ -1,0 +1,12 @@
+┌  hyperframes preview
+
+  Project   aedrova-motion-film
+  Studio    http://localhost:3017/#project/aedrova-motion-film
+  Server    http://localhost:3017
+  Desktop   Keep editing by chatting with Framey in the HyperFrames desktop app → https://hyperframes.dev/studio/download
+
+  Running in the background. Log: /Users/ayanshvarma/.local/state/hyperframes/previews/2ab28b5e9daaaae6.log
+  Changes reload automatically in the studio.
+
+  Stop with: hyperframes preview "/Users/ayanshvarma/Documents/Aedrova_site/design/motion/aedrova-motion-film" --stop
+

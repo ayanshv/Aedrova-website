@@ -1,0 +1,32 @@
+{
+  "deliverable": "Aedrova-reference-white.mp4",
+  "duration_seconds": 28.334,
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "checks": {
+    "lint": "0 errors, 0 warnings",
+    "runtime": "0 errors, 0 warnings",
+    "motion": "0 errors, 0 warnings",
+    "contrast": "4/4 sampled checks pass",
+    "layout": "0 errors, 0 warnings; 3 informational crossfade overlaps at 2.12 seconds",
+    "decode": "entire export decoded without errors",
+    "visual_review": "all 56 half-second samples reviewed plus full-resolution badge at 6.85 and code macro at 21.8",
+    "animation_map_tweens": 71,
+    "animation_dead_zones": []
+  },
+  "flag_review": {
+    "offscreen": "Low localized decorative aura intentionally extends beneath frame edge.",
+    "paced-slow": "Ambient glow drifts during readable holds, matching reference.",
+    "paced-fast": "0.18-second scene transitions, short badge and caret entrances match reference fast beats.",
+    "collision": "Scene crossfades overlap intentionally; screen cube uses layered faces; aura and orbit dot deliberately overlap product frames. No unintended foreground overlaps in reviewed holds."
+  },
+  "limits": [
+    "Reconstructed from supplied rendered reference rather than original animation project; not pixel-identical.",
+    "Actual app-preview captures and recorded local build; no new live build executed.",
+    "Reference audio retained for requested adaptation.",
+    "No website/app changes or public publication."
+  ]
+}

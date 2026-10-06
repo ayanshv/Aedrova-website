@@ -1,0 +1,36 @@
+◆  Checking aedrova-motion-film
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Fetched 10 font face(s) for "JetBrains Mono" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/jetbrains-mono)
+[INFO] [Compiler] Fetched 10 font face(s) for "JetBrains Mono" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/jetbrains-mono)
+[INFO] [Compiler] Injected deterministic @font-face rules for 5 requested font families
+[hyperframes] browserGpuMode probe → hardware (WebGL renderer vendor="Google Inc. (Apple)" renderer="ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)")
+
+Lint
+  ◇ 0 errors, 0 warnings
+
+Runtime
+  ⚠ clip_media_fit: Audio "music" is 28.21s but its slot (data-duration) is 28.33s — the slot is shortened to the media length when rendered. Set data-duration to ~28.21s if that isn't intended.
+    index.html [data-composition-id] t=0s
+  0 error(s), 1 warning(s), 0 info(s)
+
+Layout
+  ℹ t=2.12s content_overlap #line1 > span:nth-of-type(1) inside #line2 "Your team" — Two text blocks overlap and may render unreadable.
+        Fix: Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.
+  ℹ t=2.12s content_overlap #line1 > span:nth-of-type(2) inside #line2 > span:nth-of-type(1) "already knows" — Two text blocks overlap and may render unreadable.
+        Fix: Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.
+  ℹ t=2.12s content_overlap #line1 > span:nth-of-type(3) inside #line2 > span:nth-of-type(1) "the details." — Two text blocks overlap and may render unreadable.
+        Fix: Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.
+  0 error(s), 0 warning(s), 3 info(s)
+
+Motion
+  ◇ 0 errors, 0 warnings
+
+Contrast
+  ◇ 4/4 text checks pass WCAG AA
+
+Snapshots
+  ◇ disabled
+
+◇  Check passed

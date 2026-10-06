@@ -1,0 +1,6 @@
+◆  Linting aedrova-motion-film/index.html
+
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching img entries with the same source/start/duration.
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+
+◇  0 error(s), 1 warning(s)

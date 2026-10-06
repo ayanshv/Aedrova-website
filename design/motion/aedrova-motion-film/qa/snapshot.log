@@ -1,0 +1,23 @@
+◆  Capturing 9 frames at [1.2s, 3.2s, 5.3s, 8.4s, 12.8s, 15.8s, 19.6s, 23.4s, 27.5s] from aedrova-motion-film
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Fetched 11 font face(s) for "Inter" from Google Fonts (cached to /Users/ayanshvarma/.cache/hyperframes/fonts/inter)
+[INFO] [Compiler] Injected deterministic @font-face rules for 3 requested font families
+[hyperframes] browserGpuMode probe → hardware (WebGL renderer vendor="Google Inc. (Apple)" renderer="ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)")
+
+   Fonts: 0 loaded, 15 unused
+   Note: added an end-of-timeline frame at 27.94s. Short beats between your --at times may still be skipped — pass them explicitly.
+
+◇  10 snapshots saved to /Users/ayanshvarma/Documents/Aedrova_site/design/motion/aedrova-motion-film/qa/animated
+   qa/animated/frame-00-at-1.2s.png
+   qa/animated/frame-01-at-3.2s.png
+   qa/animated/frame-02-at-5.3s.png
+   qa/animated/frame-03-at-8.4s.png
+   qa/animated/frame-04-at-12.8s.png
+   qa/animated/frame-05-at-15.8s.png
+   qa/animated/frame-06-at-19.6s.png
+   qa/animated/frame-07-at-23.4s.png
+   qa/animated/frame-08-at-27.5s.png
+   qa/animated/frame-09-at-27.936s.png
+   contact-sheet-1..2.jpg (grid view for AI review)
+   --describe: GEMINI_API_KEY not set, skipping

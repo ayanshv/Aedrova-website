@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "duration": 28.8,
+  "samples": [
+    0.96,
+    2.88,
+    4.8,
+    6.72,
+    8.64,
+    10.56,
+    12.48,
+    14.4,
+    16.32,
+    18.24,
+    20.16,
+    22.08,
+    24,
+    25.92,
+    27.84
+  ],
+  "tolerance": 2,
+  "strict": false,
+  "collapseStatic": true,
+  "ok": true,
+  "errorCount": 0,
+  "warningCount": 0,
+  "infoCount": 0,
+  "issueCount": 0,
+  "totalIssueCount": 0,
+  "truncated": false,
+  "issues": [],
+  "_meta": {
+    "version": "0.8.127",
+    "latestVersion": "0.8.127",
+    "updateAvailable": false,
+    "deprecated": true
+  }
+}

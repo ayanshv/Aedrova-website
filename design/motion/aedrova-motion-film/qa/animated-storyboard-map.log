@@ -1,0 +1,136 @@
+[BrowserManager] Browser launched (HeadlessChrome/152.0.7977.30, screenshot, gl=--use-gl=angle --use-angle=swiftshader, headlessShell=true, platform=darwin)
+[initSession:screenshot] page.goto start (0ms)
+[HyperFrames] render runtime fps {"canonicalFps":30,"source":"default","rawFpsSource":"default","rawFps":30,"fallbackReason":"missing"}
+[initSession:screenshot] page.goto complete (257ms)
+[initSession:screenshot] GSAP proxy flush complete (273ms)
+[initSession:screenshot] pollHfReady complete (274ms)
+[initSession:screenshot] pollSubCompositionTimelines complete (ready) (274ms)
+[initSession:screenshot] applyVideoMetadataHints complete (275ms)
+[initSession:screenshot] media + fonts + tailwind ready (350ms)
+[initSession:screenshot] static-frame dedup: disabled (static-dedup frame analysis limit (1000000)) (353ms)
+
+Animation map: 116/116 tweens (skipped 0 micro-tweens)
+  offscreen: 3
+  paced-slow: 2
+  collision: 83
+  paced-fast: 24
+  staggers: 42 elements stagger with uneven intervals (0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms, 45ms, 0ms, 0ms, 0ms, 0ms, 0ms)
+Timeline (28.3s, each char ≈ 0.47s):
+  0s                                                    28s
+  ┼───────────────────────────────────────────────────────────┤
+  █                                                             #dot1 scaleX+opacity+x
+  ██                                                            #aura opacity+y
+  ██                                                            span opacity+y+filter
+  ███                                                           #dot1 x
+   ██                                                           span.accent --underline
+   ██████████                                                   #aura x+scaleX
+      █                                                         #s1 opacity+filter
+      █                                                         #s2 opacity+filter
+      █                                                         #line2 opacity+y+filter
+      █                                                         #dot2 scaleX+opacity
+       ██                                                       #line2 scale+x+y
+       ██                                                       #dot2 scale+x+y
+           █                                                    #s2 opacity+filter
+           █                                                    #s3 opacity+filter
+           ██                                                   #brand3 opacity+scale+rotation+x
+            ██                                                  #brand3 scale+x
+             ██                                                 #brand3 scale+x
+             ██                                                 #name3 opacity+x+filter
+               █                                                #s3 opacity+filter
+               ██                                               #s4 opacity+filter
+               ██                                               #badge4 opacity+scale+filter
+                ██                                              #aura opacity
+                ██                                              #s4 opacity+filter
+                ██                                              #s5 opacity+filter
+                 █                                              #title5 opacity+y
+                 ██                                             #prompt5 opacity+scale
+                  ████                                          #prompt5 scale
+                      █                                         #s5 opacity+filter
+                      █                                         #s6 opacity+filter
+                      ██                                        #frame6 opacity+scale+rotationY+x
+                       ██                                       #frame6 rotationY+scale
+                        █                                       #s6 opacity+filter
+                        █                                       #s7 opacity+filter
+                        █                                       #frame7 opacity+scale+rotationY+x
+                        ███                                     #frame7 rotationY+scale
+                          █                                     #s7 opacity+filter
+                          █                                     #s8 opacity+filter
+                          ██                                    #frame8 opacity+scale+rotationY+x
+                           ███                                  #frame8 rotationY+scale
+                            ██                                  #frame8 y+rotationX+scale
+                             ██                                 #aura opacity+x
+                             █                                  #s8 opacity+filter
+                             █                                  #s9 opacity+filter
+                             ██                                 div.face.front transformPerspective+y+rotationX+scale
+                             ██                                 div.face.bottom transformPerspective+y+rotationX+scale
+                             ██                                 #dot9 opacity+scale
+                              ████                              #dot9 y+x
+                                ██                              div.face.front y+rotationX+scale
+                                ██                              div.face.bottom rotationX+y
+                                 ██                             #s9 opacity+filter
+                                 ██                             #s10 opacity+filter
+                                 ███                            #frame10 opacity+scale+rotationY+x+rotationZ+filter
+                                   ██                           #frame10 x+rotationY
+                                    ██                          #s10 opacity+filter
+                                    ██                          #s11 opacity+filter
+                                    ██                          #frame11 opacity+scale+rotationY+x+rotationZ+filter
+                                     ███                        #frame11 x+rotationY
+                                       ██                       #s11 opacity+filter
+                                       ██                       #s12 opacity+filter
+                                       ██                       #aura opacity
+                                       ███                      #code12 opacity+x+y+rotationY+rotationX+filter
+                                         ████                   #code12 rotationY+rotationX+x+y
+                                          ██                    #ring12 opacity+scale
+                                             ██                 #caret12 opacity+scaleY
+                                              ███               #code12 scale+x+y
+                                                  █             #s12 opacity+filter
+                                                  █             #s13 opacity+filter
+                                                  ███           #aura opacity+x
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                  ██            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   █            span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                   ██           span.char opacity+filter+y+rotation
+                                                    ████        #console13 scale
+                                                       ███████  #aura x+scaleX
+                                                        █       #s13 opacity+filter
+                                                        █       #s14 opacity+filter
+                                                        ██      #brand14 opacity+scale+rotation
+                                                         █████  #brand14 scale

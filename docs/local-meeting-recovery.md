@@ -12,17 +12,19 @@ owner acceptance, not proven by that synthetic check. 473 desktop and 245 websit
 Ruff, 23 embedded SQL scripts, private ledger schema, runtime handshake/boundaries and
 packaged signature/resource checks passed during this task.
 
-If the local service stops after a reboot or terminal shutdown, run from the website checkout:
+On October 5 the absent local service was restored and registered as a user
+LaunchAgent at `~/Library/LaunchAgents/com.aedrova.local-meetings.plist`. It starts
+at login and restarts after an unexpected process exit; no terminal needs to stay
+open. It runs `uv run python -m scripts.run_local_meetings` from this checkout.
+The service binds only 127.0.0.1:8090 and loads the existing private setup files
+without printing keys. Paid/public launch flags remain disabled.
 
-```sh
-uv run python -m scripts.run_local_meetings
-```
-
-Keep that terminal open. It binds only 127.0.0.1:8090, loads the two existing private setup
-files without printing keys, enables development meetings and keeps speech/context,
-checkout, paid AI and public release disabled. Local development uses the embedded guard;
-production still requires a separate supervised guard. Do not start a second copy while
-port 8090 is occupied. No paid Render or additional Stripe setup is required for this retry.
+Check its status with `launchctl print gui/$(id -u)/com.aedrova.local-meetings`.
+Restart it with `launchctl kickstart -k gui/$(id -u)/com.aedrova.local-meetings`.
+Do not start a duplicate terminal service while port 8090 is occupied.
+Logs live in `~/Library/Logs/Aedrova/local-meetings.*.log` with private permissions.
+Moving these checkouts or removing the local uv executable requires updating the
+LaunchAgent paths. No paid Render or additional Stripe setup is needed locally.
 This does not make meetings accessible from another computer.
 
 Future local preview rebuilds must retain the local meeting origin and existing Apple

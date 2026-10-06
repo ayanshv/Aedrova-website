@@ -1,0 +1,2 @@
+'hyperframes inspect' is deprecated and will be removed in a future release. Use 'hyperframes check' instead.
+[hyperframes] browserGpuMode probe → hardware (WebGL renderer vendor="Google Inc. (Apple)" renderer="ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)")
