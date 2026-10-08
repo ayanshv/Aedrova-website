@@ -97,7 +97,13 @@ async def authorize_run(request: Request, provider, config, store, identity):
     if run["provider"] != provider:
         raise Denied("This build token cannot access that provider.")
     session = await asyncio.to_thread(store.session, token)
-    user = await asyncio.to_thread(identity.require, session["access_token"], run["workspace"])
+    development = await asyncio.to_thread(store.development_workspace, run["workspace"])
+    user = await asyncio.to_thread(
+        identity.require,
+        session["access_token"],
+        run["workspace"],
+        billing=development,
+    )
     if user["id"] != run["user_id"]:
         raise Denied("Build account changed.")
     await asyncio.to_thread(store.rate_limit, "inference:" + run["id"], limit=120)

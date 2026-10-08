@@ -74,8 +74,9 @@ def test_authorization_database_operations_never_run_on_event_loop_thread():
         ),
         session=lambda token: worker({"access_token": "private-token"}),
         rate_limit=lambda *a, **kw: worker(None),
+        development_workspace=lambda workspace: worker(False),
     )
-    identity = SimpleNamespace(require=lambda *a: worker({"id": "u"}))
+    identity = SimpleNamespace(require=lambda *a, **kw: worker({"id": "u"}))
     request = SimpleNamespace(headers={"authorization": "Bearer build-token"})
     asyncio.run(
         authorize_run(
@@ -86,7 +87,7 @@ def test_authorization_database_operations_never_run_on_event_loop_thread():
             identity,
         )
     )
-    assert len(calls) == 4 and all(identifier != main for identifier in calls)
+    assert len(calls) == 5 and all(identifier != main for identifier in calls)
 
 
 def test_admission_bounds_burst_and_releases_slots_on_cancellation():

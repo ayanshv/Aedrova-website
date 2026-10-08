@@ -1,0 +1,9 @@
+{
+  "codex": {
+    "id": "gpt-5.3-codex",
+    "input_rate": 1750000,
+    "output_rate": 14000000,
+    "cache_read_rate": 175000,
+    "max_input_tokens": 200000
+  }
+}

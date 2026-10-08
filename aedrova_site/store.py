@@ -88,7 +88,19 @@ class RateLimited(Denied):
 
 
 class Store:
-    def __init__(self, url, encryption_key="", *, pool_size=5, max_overflow=5, pool_timeout=5):
+    def __init__(
+        self,
+        url,
+        encryption_key="",
+        *,
+        pool_size=5,
+        max_overflow=5,
+        pool_timeout=5,
+        development_ai=False,
+    ):
+        if development_ai and not url.startswith("sqlite:///"):
+            raise ValueError("Development allowances require a private SQLite database.")
+        self.development_ai = development_ai
         if url.startswith("sqlite:///"):
             path = Path(url.removeprefix("sqlite:///"))
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -360,6 +372,64 @@ class Store:
             )
             return True
 
+    def grant_development(self, user, workspace, amount=2_000_000, *, hours=24):
+        """Trusted local operator grant; never a subscription or a public endpoint."""
+        if not self.development_ai or type(amount) is not int or not 0 < amount <= 5_000_000:
+            raise Denied("Development funding is disabled or exceeds the $5 hard cap.")
+        if type(hours) is not int or not 1 <= hours <= 168 or not user or not workspace:
+            raise Denied("Invalid development grant.")
+        now = int(time.time())
+        customer = "development:" + user + ":" + workspace
+        with self.tx() as db:
+            db.execute(
+                text(
+                    "INSERT INTO billing(workspace,customer,plan,status,period_start,"
+                    "period_end,allowance,concurrency) VALUES(:w,:c,'development',"
+                    "'development',:start,:end,:amount,1) "
+                    "ON CONFLICT(workspace) DO NOTHING"
+                ),
+                {
+                    "w": workspace,
+                    "c": customer,
+                    "start": now,
+                    "end": now + hours * 3600,
+                    "amount": amount,
+                },
+            )
+            row = self.billing_lock(db, workspace)
+            if row["customer"] != customer or row["status"] != "development":
+                raise Denied("This workspace already has another billing or funding record.")
+            # Reruns must not reset spending, renew expiry or replenish a hard cap.
+        return self.balance(workspace)
+
+    def development_workspace(self, workspace):
+        if not self.development_ai:
+            return False
+        with self.tx(write=False) as db:
+            return (
+                db.execute(
+                    text(
+                        "SELECT workspace FROM billing WHERE workspace=:w "
+                        "AND status='development' AND plan='development'"
+                    ),
+                    {"w": workspace},
+                ).first()
+                is not None
+            )
+
+    def usable_allowance(self, row, user):
+        if row["period_end"] <= int(time.time()):
+            return False
+        if row["status"] in {"active", "trialing"}:
+            return True
+        return bool(
+            self.development_ai
+            and row["status"] == "development"
+            and row["plan"] == "development"
+            and not row["subscription"]
+            and row["customer"] == "development:" + user + ":" + row["workspace"]
+        )
+
     def create_run(self, user, workspace, provider, request_key):
         now = int(time.time())
         run_id, token = secrets.token_urlsafe(24), secrets.token_urlsafe(48)
@@ -379,7 +449,7 @@ class Store:
                     "Your account already has two active builds. Finish or close one first."
                 )
             row = self.billing_lock(db, workspace)
-            if row["status"] not in {"active", "trialing"} or row["period_end"] <= now:
+            if not self.usable_allowance(row, user):
                 raise Denied("An active Aedrova plan is required.")
             wallet = self.wallet(db, workspace)
             if wallet["balance"] < 0:
@@ -469,7 +539,7 @@ class Store:
             )
             if fresh["state"] != "active" or fresh["expires"] <= int(time.time()):
                 raise Denied("Build access expired. Start a fresh request.")
-            if row["status"] not in {"active", "trialing"} or row["period_end"] <= int(time.time()):
+            if not self.usable_allowance(row, run["user_id"]):
                 raise Denied("Your subscription is not active.")
             prior = (
                 db.execute(text("SELECT * FROM inference WHERE id=:id"), {"id": identifier})
@@ -483,7 +553,7 @@ class Store:
                     "This model request is already running or has an "
                     "uncertain result. No automatic replay."
                 )
-            if row["status"] not in {"active", "trialing"} or row["period_end"] <= int(time.time()):
+            if not self.usable_allowance(row, run["user_id"]):
                 raise Denied("Your subscription is not active.")
             if db.execute(
                 text("SELECT id FROM inference WHERE run_id=:run AND state='pending' LIMIT 1"),

@@ -36,6 +36,10 @@ class Config:
     webhook_secret: str = field(default="", repr=False)
     openai_key: str = field(default="", repr=False)
     anthropic_key: str = field(default="", repr=False)
+    dots_enabled: bool = False
+    github_dot_client_id: str = ""
+    github_dot_client_secret: str = field(default="", repr=False)
+    github_dot_webhook_secret: str = field(default="", repr=False)
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
@@ -46,6 +50,7 @@ class Config:
     stripe_test_mode: bool = False
     checkout_enabled: bool = False
     gateway_enabled: bool = False
+    development_ai: bool = False
     plans: dict = field(default_factory=dict)
     models: dict = field(default_factory=dict)
     download_path: str = ""
@@ -139,12 +144,19 @@ class Config:
             raise ValueError(
                 "Waitlist launch must keep checkout, managed AI and meetings disabled."
             )
+        if self.dots_enabled and not self.encryption_key:
+            raise ValueError("Dots require a persistent server encryption key.")
+        if bool(self.github_dot_client_id) != bool(self.github_dot_client_secret):
+            raise ValueError("Configure both GitHub Dot OAuth credentials server-side.")
         if self.meeting_context_enabled and not self.meetings_enabled:
             raise ValueError("Meeting context requires the enabled meeting service.")
-        if self.speech_enabled and (not self.meeting_context_enabled
-                or not self.supabase_database or not self.speech_key):
-            raise ValueError("Speech needs meeting context, restricted Supabase PostgreSQL "
-                             "and a server-only speech key.")
+        if self.speech_enabled and (
+            not self.meeting_context_enabled or not self.supabase_database or not self.speech_key
+        ):
+            raise ValueError(
+                "Speech needs meeting context, restricted Supabase PostgreSQL "
+                "and a server-only speech key."
+            )
         if self.meetings_enabled:
             media = urlparse(self.livekit_url)
             if (
@@ -164,6 +176,16 @@ class Config:
                     "Meetings require LiveKit Cloud credentials and a persistent "
                     "server encryption key."
                 )
+        if self.development_ai and (
+            self.production
+            or self.checkout_enabled
+            or self.release_ready
+            or self.waitlist_only
+            or not self.database.startswith("sqlite:///")
+            or urlparse(self.origin).hostname not in {"127.0.0.1", "localhost", "::1"}
+            or urlparse(self.origin).scheme != "http"
+        ):
+            raise ValueError("Development AI is restricted to private loopback SQLite testing.")
         if self.gateway_enabled:
             if not self.models:
                 raise ValueError("Managed AI requires approved models and rates.")

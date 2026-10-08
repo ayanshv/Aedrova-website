@@ -122,6 +122,7 @@ def create_app(config=None):
             pool_size=config.db_pool_size,
             max_overflow=config.db_max_overflow,
             pool_timeout=config.db_pool_timeout,
+            development_ai=config.development_ai,
         ),
         Identity(config),
     )
@@ -149,6 +150,8 @@ def create_app(config=None):
                 with suppress(asyncio.CancelledError):
                     await guard
             await asyncio.to_thread(identity.close)
+            for provider in _app.state.dots.providers.values():
+                await asyncio.to_thread(provider.close)
             await asyncio.to_thread(speech.close)
             await asyncio.to_thread(store.engine.dispose)
 
@@ -247,6 +250,13 @@ def create_app(config=None):
         ):
             raise Denied("Refresh this page before making changes.")
         return session["access_token"]
+
+    from aedrova_site.dots import install as install_dots
+
+    install_dots(app, config, store, identity, auth)
+    from aedrova_site.pulse import install as install_pulse
+
+    install_pulse(app, app.state.dots, auth)
 
     def page(request, name, title, **context):
         return templates.TemplateResponse(
@@ -389,9 +399,16 @@ def create_app(config=None):
             .rstrip("=")
         )
         plan = request.query_params.get("plan", "")
+        dot_state = request.query_params.get("dot", "")
+        if dot_state and not re.fullmatch(r"[A-Za-z0-9_-]{40,100}", dot_state):
+            raise Denied("Invalid Dot authorization.")
         store.session(
             state,
-            {"verifier": verifier, "plan": plan if plan in {"weekly", "monthly"} else ""},
+            {
+                "verifier": verifier,
+                "plan": plan if plan in {"weekly", "monthly"} else "",
+                "dot": dot_state,
+            },
             lifetime=600,
         )
         target = (
@@ -447,6 +464,8 @@ def create_app(config=None):
         return_path = "/account"
         if session.get("plan"):
             return_path += "?" + urlencode({"plan": session["plan"]})
+        if session.get("dot"):
+            return_path = "/dots/authorize/" + session["dot"]
         response = RedirectResponse(return_path, status_code=303)
         response.set_cookie(
             "aedrova_session",
@@ -813,7 +832,9 @@ def create_app(config=None):
         if not config.gateway_enabled or body.provider not in config.models:
             raise Denied("Included AI access is not configured yet.")
         token = auth(request, change=True)
-        user = identity.require(token, body.workspace)
+        user = identity.require(
+            token, body.workspace, billing=store.development_workspace(body.workspace)
+        )
         store.rate_limit("runs:" + user["id"], limit=20)
         store.reconcile_expired()
         run = store.create_run(user["id"], body.workspace, body.provider, body.request_id)
