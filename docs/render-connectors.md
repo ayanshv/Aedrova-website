@@ -49,15 +49,18 @@ connector catalog 403, plans/meetings 404, and an unsolicited OAuth callback 403
 The service uses the approved restricted database/encryption key and the configured
 GitHub/Supabase OAuth pairs. No unrelated provider secrets were transferred.
 
-Three exact callback changes are prepared but not saved: Supabase Auth
+All three callback changes were approved, saved and verified: Supabase Auth
 /auth/callback, Supabase Management /buds/oauth/supabase/callback, and GitHub
-/buds/oauth/github/callback, all on the origin above. Provider permission scopes
-remain unchanged. Browser policy requires action-time approval for the new
-authorization destinations. Native connector_origin remains local until callback
-and authenticated live-read acceptance passes; existing local connections keep
-working. GitHub's local callback will be retained.
+/buds/oauth/github/callback, all on the origin above. GitHub retains its local
+callback. Permissions remain unchanged (Supabase Projects Read only).
+The signed desktop preview now bundles this HTTPS connector_origin separately
+from the local AI/meeting origin. Deep signature verification and 45 focused
+desktop tests pass. Authenticated provider reads remain pending: no reusable
+unexpired local account session was available. Reauthorize each Bud on HTTPS;
+private SQLite grants are not automatically migrated.
 
-Figma, Linear and Notion developer pages currently require sign-in. Figma/Notion/
+Figma and Notion developer pages require sign-in. Linear Google sign-in succeeded;
+this account has no workspace and is at Create a workspace. Figma/Notion/
 Linear registrations and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance
 of all ten integrations. No paid upgrade was selected.

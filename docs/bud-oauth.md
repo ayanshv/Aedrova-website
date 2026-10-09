@@ -21,7 +21,8 @@ Code and deterministic HTTP/security tests pass locally. Private PostgreSQL DDL
 and role isolation are validated in embedded PostgreSQL. Actual provider consent,
 refresh and successful reads with owner accounts still require app registration
 and real credentials. GitHub is now configured and the owner confirmed live Bud replies.
-Supabase's credential pair is configured; its hosted callback is pending approval.
+Supabase's credential pair and hosted callbacks are configured, saved and verified.
+Hosted provider reads still require interactive reauthorization.
 Figma, Notion and Linear credential pairs remain unconfigured.
 Networked PostgreSQL concurrency and live provider acceptance remain gates.
 This task does not deploy or change aedrova.com's waitlist mode.
