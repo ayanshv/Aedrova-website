@@ -24,7 +24,8 @@ and real credentials. GitHub is now configured and the owner confirmed live Bud 
 Supabase completed hosted OAuth and a real project health/region read for Pebble.
 Figma is privately published to the owner’s team; its credentials are deployed
 and Pebble passed a real file structure/label read.
-Notion and Linear credential pairs remain unconfigured.
+Notion’s read-only OAuth app and credential deployment are complete; its live
+page-consent/read validation remains pending. Linear remains unconfigured.
 Networked PostgreSQL concurrency and live provider acceptance remain gates.
 This task does not deploy or change aedrova.com's waitlist mode.
 
@@ -159,16 +160,19 @@ page UUID and at most 20 immediate blocks.
 Provider credentials must be stored in ignored .env.dots (0600) and, with
 specific approval, the isolated Render service’s secret environment fields:
 AEDROVA_NOTION_BUD_CLIENT_ID and AEDROVA_NOTION_BUD_CLIENT_SECRET.
-Notion login succeeded after explicit Terms & Conditions approval. The developer
-portal has no existing connections. Aedrova Buds OAuth creation is drafted with
-the exact hosted callback. The workspace-specific installation option is disabled
-for Ayansh Varma’s Notion (Development); Any workspace is the available selection.
-This permits installation requests, not access without each user’s page consent.
-Create connection requires separate Notion Developer Terms acceptance.
-Creation, read-only capability configuration, credential transfer to Render and
-access to a dedicated empty validation page await concrete approval.
-No Notion integration was created, credential transferred, page authorized or
-live read claimed.
+The owner approved Developer Terms acceptance, connection creation, credential
+transfer to Render, and a read-only test of a dedicated empty validation page.
+Aedrova Buds was created with the exact hosted callback and Any workspace
+installation scope; Marketplace listing remains unpublished. Read content is
+enabled; insert/update content, comments and user information are disabled.
+Credentials are saved in ignored .env.dots (0600) and only the isolated Render
+service. Deployment dep-db47d4h42hec73ac6nh0 succeeded using existing code 5c93b32.
+The empty private page Aedrova connector validation was created. Native OAuth
+handoff opened Notion in Safari. Notion's Google popup returned a 502 Bad gateway
+and browser control timed out after closing that popup. Page consent and a
+verified live read are still pending; no access to existing personal pages has
+been authorized. Resume with a fresh native Connect account attempt after Notion
+sign-in succeeds; authorization states expire after ten minutes.
 
 Official OAuth reference:
 https://developers.notion.com/guides/get-started/authorization
