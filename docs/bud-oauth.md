@@ -24,8 +24,8 @@ and real credentials. GitHub is now configured and the owner confirmed live Bud 
 Supabase completed hosted OAuth and a real project health/region read for Pebble.
 Figma is privately published to the owner’s team; its credentials are deployed
 and Pebble passed a real file structure/label read.
-Notion’s read-only OAuth app and credential deployment are complete; its live
-page-consent/read validation remains pending. Linear remains unconfigured.
+Notion’s read-only OAuth app and credential deployment are complete; Pebble
+passed a real read of the dedicated validation page. Linear remains unconfigured.
 Networked PostgreSQL concurrency and live provider acceptance remain gates.
 This task does not deploy or change aedrova.com's waitlist mode.
 
@@ -168,11 +168,12 @@ enabled; insert/update content, comments and user information are disabled.
 Credentials are saved in ignored .env.dots (0600) and only the isolated Render
 service. Deployment dep-db47d4h42hec73ac6nh0 succeeded using existing code 5c93b32.
 The empty private page Aedrova connector validation was created. Native OAuth
-handoff opened Notion in Safari. Notion's Google popup returned a 502 Bad gateway
-and browser control timed out after closing that popup. Page consent and a
-verified live read are still pending; no access to existing personal pages has
-been authorized. Resume with a fresh native Connect account attempt after Notion
-sign-in succeeds; authorization states expire after ten minutes.
+handoff opened Notion in Safari. After a transient Google sign-in 502, the owner
+signed in and completed page consent. A fresh native OAuth attempt succeeded;
+Pebble passed the actual page metadata and immediate-block read for the dedicated
+validation page. Browser and native app displayed verified read-only connection.
+No existing personal page content was read. Live refresh-token renewal is a
+separate acceptance gate and was not exercised by this initial connection test.
 
 Official OAuth reference:
 https://developers.notion.com/guides/get-started/authorization

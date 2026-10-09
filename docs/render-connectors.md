@@ -78,8 +78,10 @@ Notion Aedrova Buds OAuth registration is complete with Read content only,
 no user-information access, and its exact HTTPS callback. Its credential pair
 was deployed only to this service with owner approval. Deployment
 dep-db47d4h42hec73ac6nh0 succeeded on existing code 5c93b32. Marketplace listing
-remains unpublished. An empty private validation page was created; native OAuth
-handoff works, but page consent and live read acceptance remain pending.
+remains unpublished. An empty private validation page was created; after the
+owner signed in and completed consent, Pebble passed a real page/immediate-block
+read. The browser and native app show verified read-only connection. No existing
+personal page content was read; live refresh-token renewal remains untested.
 Linear Google sign-in succeeded; this account has no workspace and is at Create
 a workspace. Linear registration and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance
