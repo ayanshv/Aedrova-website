@@ -251,8 +251,8 @@ html[data-theme="dark"] .meeting-image-dark{display:block!important}
 html[data-theme="dark"] .meeting-image-light{display:none!important}
 /* Four plans retain readable pricing and shared alignment at every width. */
 .plans{grid-template-columns:repeat(4,minmax(0,1fr));max-width:1400px;margin-inline:auto}
-.plans .plan{min-width:0;padding-inline:24px;display:flex;flex-direction:column}
+.plans .plan{min-width:0;padding-inline:24px;display:grid;grid-template-rows:subgrid;grid-row:span 7;align-items:start}
 .plans .plan h2{font-size:30px}.plans .price{font-size:58px}.plans .enterprise-price{font-size:38px}
-.plans .plan ul{flex:1}.plans .plan .button{white-space:normal;text-align:center}
+.plans .plan ul{align-self:stretch}.plans .plan .button{white-space:normal;text-align:center;align-self:start}
 @media(max-width:1150px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.plans{grid-template-columns:1fr}.plans .recommended{order:initial}}
