@@ -42,6 +42,22 @@ connection. No provider credentials belong in Git or the packaged app.
 
 ## Current status
 
-Prepared implementation and deployment form; secret transfer and final deployment
-are pending. Subsequent setup covers Figma, Notion, Linear and the five scoped-token
-providers, with their own real account authorization and least-privilege validation.
+Deployed after the owner's explicit credential-transfer and deployment approval:
+https://aedrova-connectors.onrender.com (Render service srv-db43abnlk1mc73elnki0,
+commit 5c93b32). Live HTTPS checks returned root/readiness 200, unauthenticated
+connector catalog 403, plans/meetings 404, and an unsolicited OAuth callback 403.
+The service uses the approved restricted database/encryption key and the configured
+GitHub/Supabase OAuth pairs. No unrelated provider secrets were transferred.
+
+Three exact callback changes are prepared but not saved: Supabase Auth
+/auth/callback, Supabase Management /buds/oauth/supabase/callback, and GitHub
+/buds/oauth/github/callback, all on the origin above. Provider permission scopes
+remain unchanged. Browser policy requires action-time approval for the new
+authorization destinations. Native connector_origin remains local until callback
+and authenticated live-read acceptance passes; existing local connections keep
+working. GitHub's local callback will be retained.
+
+Figma, Linear and Notion developer pages currently require sign-in. Figma/Notion/
+Linear registrations and the five scoped-token providers still require account
+authorization and real least-privilege reads. This deployment is not acceptance
+of all ten integrations. No paid upgrade was selected.

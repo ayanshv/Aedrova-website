@@ -21,8 +21,9 @@ Code and deterministic HTTP/security tests pass locally. Private PostgreSQL DDL
 and role isolation are validated in embedded PostgreSQL. Actual provider consent,
 refresh and successful reads with owner accounts still require app registration
 and real credentials. GitHub is now configured and the owner confirmed live Bud replies.
-The other four OAuth credential pairs remain unconfigured.
-Networked PostgreSQL concurrency and public deployment remain acceptance gates.
+Supabase's credential pair is configured; its hosted callback is pending approval.
+Figma, Notion and Linear credential pairs remain unconfigured.
+Networked PostgreSQL concurrency and live provider acceptance remain gates.
 This task does not deploy or change aedrova.com's waitlist mode.
 
 Stripe balance, Instagram professional account data, TikTok Display API, Vercel
@@ -129,6 +130,11 @@ Google sign-in redirect, and cookies must all use the same approved HTTPS origin
 Do not expose the local service through a tunnel silently. An isolated Render
 connection service is the next setup task; aedrova.com stays waitlist-only.
 Scoped-token verification remains available independently of OAuth.
+
+The isolated HTTPS service is now deployed and readiness verified at
+https://aedrova-connectors.onrender.com. Exact callback registration, authenticated
+browser handoff and successful provider reads remain pending; see
+docs/render-connectors.md. The native app has not yet switched its connector origin.
 
 Resource help now appears beside every connector’s resource input. For Supabase:
 open the intended project → Project Settings → General → Reference ID, or copy
