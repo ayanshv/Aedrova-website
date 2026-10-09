@@ -54,12 +54,18 @@ All three callback changes were approved, saved and verified: Supabase Auth
 /buds/oauth/github/callback, all on the origin above. GitHub retains its local
 callback. Permissions remain unchanged (Supabase Projects Read only).
 The signed desktop preview now bundles this HTTPS connector_origin separately
-from the local AI/meeting origin. Deep signature verification and 45 focused
-desktop tests pass. Authenticated provider reads remain pending: no reusable
-unexpired local account session was available. Reauthorize each Bud on HTTPS;
+from the local AI/meeting origin. Deep signature verification and 48 focused
+desktop tests pass. Native Google sign-in and hosted /api/dots/providers and
+/api/dots reads passed (HTTP 200); the role-filtered gallery loaded. Supabase
+OAuth reached real consent for Aedrova / Projects Read with the correct HTTPS
+callback. Provider consent and its project read are pending action-time approval.
+Bud requests now allow 90 seconds for free-host wake-up in the background worker
+and use a connector-specific network error. Reauthorize each Bud on HTTPS;
 private SQLite grants are not automatically migrated.
 
-Figma and Notion developer pages require sign-in. Linear Google sign-in succeeded;
+Figma sign-in succeeded; Create app is prepared for Aedrova Buds, owned by
+Ayansh Varma's team. Submission accepts Figma Developer Terms and is pending
+action-time approval. Notion requires sign-in. Linear Google sign-in succeeded;
 this account has no workspace and is at Create a workspace. Figma/Notion/
 Linear registrations and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance
