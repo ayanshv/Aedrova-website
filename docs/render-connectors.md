@@ -86,3 +86,5 @@ Linear Google sign-in succeeded; this account has no workspace and is at Create
 a workspace. Linear registration and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance
 of all ten integrations. No paid upgrade was selected.
+
+Linear integration was removed at the owner’s request. The next connector is Stripe for Finance Buds.

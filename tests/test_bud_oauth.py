@@ -25,7 +25,7 @@ from aedrova_site.store import Denied
 @pytest.fixture
 def system(dot_system):  # noqa: F811
     dots, dot, user = dot_system
-    for key in ("figma", "notion", "linear", "supabase"):
+    for key in ("figma", "notion", "supabase"):
         setattr(dots.config, key + "_bud_client_id", "app-id")
         setattr(dots.config, key + "_bud_client_secret", "app-secret")
     connections = BudConnections(dots)
@@ -97,7 +97,6 @@ def test_real_read_required_encrypted_credentials_and_poll_bound_to_account(syst
         ("github", "owner/repo"),
         ("figma", "fileKey123"),
         ("notion", str(uuid4())),
-        ("linear", str(uuid4())),
         ("supabase", "a" * 20),
     ],
 )
@@ -131,8 +130,6 @@ def test_fixed_endpoints_provider_scopes_pkce_and_confidential_exchange(system, 
     assert body["redirect_uri"] == oauth.redirect(provider)
     if provider != "github":
         assert request.headers["authorization"].startswith("Basic ")
-    if provider == "linear":
-        assert params["scope"] == ["read"]
     if provider == "supabase":
         assert "scope" not in params  # Dashboard-configured Projects Read, never deprecated 'all'.
 
@@ -236,7 +233,7 @@ def test_bad_token_responses_fail_closed_without_leaking_secrets(system, respons
         transport=httpx.MockTransport(lambda _: response), follow_redirects=False
     )
     with pytest.raises(Denied) as error:
-        oauth.token("linear", code="code", verifier="verifier")
+        oauth.token("supabase", code="code", verifier="verifier")
     assert "private-token" not in str(error.value)
 
 
@@ -250,7 +247,7 @@ def test_refresh_token_is_withheld_if_provider_echoes_it(system):
         )
 
 
-@pytest.mark.parametrize("provider", ["figma", "linear"])
+@pytest.mark.parametrize("provider", ["figma"])
 def test_oauth_reader_uses_bearer_instead_of_personal_token_headers(provider):
     def transport(request):
         assert request.headers["Authorization"] == "Bearer oauth-access-private"
@@ -400,7 +397,7 @@ def test_expired_grant_does_not_refresh_and_removal_during_read_withholds_eviden
     assert len(seen) == before
 
 
-@pytest.mark.parametrize("provider", ["figma", "notion", "supabase", "linear"])
+@pytest.mark.parametrize("provider", ["figma", "notion", "supabase"])
 def test_oauth_configuration_rejects_partial_credentials_and_hides_secrets(provider):
     with pytest.raises(ValueError, match="both"):
         Config(**{provider + "_bud_client_id": "app"}).validate()

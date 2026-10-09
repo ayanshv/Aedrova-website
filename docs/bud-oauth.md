@@ -1,7 +1,7 @@
 # Bud account connections — local implementation and owner setup
 
 Browser-based OAuth is implemented for GitHub Apps, Figma, Notion, Supabase
-Management API, and Linear. The native connector card opens the browser after
+Management API. The native connector card opens the browser after
 saving any changed Bud settings, then quietly checks completion. It never
 activates another desktop window. Connected requires real successful reads of
 all advertised tools for the chosen resource, not just a completed login.
@@ -25,7 +25,7 @@ Supabase completed hosted OAuth and a real project health/region read for Pebble
 Figma is privately published to the owner’s team; its credentials are deployed
 and Pebble passed a real file structure/label read.
 Notion’s read-only OAuth app and credential deployment are complete; Pebble
-passed a real read of the dedicated validation page. Linear remains unconfigured.
+passed a real read of the dedicated validation page. Linear was removed at the owner’s request.
 Networked PostgreSQL concurrency and live provider acceptance remain gates.
 This task does not deploy or change aedrova.com's waitlist mode.
 
@@ -84,12 +84,11 @@ redirect in Supabase. Do not silently tunnel or enable production release gates.
 | Figma | https://www.figma.com/developers/apps — file_content:read only; private app for initial team testing, public apps require review | AEDROVA_FIGMA_BUD_CLIENT_ID / CLIENT_SECRET | http://127.0.0.1:8090/buds/oauth/figma/callback |
 | Notion | https://www.notion.so/profile/integrations — public integration, Read content only; authorize only the intended page | AEDROVA_NOTION_BUD_CLIENT_ID / CLIENT_SECRET | http://127.0.0.1:8090/buds/oauth/notion/callback |
 | Supabase | Organization Settings → OAuth Apps — Projects Read only; no secrets or database access | AEDROVA_SUPABASE_BUD_CLIENT_ID / CLIENT_SECRET | https://<approved-service>/buds/oauth/supabase/callback |
-| Linear | Settings → API → OAuth applications — user actor, read scope only | AEDROVA_LINEAR_BUD_CLIENT_ID / CLIENT_SECRET | http://127.0.0.1:8090/buds/oauth/linear/callback |
 
 The full variable names end in `_BUD_CLIENT_ID` and `_BUD_CLIENT_SECRET`; the
 example file `deploy/dots.env.example` contains every exact key. Fill complete
 pairs only. Figma files use file keys, Notion uses a page UUID, Supabase uses a
-project ref, Linear uses a team UUID. API readers use fixed hosts and do not follow
+project ref. API readers use fixed hosts and do not follow
 redirects. Provider errors never expose returned token payloads.
 
 Production callbacks use `https://<approved-service>/buds/oauth/<provider>/callback`.
@@ -106,7 +105,6 @@ are required before offering these integrations to all customers.
 - Notion authorization: https://developers.notion.com/guides/get-started/authorization
 - Supabase Management OAuth: https://supabase.com/docs/guides/integrations/build-a-supabase-oauth-integration
 - Supabase scopes: https://supabase.com/docs/guides/integrations/build-a-supabase-oauth-integration/oauth-scopes
-- Linear OAuth: https://linear.app/developers/oauth-2-0-authentication
 
 ## October 8 confirmation and role-gallery pass
 
@@ -118,7 +116,7 @@ to the selected Bud’s specialty; All tools remains an explicit override.
 
 Supabase OAuth registration is the next owner gate. The app’s existing Supabase
 auth/database settings do not authorize a Bud to read a customer’s project.
-Figma, Notion and Linear registrations and the remaining scoped provider tokens
+Remaining provider registrations and the remaining scoped provider tokens
 still require owner setup and live acceptance. No new deployment or SQL is required
 for this presentation change.
 

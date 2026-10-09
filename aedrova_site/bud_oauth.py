@@ -42,7 +42,6 @@ PROVIDERS = {
         "https://api.supabase.com/v1/oauth/token",
         "",
     ),
-    "linear": ("https://linear.app/oauth/authorize", "https://api.linear.app/oauth/token", "read"),
 }
 SCHEMA = """CREATE TABLE IF NOT EXISTS bud_oauth (
  id TEXT PRIMARY KEY, payload TEXT NOT NULL, expires BIGINT NOT NULL,
@@ -198,8 +197,6 @@ class BudOAuth:
             )
         if provider == "notion":
             params["owner"] = "user"
-        if provider == "linear":
-            params["actor"] = "user"
         return target + "?" + urlencode(params), payload
 
     def token(self, provider, *, code=None, verifier=None, refresh=None):
@@ -250,11 +247,10 @@ class BudOAuth:
                 raise Denied("Unsupported authorization response.")
             # Reject unexpectedly broad grants where the provider returns OAuth scopes.
             scope = result.get("scope")
-            if scope and provider in {"figma", "linear", "supabase"}:
+            if scope and provider in {"figma", "supabase"}:
                 scopes = set(scope.replace(",", " ").split() if isinstance(scope, str) else scope)
                 allowed = {
                     "figma": {"file_content:read"},
-                    "linear": {"read"},
                     "supabase": {"projects:read"},
                 }[provider]
                 if not scopes <= allowed:

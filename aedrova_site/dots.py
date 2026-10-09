@@ -66,12 +66,6 @@ REGISTRY = {
         "auth": "Not available yet",
         "permissions": "Product analytics (planned)",
     },
-    "linear": {
-        "name": "Linear",
-        "tools": {},
-        "auth": "Not available yet",
-        "permissions": "Issues and project progress (planned)",
-    },
     "figma": {
         "name": "Figma",
         "tools": {},

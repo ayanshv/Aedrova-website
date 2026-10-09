@@ -3,7 +3,7 @@
 import json
 import os
 
-PROVIDERS = ("github", "figma", "notion", "supabase", "linear")
+PROVIDERS = ("github", "figma", "notion", "supabase")
 
 
 def main():

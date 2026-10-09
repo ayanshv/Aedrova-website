@@ -119,6 +119,10 @@ def create_app(config=None):
         Store(
             config.database,
             config.encryption_key,
+            usage_limits=config.usage_limits,
+            company_budget=config.company_budget_microusd,
+            free_pool=config.free_pool_microusd,
+            free_enabled=config.free_enabled,
             pool_size=config.db_pool_size,
             max_overflow=config.db_max_overflow,
             pool_timeout=config.db_pool_timeout,
@@ -268,6 +272,9 @@ def create_app(config=None):
                 "stripe_test_mode": config.stripe_test_mode,
                 "checkout_enabled": config.checkout_enabled,
                 "waitlist_only": config.waitlist_only,
+                "plan_policy": PLAN_POLICY,
+                "usage_policy": store.usage_policy,
+                "free_enabled": config.free_enabled,
                 "asset_version": asset_version,
                 **context,
             },
@@ -318,7 +325,14 @@ def create_app(config=None):
             )
             for name, approved in PLAN_POLICY.items()
         }
-        return page(request, "plans", "Find your rhythm", allowances=allowances)
+        return page(
+            request,
+            "plans",
+            "Your team, plus AI",
+            allowances=allowances,
+            usage_policy=store.usage_policy,
+            plan_policy=PLAN_POLICY,
+        )
 
     @app.get("/account")
     def account(request: Request):
@@ -335,7 +349,9 @@ def create_app(config=None):
             "account",
             "Your workspace",
             authenticated=authenticated,
-            selected_plan=plan if plan in {"weekly", "monthly"} else "",
+            selected_plan=plan if plan in {"monthly", "annual"} else "",
+            plan_policy=PLAN_POLICY,
+            usage_policy=store.usage_policy,
         )
 
     @app.get("/welcome")
@@ -410,7 +426,7 @@ def create_app(config=None):
             state,
             {
                 "verifier": verifier,
-                "plan": plan if plan in {"weekly", "monthly"} else "",
+                "plan": plan if plan in {"monthly", "annual"} else "",
                 "dot": dot_state,
                 "bud": bud_state,
             },
@@ -540,11 +556,21 @@ def create_app(config=None):
                 "period_end": 0,
             }
 
+    @app.post("/api/free/{workspace}")
+    def activate_free(request: Request, workspace: str):
+        if not config.free_enabled or config.waitlist_only:
+            raise Denied("Free access opens after the waitlist. No AI usage was started.")
+        user = identity.require(auth(request, change=True), workspace, billing=True)
+        store.rate_limit("free:" + user["id"], limit=5)
+        return store.activate_free(user["id"], workspace)
+
     @app.post("/api/checkout")
     def checkout(request: Request, body: CheckoutBody):
         user = identity.require(auth(request, change=True), body.workspace, billing=True)
         store.rate_limit("checkout:" + user["id"], limit=10)
-        return {"url": payments.checkout(body.workspace, body.plan, body.request_id)}
+        return {
+            "url": payments.checkout(body.workspace, body.plan, body.request_id, owner=user["id"])
+        }
 
     @app.get("/api/checkout/status")
     def checkout_status(request: Request, session_id: str):
@@ -680,8 +706,20 @@ def create_app(config=None):
             raise Denied("Audio transcription is not enabled.")
         token = meeting_context_token(request)
         user = identity.user(token)
-        # Server-owned PostgreSQL reservation checks scope/consent before provider I/O.
-        return speech.transcribe(user["id"], body)
+        # RLS resolves the workspace; never accept a client-supplied billing scope.
+        meetings = identity.request(
+            "/rest/v1/meetings?id=eq." + str(body.meeting) + "&select=channel_id", token
+        )
+        if not meetings:
+            raise Denied("Meeting access changed.")
+        channels = identity.request(
+            "/rest/v1/channels?id=eq." + meetings[0]["channel_id"] + "&select=workspace_id", token
+        )
+        if not channels:
+            raise Denied("Channel access changed.")
+        workspace = channels[0]["workspace_id"]
+        identity.require(token, workspace)
+        return speech.transcribe(user["id"], body, workspace=workspace)
 
     @app.get("/api/meetings/transcript/{meeting}")
     def meeting_transcript(request: Request, meeting: UUID, page: int = 0):
@@ -848,6 +886,7 @@ def create_app(config=None):
         store.session(run["token"], {"access_token": token}, lifetime=7200)
         return {
             **run,
+            "limits": store.run_limits({"workspace": body.workspace}),
             "model": config.models[body.provider]["id"],
             "base_url": config.origin
             + "/gateway/"

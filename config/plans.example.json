@@ -1,18 +1,18 @@
 {
-  "weekly": {
+  "monthly": {
     "amount_cents": 1000,
     "currency": "usd",
-    "interval": "week",
-    "allowance_microusd": 1000000,
-    "concurrency": 1,
-    "price_id": "price_REPLACE_WEEKLY"
-  },
-  "monthly": {
-    "amount_cents": 4900,
-    "currency": "usd",
     "interval": "month",
-    "allowance_microusd": 10000000,
+    "allowance_microusd": 2000000,
     "concurrency": 1,
     "price_id": "price_REPLACE_MONTHLY"
+  },
+  "annual": {
+    "amount_cents": 20000,
+    "currency": "usd",
+    "interval": "year",
+    "allowance_microusd": 48000000,
+    "concurrency": 2,
+    "price_id": "price_REPLACE_ANNUAL"
   }
 }

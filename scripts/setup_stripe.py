@@ -6,8 +6,9 @@ from pathlib import Path
 
 import stripe
 
+from aedrova_site.budgets import policies
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY
 
 
 def provision(config, output, *, live=False):
@@ -23,9 +24,21 @@ def provision(config, output, *, live=False):
         idempotency_key=f"aedrova-{environment}-product-v1",
         api_key=config.stripe_key,
     )
+    stripe.Product.create(
+        name="Aedrova Enterprise — Let’s Talk",
+        description="Custom scope and AI budget agreed before purchase. Contact Aedrova.",
+        metadata={"application": "aedrova", "environment": environment, "contact_only": "true"},
+        idempotency_key=f"aedrova-{environment}-enterprise-v2",
+        api_key=config.stripe_key,
+    )
     plans = {}
-    for name, policy in PLAN_POLICY.items():
-        lookup = "aedrova_" + environment + "_" + name + "_v1"
+    for name, price_policy in PLAN_POLICY.items():
+        policy = {
+            **price_policy,
+            "allowance_microusd": policies(config.usage_limits)[name]["budget"]
+            * (12 if name == "annual" else 1),
+        }
+        lookup = "aedrova_" + environment + "_" + name + "_v2"
         found = stripe.Price.list(lookup_keys=[lookup], active=True, api_key=config.stripe_key)
         if found["data"]:
             price = found["data"][0]
@@ -36,9 +49,9 @@ def provision(config, output, *, live=False):
                 unit_amount=policy["amount_cents"],
                 recurring={"interval": policy["interval"], "interval_count": 1},
                 lookup_key=lookup,
-                nickname="Aedrova " + name,
+                nickname="Aedrova " + PLAN_NAMES[name],
                 metadata={"application": "aedrova", "environment": environment},
-                idempotency_key="aedrova-" + environment + "-price-" + name + "-v1",
+                idempotency_key="aedrova-" + environment + "-price-" + name + "-v2",
                 api_key=config.stripe_key,
             )
         validate_price(price, policy, live=live)
@@ -46,7 +59,7 @@ def provision(config, output, *, live=False):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plans, indent=2) + "\n")
     output.chmod(0o600)
-    print(environment.capitalize() + " weekly/monthly prices saved to " + str(output))
+    print(environment.capitalize() + " monthly/annual prices saved to " + str(output))
 
 
 def validate_price(price, policy, *, live=False):
@@ -59,7 +72,9 @@ def validate_price(price, policy, *, live=False):
         or recurring.get("interval") != policy["interval"]
         or recurring.get("interval_count") != 1
     ):
-        raise ValueError("Stripe price differs from the approved mode, $10/week or $49/month plan.")
+        raise ValueError(
+            "Stripe price differs from the approved mode, $10/month or $200/year plan."
+        )
 
 
 def provision_branding(config, output):

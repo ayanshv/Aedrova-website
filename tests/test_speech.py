@@ -254,3 +254,27 @@ def test_trickling_provider_deadline_discards_text(monkeypatch):
     assert "fixture-hidden-secret" not in str(error.value)
     assert instance.database.call_args_list[-1].args[1]["body"] is None
     instance.close()
+
+
+def test_transcription_reserves_shared_budget_before_provider(tmp_path):
+    from aedrova_site.store import Store
+
+    instance, sent = service()
+    store = Store(f"sqlite:///{tmp_path / 'speech-budget.sqlite'}")
+    user = str(uuid4())
+    store.activate_free(user, "workspace")
+    instance.store = store
+    instance.config.speech_rate_microusd_per_minute = 6000
+    try:
+        instance.transcribe(user, body(), workspace="workspace")
+        assert len(sent) == 1
+        assert store.balance("workspace")["monthly_spent"] == 100
+        assert store.balance("workspace")["monthly_requests"] == 1
+        instance.database.side_effect = ["pending", uuid4()]
+        store.company_budget = 100
+        with pytest.raises(Denied):
+            instance.transcribe(user, body(), workspace="workspace")
+        assert len(sent) == 1
+    finally:
+        store.engine.dispose()
+        instance.close()

@@ -18,7 +18,6 @@ COPY = {
     "tiktok": "can now review your authorized profile and recent public videos.",
     "search": "can now find web sources for your selected research topic.",
     "vercel": "can now check your project and recent deployments.",
-    "linear": "can now read your selected team and recent issues.",
 }
 TEMPLATES = Jinja2Templates(directory=Path(__file__).parent / "templates")
 

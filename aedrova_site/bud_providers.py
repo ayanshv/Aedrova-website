@@ -79,13 +79,6 @@ CATALOG = {
         "prj_ project ID",
         {"project": "Project", "deployments": "Deployments"},
     ),
-    "linear": (
-        "Linear",
-        "Product",
-        "Team details and recent issues",
-        "team UUID",
-        {"team": "Team", "issues": "Recent issues"},
-    ),
 }
 
 
@@ -113,7 +106,7 @@ def validate_resource(provider, value):
         if len(value) < 3 or any(ord(c) < 32 for c in value):
             raise Denied("Enter a research topic of 3–200 characters.")
         return value
-    if provider in {"notion", "linear"}:
+    if provider in {"notion"}:
         try:
             return str(UUID(value))
         except ValueError:
@@ -349,33 +342,6 @@ class ReadProvider:
                     for r in row.get("deployments", [])[:10]
                 ]
             source = "https://vercel.com/dashboard"
-        elif self.key == "linear":
-            query = (
-                "query($id:String!){team(id:$id){id name key "
-                + (
-                    "issues(first:10){nodes{id identifier title updatedAt state{name}}}"
-                    if tool == "issues"
-                    else ""
-                )
-                + "}}"
-            )
-            row = get(
-                "https://api.linear.app/graphql",
-                headers={"Authorization": "Bearer " + token if oauth else token},
-                body={"query": query, "variables": {"id": resource}},
-            )
-            if row.get("errors"):
-                raise Denied("Permission issue")
-            team = row.get("data", {}).get("team")
-            if not team or team.get("id") != resource:
-                raise Denied("The Linear team is not available to this account.")
-            records = {k: team.get(k) for k in ("id", "name", "key")}
-            if tool == "issues":
-                records["issues"] = [
-                    {k: r.get(k) for k in ("id", "identifier", "title", "updatedAt")}
-                    for r in team.get("issues", {}).get("nodes", [])[:10]
-                ]
-            source = "https://linear.app/"
         else:
             raise Denied("This provider has no adapter.")
         # Never return provider credentials, raw headers, or unbounded response objects.

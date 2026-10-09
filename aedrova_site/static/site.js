@@ -82,7 +82,7 @@ if(!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObser
 let toastTimer;function notice(message){const toast=$('.toast');toast.textContent=message;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),6500);}
 let csrf='';async function api(path,body){const response=await fetch(path,{credentials:'same-origin',method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body===undefined?undefined:JSON.stringify(body)});let data;try{data=await response.json();}catch{throw new Error('The service did not respond. Please try again.');}if(!response.ok)throw new Error(data.error||data.detail||'Could not complete this request. Please retry.');return data;}
 async function busy(button,operation){const children=[...button.childNodes];button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='One moment…';try{await operation();}catch(error){notice(error.message);}finally{button.disabled=false;button.removeAttribute('aria-busy');button.replaceChildren(...children);}}
-const params=new URLSearchParams(location.search);if(['weekly','monthly'].includes(params.get('plan')))storage.set('aedrova-plan',params.get('plan'));
+const params=new URLSearchParams(location.search);if(['monthly','annual'].includes(params.get('plan')))storage.set('aedrova-plan',params.get('plan'));
 if(params.has('cancelled'))notice('Checkout cancelled. No new subscription was confirmed.');if(params.has('login_error'))notice('Google sign-in did not finish. Please try again.');
 const form=$('#onboarding-form');
 if(form){
@@ -138,16 +138,17 @@ if ($('#workspace')) {
   let balanceRevision = 0;
   const select = $('#workspace'), status = $('#account-status'), planSelect = $('#billing-plan');
   let plan = storage.get('aedrova-plan', 'monthly');
-  if (!['weekly', 'monthly'].includes(plan)) plan = 'monthly';
+  if (!['monthly', 'annual'].includes(plan)) plan = 'monthly';
   planSelect.value = plan;
   function renderPlan() {
     plan = planSelect.value;
     storage.set('aedrova-plan', plan);
     const address = new URL(location.href); address.searchParams.set('plan', plan);
     history.replaceState(null, '', address.href);
-    $('#selected-plan').textContent = (plan === 'weekly' ? 'Weekly · $10/week' : 'Monthly · $49/month') +
+    $('#selected-plan').textContent = planSelect.selectedOptions[0].dataset.description +
       ', renews until cancelled. Review details before paying on Stripe.';
   }
+  $('#activate-free').addEventListener('click', () => busy($('#activate-free'), async () => { await api('/api/free/' + encodeURIComponent(select.value), {}); await balance(); }));
   renderPlan();
   planSelect.addEventListener('change', renderPlan);
   function checkoutKey() {
@@ -181,19 +182,23 @@ if ($('#workspace')) {
     const data = await api('/api/balance/' + encodeURIComponent(selected));
     if (revision !== balanceRevision) return;
     $('#balance').replaceChildren();
-    $('#portal').disabled = !canManage || ['no_plan', 'pending'].includes(data.status);
-    $('#checkout').disabled = !canManage || !checkoutReady || data.status === 'active';
+    $('#portal').disabled = !canManage || !data.has_billing || ['no_plan', 'pending'].includes(data.status);
+    $('#checkout').disabled = !canManage || !checkoutReady || (data.status === 'active' && data.plan !== 'free');
+    $('#activate-free').disabled = $('#activate-free').dataset.enabled !== 'true' || !canManage || data.status === 'active';
     if (data.status === 'active') {
-      for (const [label, value] of [['AI remaining', data.available], ['Included usage this period', data.spent], ['Purchased credit balance', data.credit_balance || 0]]) {
+      const monthlyBudget = Math.max(1, data.monthly_budget || data.allowance);
+      for (const [label, value] of [['Monthly AI available', Math.min(100, Math.max(0, Math.round(100 * (monthlyBudget - (data.monthly_spent || 0)) / monthlyBudget)))], ['Monthly AI used', Math.min(100, Math.round(100 * (data.monthly_spent || 0) / monthlyBudget))]]) {
         const div = document.createElement('div'), small = document.createElement('small'), strong = document.createElement('strong');
-        small.textContent = label;
-        strong.textContent = '$' + (value / 1e6).toFixed(2);
+        small.textContent = label; strong.textContent = value + '%';
         div.append(small, strong); $('#balance').append(div);
       }
+      const reset = document.createElement('p');
+      reset.textContent = 'Monthly reset: ' + new Date((data.reset_at || data.period_end) * 1000).toLocaleDateString() + ' · ' + (data.monthly_requests || 0) + '/' + (data.monthly_request_limit || 0) + ' model requests';
+      $('#balance').append(reset);
       $('#balance').hidden = false;
-      $('#topup').disabled = !canManage;
+      $('#topup').disabled = !canManage || data.plan === 'free';
       status.textContent = testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
-        'Your ' + data.plan + ' subscription is active. Run your builds from the Mac app.';
+        'Your ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. ' + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the Mac app.');
     } else {
       status.textContent = !canManage ? 'Your workspace owner or admin manages the subscription.' :
         checkoutReady ? 'Review your selected plan on Stripe before confirming. ' + (testMode ? 'Test payments only.' : '') :

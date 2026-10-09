@@ -112,6 +112,7 @@ async def authorize_run(request: Request, provider, config, store, identity):
 
 async def inference(request: Request, provider, config, store, identity, *, compact=False):
     run = await authorize_run(request, provider, config, store, identity)
+    limits = await asyncio.to_thread(store.run_limits, run)
     raw = await request.body()
     if len(raw) > 8 * 1024 * 1024:
         raise Denied("Model request exceeds the 8 MiB limit.")
@@ -146,6 +147,8 @@ async def inference(request: Request, provider, config, store, identity, *, comp
 
     if remote_content(body):
         raise Denied("Multimedia model inputs are not enabled in this coding beta.")
+    if len(body.get("tools", [])) > limits["tools"]:
+        raise Denied("This request exceeds your plan’s tool-definition limit.")
     model = config.models[provider]
     if provider == "codex":
         key, output_key = config.openai_key, "max_output_tokens"
@@ -187,7 +190,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     if not key:
         raise Denied("This model's commercial billing is not configured yet.")
     try:
-        output = min(16384, max(1, int(body.get(output_key, 4096))))
+        output = min(limits["output_tokens"], max(1, int(body.get(output_key, 4096))))
     except (ValueError, TypeError) as exc:
         raise Denied("Invalid output limit.") from exc
     body["model"] = model["id"]
@@ -198,7 +201,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     else:
         body[output_key] = output
     encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
-    if len(encoded) + 8192 > model.get("max_input_tokens", 200_000):
+    if len(encoded) + 8192 > min(model.get("max_input_tokens", 200_000), limits["input_tokens"]):
         raise Denied(
             "This request exceeds the beta model context limit. "
             "Narrow the build or start a fresh run."
@@ -213,7 +216,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     )
     fingerprint = (b"compact:" if compact else b"response:") + encoded
     identifier, cached = await asyncio.to_thread(
-        store.reserve, run, hashlib.sha256(fingerprint).hexdigest(), reserve
+        store.reserve, run, hashlib.sha256(fingerprint).hexdigest(), reserve, model
     )
     streaming = body.get("stream", False)
     media = "text/event-stream" if streaming else "application/json"

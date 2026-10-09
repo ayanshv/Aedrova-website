@@ -209,12 +209,6 @@ def test_provider_failures_do_not_leak_secrets_or_follow_redirect(status):
             {"id": "prj_example123", "name": "App", "env": ["must-not-return"]},
             "project",
         ),
-        (
-            "linear",
-            str(UUID := uuid4()),
-            {"data": {"team": {"id": str(UUID), "name": "Product"}}},
-            "team",
-        ),
     ],
 )
 def test_each_adapter_reads_actual_endpoint_and_normalizes(provider, resource, payload, tool):
@@ -233,7 +227,7 @@ def test_each_adapter_reads_actual_endpoint_and_normalizes(provider, resource, p
     assert result["untrusted"] and result["coverage"] and result["source"].startswith("https://")
     assert "must-not-return" not in json.dumps(result)
     assert all(r.url.scheme == "https" for r in seen)
-    assert all(r.method == "GET" for r in seen) or provider == "linear"
+    assert all(r.method == "GET" for r in seen)
     adapter.close()
 
 

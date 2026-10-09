@@ -38,7 +38,7 @@ def allowed(method, path):
             or bool(
                 re.fullmatch(
                     r"/(?:buds|dots)/authorize/[A-Za-z0-9_-]{40,100}|"
-                    r"/buds/oauth/(?:github|supabase|figma|notion|linear)/callback",
+                    r"/buds/oauth/(?:github|supabase|figma|notion)/callback",
                     path,
                 )
             )
