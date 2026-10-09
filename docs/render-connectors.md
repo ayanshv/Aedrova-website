@@ -67,9 +67,13 @@ private SQLite grants are not automatically migrated.
 Figma app Aedrova Buds was created under Ayansh Varma's team with explicit
 Developer Terms approval. Its credentials are saved only in ignored local
 .env.dots (0600). The actual Aedrova logo and read-only description are saved.
-The HTTPS callback is drafted; file_content:read, private team publication and
-credential transfer to the isolated Render service await concrete approval.
-No Figma credential has been deployed and no live Figma read is claimed. Notion requires sign-in. Linear Google sign-in succeeded;
+The owner approved activation: HTTPS callback saved, file_content:read enabled,
+and app published privately to Ayansh Varma’s team. The credential pair was
+transferred only to aedrova-connectors on Render. Save and deploy succeeded
+(dep-db474nbtqb8s73eakdrg, existing code 5c93b32); HTTPS readiness returned 200.
+Pebble completed hosted OAuth and passed a real read of the existing Figma basics
+file; both browser and native app displayed verified read-only connection.
+No file was edited. Private publication is not public customer approval. Notion requires sign-in. Linear Google sign-in succeeded;
 this account has no workspace and is at Create a workspace. Figma/Notion/
 Linear registrations and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance
