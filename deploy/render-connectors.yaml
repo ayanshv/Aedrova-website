@@ -1,0 +1,71 @@
+# Separate free HTTPS connector service. Never import the root website Blueprint for this task.
+# Use only the approved connector branch. Persistent data stays in the restricted Supabase schema.
+services:
+  - type: web
+    name: aedrova-connectors
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: codex/bud-connectors-https
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m scripts.serve_connectors
+    autoDeployTrigger: off
+    healthCheckPath: /health/ready
+    envVars:
+      - key: AEDROVA_ORIGIN
+        sync: false
+      - key: AEDROVA_DATABASE
+        sync: false
+      - key: AEDROVA_ENCRYPTION_KEY
+        sync: false
+      - key: AEDROVA_PRODUCTION
+        value: "true"
+      - key: AEDROVA_SUPABASE_DATABASE
+        value: "true"
+      - key: AEDROVA_DB_POOL_SIZE
+        value: "1"
+      - key: AEDROVA_DB_MAX_OVERFLOW
+        value: "0"
+      - key: AEDROVA_WAITLIST_ONLY
+        value: "false"
+      - key: AEDROVA_DOTS_ENABLED
+        value: "true"
+      - key: AEDROVA_MEETINGS_ENABLED
+        value: "false"
+      - key: AEDROVA_MEETING_CONTEXT_ENABLED
+        value: "false"
+      - key: AEDROVA_SPEECH_ENABLED
+        value: "false"
+      - key: AEDROVA_GATEWAY_ENABLED
+        value: "false"
+      - key: AEDROVA_DEVELOPMENT_AI
+        value: "false"
+      - key: AEDROVA_CHECKOUT_ENABLED
+        value: "false"
+      - key: AEDROVA_RELEASE_READY
+        value: "false"
+      - key: AEDROVA_LEGAL_READY
+        value: "false"
+      - key: AEDROVA_STRIPE_TEST_MODE
+        value: "false"
+      - key: AEDROVA_SUPABASE_BUD_CLIENT_ID
+        sync: false
+      - key: AEDROVA_SUPABASE_BUD_CLIENT_SECRET
+        sync: false
+      - key: AEDROVA_GITHUB_DOT_CLIENT_ID
+        sync: false
+      - key: AEDROVA_GITHUB_DOT_CLIENT_SECRET
+        sync: false
+      - key: AEDROVA_FIGMA_BUD_CLIENT_ID
+        sync: false
+      - key: AEDROVA_FIGMA_BUD_CLIENT_SECRET
+        sync: false
+      - key: AEDROVA_NOTION_BUD_CLIENT_ID
+        sync: false
+      - key: AEDROVA_NOTION_BUD_CLIENT_SECRET
+        sync: false
+      - key: AEDROVA_LINEAR_BUD_CLIENT_ID
+        sync: false
+      - key: AEDROVA_LINEAR_BUD_CLIENT_SECRET
+        sync: false

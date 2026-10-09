@@ -40,6 +40,14 @@ class Config:
     github_dot_client_id: str = ""
     github_dot_client_secret: str = field(default="", repr=False)
     github_dot_webhook_secret: str = field(default="", repr=False)
+    figma_bud_client_id: str = ""
+    figma_bud_client_secret: str = field(default="", repr=False)
+    notion_bud_client_id: str = ""
+    notion_bud_client_secret: str = field(default="", repr=False)
+    supabase_bud_client_id: str = ""
+    supabase_bud_client_secret: str = field(default="", repr=False)
+    linear_bud_client_id: str = ""
+    linear_bud_client_secret: str = field(default="", repr=False)
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
@@ -148,6 +156,13 @@ class Config:
             raise ValueError("Dots require a persistent server encryption key.")
         if bool(self.github_dot_client_id) != bool(self.github_dot_client_secret):
             raise ValueError("Configure both GitHub Dot OAuth credentials server-side.")
+        for provider in ("figma", "notion", "supabase", "linear"):
+            if bool(getattr(self, provider + "_bud_client_id")) != bool(
+                getattr(self, provider + "_bud_client_secret")
+            ):
+                raise ValueError(
+                    "Configure both " + provider + " Bud OAuth credentials server-side."
+                )
         if self.meeting_context_enabled and not self.meetings_enabled:
             raise ValueError("Meeting context requires the enabled meeting service.")
         if self.speech_enabled and (

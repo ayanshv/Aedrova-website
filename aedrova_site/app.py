@@ -150,6 +150,7 @@ def create_app(config=None):
                 with suppress(asyncio.CancelledError):
                     await guard
             await asyncio.to_thread(identity.close)
+            await asyncio.to_thread(_app.state.dots.connections.close)
             for provider in _app.state.dots.providers.values():
                 await asyncio.to_thread(provider.close)
             await asyncio.to_thread(speech.close)
@@ -399,6 +400,9 @@ def create_app(config=None):
             .rstrip("=")
         )
         plan = request.query_params.get("plan", "")
+        bud_state = request.query_params.get("bud", "")
+        if bud_state and not re.fullmatch(r"[A-Za-z0-9_-]{40,100}", bud_state):
+            raise Denied("Invalid Bud authorization.")
         dot_state = request.query_params.get("dot", "")
         if dot_state and not re.fullmatch(r"[A-Za-z0-9_-]{40,100}", dot_state):
             raise Denied("Invalid Dot authorization.")
@@ -408,6 +412,7 @@ def create_app(config=None):
                 "verifier": verifier,
                 "plan": plan if plan in {"weekly", "monthly"} else "",
                 "dot": dot_state,
+                "bud": bud_state,
             },
             lifetime=600,
         )
@@ -466,6 +471,8 @@ def create_app(config=None):
             return_path += "?" + urlencode({"plan": session["plan"]})
         if session.get("dot"):
             return_path = "/dots/authorize/" + session["dot"]
+        if session.get("bud"):
+            return_path = "/buds/authorize/" + session["bud"]
         response = RedirectResponse(return_path, status_code=303)
         response.set_cookie(
             "aedrova_session",
