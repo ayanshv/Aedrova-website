@@ -57,15 +57,19 @@ The signed desktop preview now bundles this HTTPS connector_origin separately
 from the local AI/meeting origin. Deep signature verification and 48 focused
 desktop tests pass. Native Google sign-in and hosted /api/dots/providers and
 /api/dots reads passed (HTTP 200); the role-filtered gallery loaded. Supabase
-OAuth reached real consent for Aedrova / Projects Read with the correct HTTPS
-callback. Provider consent and its project read are pending action-time approval.
+OAuth completed with the owner-approved Aedrova / Projects Read grant and the
+correct HTTPS callback. Pebble passed a real project health/region read and the
+native app displayed Connection verified. No rows, SQL or keys are authorized.
 Bud requests now allow 90 seconds for free-host wake-up in the background worker
 and use a connector-specific network error. Reauthorize each Bud on HTTPS;
 private SQLite grants are not automatically migrated.
 
-Figma sign-in succeeded; Create app is prepared for Aedrova Buds, owned by
-Ayansh Varma's team. Submission accepts Figma Developer Terms and is pending
-action-time approval. Notion requires sign-in. Linear Google sign-in succeeded;
+Figma app Aedrova Buds was created under Ayansh Varma's team with explicit
+Developer Terms approval. Its credentials are saved only in ignored local
+.env.dots (0600). The actual Aedrova logo and read-only description are saved.
+The HTTPS callback is drafted; file_content:read, private team publication and
+credential transfer to the isolated Render service await concrete approval.
+No Figma credential has been deployed and no live Figma read is claimed. Notion requires sign-in. Linear Google sign-in succeeded;
 this account has no workspace and is at Create a workspace. Figma/Notion/
 Linear registrations and the five scoped-token providers still require account
 authorization and real least-privilege reads. This deployment is not acceptance

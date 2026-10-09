@@ -133,9 +133,11 @@ connection service is the next setup task; aedrova.com stays waitlist-only.
 Scoped-token verification remains available independently of OAuth.
 
 The isolated HTTPS service is now deployed and readiness verified at
-https://aedrova-connectors.onrender.com. Exact callback registration, authenticated
-browser handoff and successful provider reads remain pending; see
-docs/render-connectors.md. The native app has not yet switched its connector origin.
+https://aedrova-connectors.onrender.com. The Supabase Auth, Supabase Management and GitHub callbacks are registered.
+The native preview uses the isolated HTTPS connector origin and Google handoff
+is verified. Supabase Projects Read passed a real health/region read for Pebble.
+Figma app creation is complete; remaining activation and other provider reads
+are tracked separately in docs/render-connectors.md.
 
 Resource help now appears beside every connector’s resource input. For Supabase:
 open the intended project → Project Settings → General → Reference ID, or copy
