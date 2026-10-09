@@ -1,0 +1,21 @@
+
+:root[data-theme=dark]{--bg:#171719;--surface:#202022;--text:#F5F5F7;--muted:#A6A6AE;--soft:#242C3C}
+.bud-connection-page{min-height:100svh}
+.bud-connection-header{position:static;display:flex;justify-content:space-between;align-items:center;padding:24px 36px;background:transparent;border:0}
+.bud-connection-header .wordmark{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:650}
+.bud-connection-header .theme-toggle{position:static;width:36px;height:36px;border:1px solid var(--edge);border-radius:50%;background:var(--surface)}
+.bud-connection-main{min-height:calc(100svh - 84px);display:grid;place-items:center;padding:30px 20px 80px}
+.bud-connection-card{text-align:center;width:min(100%,540px);padding:44px 32px;background:var(--surface);border:1px solid var(--edge);border-radius:24px;box-shadow:var(--shadow)}
+.bud-connection-card .eyebrow{color:var(--muted);margin-bottom:12px}
+.connected-bud{width:160px;height:160px;margin:0 auto;background-image:url('/static/buds-atlas.png');background-size:300% 200%;background-repeat:no-repeat;animation:bud-arrive .55s ease-out both}
+.look-builder{background-position:0 0}.look-designer{background-position:50% 0}.look-marketing{background-position:100% 0}.look-finance{background-position:0 100%}.look-research{background-position:50% 100%}.look-product{background-position:100% 100%}
+.connection-check{display:grid;place-items:center;margin:12px auto 26px;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--blue);font-weight:600}
+.bud-connection-card h1{font-size:clamp(26px,4vw,34px);line-height:1.15;margin-bottom:16px}
+.connection-lead{font-size:15px;margin-bottom:24px}.connection-lead strong{color:var(--text);font-weight:600}
+.connection-detail{display:inline-flex;align-items:center;gap:8px;background:var(--soft);border-radius:8px;padding:10px 14px;color:var(--blue);font-size:12px}
+.connection-dot{width:6px;height:6px;background:currentColor;border-radius:50%}
+.connection-return{font-size:14px;margin:28px 0;line-height:1.65}.connection-return strong{color:var(--text)}
+.connection-footnote{display:block;font-size:11px;line-height:1.6;color:var(--muted);border-top:1px solid var(--edge);padding-top:20px}
+@keyframes bud-arrive{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:480px){.bud-connection-header{padding:20px}.bud-connection-card{padding:30px 20px}.bud-connection-main{padding-bottom:40px}}
+@media(prefers-reduced-motion:reduce){.connected-bud{animation:none}}

@@ -32,9 +32,9 @@ def test_reject_other_keys(key):
 
 def test_mode_and_price_mismatch():
     with pytest.raises(ValueError):
-        validate_price(price("weekly", False), PLAN_POLICY["weekly"], live=True)
+        validate_price(price("annual", False), PLAN_POLICY["annual"], live=True)
     changed = price("monthly")
-    changed["unit_amount"] = 14900
+    changed["unit_amount"] = 11000
     with pytest.raises(ValueError):
         validate_price(changed, PLAN_POLICY["monthly"], live=True)
 
@@ -48,15 +48,16 @@ def test_provision_live_namespaced_and_private(tmp_path, monkeypatch):
         "stripe.Price.list",
         lambda **kw: (
             calls.append(kw)
-            or {"data": [price("weekly" if "weekly" in kw["lookup_keys"][0] else "monthly")]}
+            or {"data": [price("annual" if "annual" in kw["lookup_keys"][0] else "monthly")]}
         ),
     )
     target = tmp_path / "plans.json"
     provision(Config(stripe_key="sk_live_fixture"), target, live=True)
-    assert json.loads(target.read_text())["monthly"]["amount_cents"] == 4900
+    assert any(call.get("metadata", {}).get("contact_only") == "true" for call in calls)
+    assert json.loads(target.read_text())["monthly"]["amount_cents"] == 1000
     assert target.stat().st_mode & 0o777 == 0o600
     assert calls[0]["metadata"]["environment"] == "live"
-    assert all("aedrova_live_" in call["lookup_keys"][0] for call in calls[1:])
+    assert all("aedrova_live_" in call["lookup_keys"][0] for call in calls if "lookup_keys" in call)
 
 
 def test_inactive_account_no_assets(tmp_path, monkeypatch):

@@ -40,9 +40,16 @@ class Config:
     github_dot_client_id: str = ""
     github_dot_client_secret: str = field(default="", repr=False)
     github_dot_webhook_secret: str = field(default="", repr=False)
+    figma_bud_client_id: str = ""
+    figma_bud_client_secret: str = field(default="", repr=False)
+    notion_bud_client_id: str = ""
+    notion_bud_client_secret: str = field(default="", repr=False)
+    supabase_bud_client_id: str = ""
+    supabase_bud_client_secret: str = field(default="", repr=False)
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
+    speech_rate_microusd_per_minute: int = 6000
     speech_key: str = field(default="", repr=False)
     livekit_url: str = ""
     livekit_api_key: str = field(default="", repr=False)
@@ -51,6 +58,10 @@ class Config:
     checkout_enabled: bool = False
     gateway_enabled: bool = False
     development_ai: bool = False
+    usage_limits: dict = field(default_factory=dict)
+    company_budget_microusd: int = 100_000_000
+    free_pool_microusd: int = 25_000_000
+    free_enabled: bool = False
     plans: dict = field(default_factory=dict)
     models: dict = field(default_factory=dict)
     download_path: str = ""
@@ -63,7 +74,7 @@ class Config:
         kwargs = {}
         for name, item in cls.__dataclass_fields__.items():
             raw = os.environ.get("AEDROVA_" + name.upper())
-            if name in {"plans", "models"} and raw is None:
+            if name in {"plans", "models", "usage_limits"} and raw is None:
                 config_file = os.environ.get("AEDROVA_" + name.upper() + "_FILE")
                 if config_file:
                     kwargs[name] = json.loads(Path(config_file).read_text())
@@ -74,7 +85,7 @@ class Config:
                 kwargs[name] = raw.lower() == "true"
             elif item.type is int:
                 kwargs[name] = int(raw)
-            elif name in {"plans", "models"}:
+            elif name in {"plans", "models", "usage_limits"}:
                 kwargs[name] = json.loads(raw)
             else:
                 kwargs[name] = raw
@@ -139,7 +150,10 @@ class Config:
                     "on port 5432, TLS and at most three pooled connections."
                 )
         if self.waitlist_only and (
-            self.checkout_enabled or self.gateway_enabled or self.meetings_enabled
+            self.checkout_enabled
+            or self.gateway_enabled
+            or self.meetings_enabled
+            or self.free_enabled
         ):
             raise ValueError(
                 "Waitlist launch must keep checkout, managed AI and meetings disabled."
@@ -148,8 +162,17 @@ class Config:
             raise ValueError("Dots require a persistent server encryption key.")
         if bool(self.github_dot_client_id) != bool(self.github_dot_client_secret):
             raise ValueError("Configure both GitHub Dot OAuth credentials server-side.")
+        for provider in ("figma", "notion", "supabase"):
+            if bool(getattr(self, provider + "_bud_client_id")) != bool(
+                getattr(self, provider + "_bud_client_secret")
+            ):
+                raise ValueError(
+                    "Configure both " + provider + " Bud OAuth credentials server-side."
+                )
         if self.meeting_context_enabled and not self.meetings_enabled:
             raise ValueError("Meeting context requires the enabled meeting service.")
+        if self.speech_rate_microusd_per_minute <= 0:
+            raise ValueError("Configure a positive speech cost estimate.")
         if self.speech_enabled and (
             not self.meeting_context_enabled or not self.supabase_database or not self.speech_key
         ):
@@ -192,21 +215,33 @@ class Config:
             for provider in self.models:
                 if not (self.openai_key if provider == "codex" else self.anthropic_key):
                     raise ValueError("Configure every enabled provider's server-only API key.")
+        from aedrova_site.budgets import policies
+
+        usage_policy = policies(self.usage_limits)
+        if min(self.company_budget_microusd, self.free_pool_microusd) <= 0:
+            raise ValueError("Company and Free pool budgets must be positive.")
+        if self.free_enabled and not self.gateway_enabled:
+            raise ValueError("Free activation requires the configured managed gateway.")
         for name, plan in self.plans.items():
-            if name not in {"weekly", "monthly"} or not plan.get("price_id", "").startswith(
+            if name not in {"monthly", "annual"} or not plan.get("price_id", "").startswith(
                 "price_"
             ):
-                raise ValueError("Use approved weekly/monthly Stripe price identifiers.")
+                raise ValueError("Use approved monthly/annual Stripe price identifiers.")
             for key in ("amount_cents", "allowance_microusd", "concurrency"):
                 if type(plan.get(key)) is not int or plan[key] <= 0:
                     raise ValueError(
                         "Plans require positive approved price, allowance and concurrency."
                     )
-            if any(plan.get(key) != value for key, value in PLAN_POLICY[name].items()):
+            expected_policy = {
+                **PLAN_POLICY[name],
+                "allowance_microusd": usage_policy[name]["budget"]
+                * (12 if name == "annual" else 1),
+            }
+            if any(plan.get(key) != value for key, value in expected_policy.items()):
                 raise ValueError("Plan limits must match the published beta policy.")
-            expected = (1000, "week") if name == "weekly" else (4900, "month")
+            expected = (1000, "month") if name == "monthly" else (20000, "year")
             if (plan["amount_cents"], plan.get("interval")) != expected:
-                raise ValueError("Use the owner's approved $10/week and $49/month prices.")
+                raise ValueError("Use the owner's approved $10/month and $200/year prices.")
             if plan.get("currency", "usd") != "usd":
                 raise ValueError("This beta checkout currently supports USD plans.")
         for provider, model in self.models.items():
@@ -256,7 +291,7 @@ class Config:
         billing_ready = (
             self.stripe_key
             and self.webhook_secret
-            and set(self.plans) == {"weekly", "monthly"}
+            and set(self.plans) == {"monthly", "annual"}
             and self.encryption_key
         )
         public_ready = (

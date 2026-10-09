@@ -84,13 +84,13 @@ def test_external_media_cannot_expand_script_or_connection_policy(client):
 
 def test_plan_links_keep_approved_prices_and_billing_choice(client):
     response = client.get("/plans")
-    assert "$10" in response.text and "$49" in response.text
+    assert "$200" in response.text and "$10" in response.text
     targets = {attrs.get("href") for tag, attrs in Document(response.text).nodes if tag == "a"}
-    assert "/account?plan=weekly" in targets
+    assert "/account?plan=annual" in targets
     assert "/account?plan=monthly" in targets
     assert "/enterprise" in targets
-    assert "charged every week until cancelled" in response.text
-    assert "charged every month until cancelled" in response.text
+    assert "charged each year until cancelled" in response.text
+    assert "charged each month until cancelled" in response.text
 
 
 def test_signed_out_account_keeps_google_entry(client):
@@ -141,7 +141,8 @@ def test_signed_in_account_retains_all_workspace_and_billing_controls(client):
 def test_hero_keeps_local_scenery_when_remote_video_is_unavailable(client):
     nodes = Document(client.get("/").text).nodes
     posters = [
-        attrs for tag, attrs in nodes
+        attrs
+        for tag, attrs in nodes
         if tag == "img" and "scene-poster" in attrs.get("class", "").split()
     ]
     videos = [attrs for tag, attrs in nodes if tag == "video"]
@@ -160,13 +161,13 @@ def test_hero_keeps_local_scenery_when_remote_video_is_unavailable(client):
 def test_entry_buttons_navigate_without_javascript_and_assets_are_versioned(client):
     nodes = Document(client.get("/").text).nodes
     entry_links = [
-        attrs for tag, attrs in nodes
-        if tag == "a" and attrs.get("href") == "/onboarding"
+        attrs for tag, attrs in nodes if tag == "a" and attrs.get("href") == "/onboarding"
     ]
     assert len(entry_links) >= 3
     assert client.get("/onboarding").status_code == 200
     assets = [
-        attrs.get("src") or attrs.get("href", "") for tag, attrs in nodes
+        attrs.get("src") or attrs.get("href", "")
+        for tag, attrs in nodes
         if tag in {"script", "link"}
     ]
     assert any(asset.startswith("/static/site.js?v=") for asset in assets)
@@ -174,27 +175,30 @@ def test_entry_buttons_navigate_without_javascript_and_assets_are_versioned(clie
 
 
 def test_introduction_has_six_optional_questions_and_personal_goal(client):
-    document = Document(client.get('/onboarding').text)
-    steps = [attrs for tag, attrs in document.nodes if tag == 'fieldset']
-    assert [attrs['data-step'] for attrs in steps] == [str(i) for i in range(6)]
-    assert 'hidden' not in steps[0]
-    assert all('hidden' in step for step in steps[1:])
-    goals = [attrs for tag, attrs in document.nodes if tag == 'textarea']
-    assert goals[0]['id'] == 'first-win'
-    assert goals[0]['maxlength'] == '280'
-    assert all('required' not in attrs for tag, attrs in document.nodes
-               if tag in {'input', 'textarea', 'select'})
-    acknowledgments = [attrs for tag, attrs in document.nodes if 'data-response' in attrs]
+    document = Document(client.get("/onboarding").text)
+    steps = [attrs for tag, attrs in document.nodes if tag == "fieldset"]
+    assert [attrs["data-step"] for attrs in steps] == [str(i) for i in range(6)]
+    assert "hidden" not in steps[0]
+    assert all("hidden" in step for step in steps[1:])
+    goals = [attrs for tag, attrs in document.nodes if tag == "textarea"]
+    assert goals[0]["id"] == "first-win"
+    assert goals[0]["maxlength"] == "280"
+    assert all(
+        "required" not in attrs
+        for tag, attrs in document.nodes
+        if tag in {"input", "textarea", "select"}
+    )
+    acknowledgments = [attrs for tag, attrs in document.nodes if "data-response" in attrs]
     assert len(acknowledgments) == 12
 
 
 def test_city_video_supports_browser_range_loading(client):
-    response = client.get('/static/overhead-pedestrians.mp4', headers={'Range': 'bytes=0-1023'})
+    response = client.get("/static/overhead-pedestrians.mp4", headers={"Range": "bytes=0-1023"})
     assert response.status_code == 206
-    assert response.headers['content-type'] == 'video/mp4'
-    assert response.headers['content-range'].startswith('bytes 0-1023/')
+    assert response.headers["content-type"] == "video/mp4"
+    assert response.headers["content-range"].startswith("bytes 0-1023/")
     assert len(response.content) == 1024
-    assert b'ftyp' in response.content[:32]
+    assert b"ftyp" in response.content[:32]
 
 
 def test_meeting_showcase_uses_real_captures_and_honest_availability(client):
@@ -206,7 +210,10 @@ def test_meeting_showcase_uses_real_captures_and_honest_availability(client):
     assert "AI reuse is a separate choice" in page
     assert "does not give the agent automatic visual understanding" in page
     for asset in (
-        "meetings-light.png", "meetings-dark.png", "devices-light.png", "devices-dark.png"
+        "meetings-light.png",
+        "meetings-dark.png",
+        "devices-light.png",
+        "devices-dark.png",
     ):
         assert asset in page
         response = client.get("/static/" + asset)
@@ -216,7 +223,7 @@ def test_meeting_showcase_uses_real_captures_and_honest_availability(client):
 
 
 def test_meeting_links_and_plan_disclosures_preserve_release_gate(client):
-    assert '/#meetings' in client.get("/").text
+    assert "/#meetings" in client.get("/").text
     assert "public availability and any meeting limits will be confirmed" in (
         client.get("/plans").text
     )

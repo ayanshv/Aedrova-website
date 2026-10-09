@@ -13,7 +13,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
@@ -65,12 +65,6 @@ REGISTRY = {
         "tools": {},
         "auth": "Not available yet",
         "permissions": "Product analytics (planned)",
-    },
-    "linear": {
-        "name": "Linear",
-        "tools": {},
-        "auth": "Not available yet",
-        "permissions": "Issues and project progress (planned)",
     },
     "figma": {
         "name": "Figma",
@@ -384,6 +378,25 @@ class DotService:
                 tools=provider.get("tools", {}),
                 permissions=provider.get("permissions", ""),
             )
+            if hasattr(self, "connections"):
+                connections = self.connections.listing(row, user)
+                row["connections"] = connections
+                if connections and status != "Connected":
+                    row["tools"] = {}
+                for connection in connections:
+                    if connection["status"] in {"Connected", "Error"}:
+                        if connection["status"] == "Connected":
+                            row["status"] = "Connected"
+                        elif row["status"] != "Connected":
+                            row["status"] = "Error"
+                        row["last_sync"] = max(row["last_sync"], connection["last_sync"])
+                        row["tools"] = {
+                            **row["tools"],
+                            **{
+                                connection["id"] + "." + key: connection["provider"] + " · " + value
+                                for key, value in connection["tools"].items()
+                            },
+                        }
         return rows
 
     def cached(self, dot, user, grant, tool, *, stale=False):
@@ -550,6 +563,11 @@ class DotService:
             raise Denied("Select between one and three tools.")
         results = []
         for call in calls:
+            if "." in call["tool"] and hasattr(self, "connections"):
+                results.append(
+                    self.connections.execute(token, workspace, call["dot"], call["tool"])
+                )
+                continue
             dot, user = self.dot(token, workspace, call["dot"])
             if call["tool"] not in REGISTRY.get(dot["provider"], {}).get("tools", {}):
                 raise Denied("This Bud cannot use the selected tool.")
@@ -639,6 +657,19 @@ class DotService:
                 text("DELETE FROM dot_evidence_cache WHERE dot=:d AND workspace=:w"),
                 {"d": dot_id, "w": workspace},
             )
+        token_connections = False
+        if hasattr(self, "connections"):
+            with self.store.tx() as db:
+                token_connections = bool(
+                    db.execute(
+                        text("SELECT count(*) FROM bud_connections WHERE dot=:d AND workspace=:w"),
+                        {"d": dot_id, "w": workspace},
+                    ).scalar()
+                )
+                db.execute(
+                    text("DELETE FROM bud_connections WHERE dot=:d AND workspace=:w"),
+                    {"d": dot_id, "w": workspace},
+                )
         revoked = all(
             [
                 self.providers[dot["provider"]].revoke(
@@ -647,6 +678,7 @@ class DotService:
                 for secret in grants
             ]
         )
+        revoked = revoked and not token_connections
         self.audit(dot, user, "removed" if revoked else "removed_revoke_pending")
         return {"removed": True, "provider_revoked": revoked}
 
@@ -684,7 +716,7 @@ class RemoveBody(DotBody):
 class ToolCall(BaseModel):
     model_config = {"extra": "forbid"}
     dot: UUID
-    tool: str = Field(min_length=1, max_length=32)
+    tool: str = Field(min_length=1, max_length=96)
 
 
 class ToolsBody(BaseModel):
@@ -696,6 +728,11 @@ class ToolsBody(BaseModel):
 def install(app, config, store, identity, auth):
     service = DotService(config, store, identity)
     app.state.dots = service
+    from aedrova_site.bud_connections import install as install_connections
+
+    install_connections(app, service, auth)
+
+    from aedrova_site.bud_providers import CATALOG, descriptor
 
     @app.get("/api/dots/providers")
     def providers(request: Request):
@@ -711,6 +748,12 @@ def install(app, config, store, identity, auth):
                     ),
                 }
                 for key, value in REGISTRY.items()
+                if key == "github" or key not in CATALOG
+            ]
+            + [
+                {**descriptor(key), "available": config.dots_enabled}
+                for key in CATALOG
+                if key != "github"
             ]
         }
 
@@ -789,13 +832,11 @@ def install(app, config, store, identity, auth):
     @app.get("/dots/github/callback")
     def callback(request: Request, state: str = "", code: str = ""):
         service.enabled()
+        bud = service.state(state, peek=True)["dot"]
         service.callback(state, request.cookies.get("aedrova_dot_state", ""), code)
-        response = HTMLResponse(
-            '<!doctype html><html><head><link rel="stylesheet" href="/static/site.css">'
-            '<title>Aedrova · Connected</title></head><body><main class="section">'
-            "<h1>GitHub is connected.</h1><p>Return to Aedrova and refresh your Bud. "
-            "You can close this tab.</p></main></body></html>"
-        )
+        from aedrova_site.connection_confirmation import confirmation
+
+        response = confirmation(request, "github", bud)
         response.delete_cookie("aedrova_dot_state", path="/dots/github")
         return response
 

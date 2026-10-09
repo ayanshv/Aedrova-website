@@ -4,6 +4,7 @@ import base64
 import binascii
 import hashlib
 import io
+import math
 import threading
 import time
 import wave
@@ -73,7 +74,7 @@ class SpeechService:
                 "Discard this chunk and refresh the meeting."
             ) from error
 
-    def transcribe(self, user, body):
+    def transcribe(self, user, body, *, workspace=None):
         if not self.config.speech_enabled:
             raise Denied("Audio transcription is not enabled.")
         audio, duration = decode_audio(body.audio)
@@ -89,6 +90,8 @@ class SpeechService:
         )
         if not self.slots.acquire(blocking=False):
             raise Denied("Transcription is busy. This chunk was not sent. Retry when ready.")
+        access = None
+        reservation = None
         try:
             state = self.database("reserve", values)
             if state == "completed":
@@ -96,6 +99,19 @@ class SpeechService:
             if state != "pending":
                 raise Denied("Speech reservation was not accepted.")
             try:
+                if self.store is not None:
+                    if not workspace:
+                        raise Denied("Transcription requires a verified billing workspace.")
+                    access = self.store.create_run(
+                        user, workspace, "speech", "speech:" + values["identifier"]
+                    )
+                    run = self.store.run(access["token"])
+                    estimate = math.ceil(duration / 1000) * math.ceil(
+                        self.config.speech_rate_microusd_per_minute / 60
+                    )
+                    reservation, _ = self.store.reserve(
+                        run, values["digest"], estimate, {"id": "whisper-1"}
+                    )
                 # Stream response with a hard bound; never echo provider bodies or keys.
                 started = time.monotonic()
                 with self.client.stream(
@@ -123,8 +139,12 @@ class SpeechService:
                     if not isinstance(transcript, str) or len(transcript.strip()) > 2000:
                         raise ValueError("invalid transcript")
                 identifier = self.database("finish", {**values, "body": transcript.strip() or None})
+                if reservation:
+                    self.store.settle(reservation, estimate, b"completed")
                 return {"id": str(identifier) if identifier else None, "review_required": True}
             except Exception as error:
+                if reservation:
+                    self.store.settle(reservation, None)
                 try:
                     self.database("finish", {**values, "body": None})
                 except Denied:
@@ -134,4 +154,6 @@ class SpeechService:
                     "provider availability and allowance. No automatic retry."
                 ) from error
         finally:
+            if access:
+                self.store.end_run(access["id"], user)
             self.slots.release()

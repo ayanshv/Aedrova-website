@@ -102,7 +102,7 @@ class Payments:
             settings["icon"] = {"type": "file", "file": self.config.stripe_icon_file}
         return settings
 
-    def checkout(self, workspace, plan, request_id):
+    def checkout(self, workspace, plan, request_id, *, owner=""):
         config = self.config
         if not config.checkout_enabled or plan not in config.plans:
             raise Denied("Paid beta checkout is being prepared. No payment has been taken.")
@@ -121,7 +121,7 @@ class Payments:
             existing = db.execute(
                 text("SELECT customer FROM billing WHERE workspace=:w"), {"w": workspace}
             ).scalar()
-        if existing:
+        if existing and not existing.startswith("free:"):
             row = self.store.customer(workspace, existing)
         else:
             customer = stripe.Customer.create(
@@ -129,8 +129,25 @@ class Payments:
                 idempotency_key="aedrova-customer-" + workspace,
                 api_key=config.stripe_key,
             )
+            if existing and existing.startswith("free:"):
+                with self.store.tx() as db:
+                    locked = self.store.billing_lock(db, workspace)
+                    if locked["customer"].startswith("free:"):
+                        db.execute(
+                            text("UPDATE billing SET customer=:c WHERE workspace=:w"),
+                            {"c": customer["id"], "w": workspace},
+                        )
             row = self.store.customer(workspace, customer["id"])
-        if row["status"] in {"active", "trialing"}:
+        if owner:
+            with self.store.tx() as db:
+                self.store.billing_lock(db, workspace)
+                db.execute(
+                    text(
+                        "UPDATE billing SET budget_owner=:u WHERE workspace=:w AND budget_owner=''"
+                    ),
+                    {"u": owner, "w": workspace},
+                )
+        if row["status"] in {"active", "trialing"} and row["plan"] != "free":
             raise Denied("This workspace already has a plan. Use Manage subscription.")
         if row["subscription"]:
             current = stripe.Subscription.retrieve(row["subscription"], api_key=config.stripe_key)
@@ -315,6 +332,33 @@ class Payments:
             ):
                 raise Denied("Invalid credit reversal amount.")
             self.store.reverse_credit(charge.get("payment_intent", ""), refunded, charge["amount"])
+            # A full subscription refund/dispute cannot be undone by delayed paid webhooks.
+            if refunded >= charge["amount"] and charge.get("invoice"):
+                invoice = stripe.Invoice.retrieve(charge["invoice"], api_key=self.config.stripe_key)
+                subscription = invoice.get("subscription") or invoice.get("parent", {}).get(
+                    "subscription_details", {}
+                ).get("subscription")
+                if subscription:
+                    current = stripe.Subscription.retrieve(
+                        subscription, api_key=self.config.stripe_key
+                    )
+                    workspace = current.get("metadata", {}).get("workspace", "")
+                    with self.store.tx() as db:
+                        row = self.store.billing_lock(db, workspace)
+                        if row["customer"] != charge.get("customer"):
+                            raise Denied("Refund does not belong to this workspace.")
+                        if row["subscription"] == subscription:
+                            db.execute(
+                                text("""INSERT INTO billing_holds(workspace,period)
+                                VALUES(:w,:p) ON CONFLICT(workspace) DO UPDATE SET
+                                period=CASE WHEN excluded.period>billing_holds.period
+                                THEN excluded.period ELSE billing_holds.period END"""),
+                                {"w": workspace, "p": row["period_start"]},
+                            )
+                            db.execute(
+                                text("UPDATE billing SET status='inactive' WHERE workspace=:w"),
+                                {"w": workspace},
+                            )
 
     def portal(self, workspace):
         if not self.config.stripe_key:
@@ -322,6 +366,8 @@ class Payments:
         with self.store.tx() as db:
             row = self.store.billing_lock(db, workspace)
             customer = row["customer"]
+        if customer.startswith("free:"):
+            raise Denied("Free has no payment subscription to manage.")
         result = stripe.billing_portal.Session.create(
             customer=customer,
             return_url=self.config.origin + "/account?" + urlencode({"workspace": workspace}),
@@ -400,8 +446,39 @@ class Payments:
                 and row["status"] == "active"
             ):
                 raise Denied("A different workspace subscription is already active.")
+
+        def fingerprint(value):
+            invoice = value.get("latest_invoice") or {}
+            return (
+                value.get("status"),
+                value.get("metadata"),
+                value.get("items"),
+                invoice.get("id"),
+                invoice.get("paid"),
+                invoice.get("status"),
+            )
+
+        expected_state = fingerprint(current)
+
+        def recheck():
+            # Re-read under the ledger's workspace lock: overlapping webhook deliveries
+            # cannot apply an old canonical snapshot after a newer cancellation/refund.
+            latest = stripe.Subscription.retrieve(
+                subscription, expand=["latest_invoice"], api_key=self.config.stripe_key
+            )
+            if fingerprint(latest) != expected_state:
+                raise Denied("Subscription changed during validation. Retry this signed event.")
+
         self.store.subscription(
-            event["id"], current["customer"], subscription, plan, status, start, end, approved
+            event["id"],
+            current["customer"],
+            subscription,
+            plan,
+            status,
+            start,
+            end,
+            approved,
+            recheck=recheck,
         )
 
 

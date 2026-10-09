@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from aedrova_site.bud_connections import SCHEMA as CONNECTION_SCHEMA
+from aedrova_site.bud_oauth import SCHEMA as OAUTH_SCHEMA
 from aedrova_site.dots import SCHEMA as DOT_SCHEMA
 from aedrova_site.meeting_leases import LEASE_SCHEMA, RESERVE_LEASE
 from aedrova_site.store import SCHEMA
@@ -28,7 +30,9 @@ def main():
             "now": "50",
         }.items():
             reserve = reserve.replace(":" + name, value)
-        (path / "schema.json").write_text(json.dumps(SCHEMA + LEASE_SCHEMA + DOT_SCHEMA))
+        (path / "schema.json").write_text(
+            json.dumps(SCHEMA + LEASE_SCHEMA + DOT_SCHEMA + [CONNECTION_SCHEMA, OAUTH_SCHEMA])
+        )
         (path / "reserve.json").write_text(json.dumps(reserve))
         migration = Path(__file__).resolve().parents[1] / "sql" / "supabase-website.sql"
         (path / "migration.sql").write_text(migration.read_text())
@@ -64,7 +68,7 @@ def main():
             'const tables=await db.query("SELECT count(*)::int AS n '
             "FROM information_schema.tables "
             "WHERE table_schema='aedrova_billing'\");\n"
-            "if (tables.rows[0].n!==16) throw new Error('Missing private tables');\n"
+            "if (tables.rows[0].n!==18) throw new Error('Missing private tables');\n"
             "const reserve=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));\n"
             "if ((await db.query(reserve)).rows.length!==1) throw new Error('Reserve failed');\n"
             "if ((await db.query(reserve)).rows.length!==0) throw new Error('Duplicate allowed');\n"
@@ -80,7 +84,8 @@ def main():
             "await denied('SELECT * FROM aedrova_billing.meeting_leases');\n"
             "for (const role of ['anon','authenticated','service_role']) { "
             "await db.exec('RESET ROLE; SET ROLE '+role); "
-            "for (const table of ['dot_grants','dot_oauth','dot_audit','dot_evidence_cache']) "
+            "for (const table of ['dot_grants','dot_oauth','dot_audit','dot_evidence_cache',"
+            "'bud_connections','bud_oauth']) "
             "await denied('SELECT * FROM aedrova_billing.'+table); }\n"
             "console.log('PASS private PostgreSQL ledger/meeting/Dot evidence schema "
             "and atomic lease SQL; "

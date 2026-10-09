@@ -56,13 +56,13 @@ def test_parallel_reservations_cannot_overspend(store):
 
     def attempt(index):
         try:
-            return store.reserve(active, str(index), 6_000_000)
+            return store.reserve(active, str(index), 1_200_000)
         except Denied:
             return None
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert sum(value is not None for value in pool.map(attempt, range(8))) == 1
-    assert store.balance("space-a")["reserved"] == 6_000_000
+    assert store.balance("space-a")["reserved"] == 1_200_000
 
 
 def test_parallel_settlement_charges_once_and_encrypts_replay(store):
@@ -245,10 +245,10 @@ def test_purchased_credits_are_explicit_idempotent_and_carry_over(store):
     assert store.grant_credit("cs_credit", "space-a", "pi_credit", 5_000_000)
     assert not store.grant_credit("cs_credit", "space-a", "pi_credit", 5_000_000)
     active, _ = run(store)
-    identifier, _ = store.reserve(active, "large", 12_000_000)
+    identifier, _ = store.reserve(active, "large", 4_000_000)
     balance = store.balance("space-a")
-    assert balance["reserved"] == 10_000_000 and balance["credit_reserved"] == 2_000_000
-    store.settle(identifier, 11_000_000, b"done")
+    assert balance["reserved"] == 2_000_000 and balance["credit_reserved"] == 2_000_000
+    store.settle(identifier, 3_000_000, b"done")
     assert store.balance("space-a")["credit_balance"] == 4_000_000
     store.subscription(
         "evt_next",
@@ -260,13 +260,14 @@ def test_purchased_credits_are_explicit_idempotent_and_carry_over(store):
         int(time.time()) + 90000,
         PLAN_POLICY["monthly"],
     )
-    assert store.balance("space-a")["available"] == 14_000_000
+    assert store.balance("space-a")["available"] == 4_000_000
+    # Renewals in the same UTC month do not grant a second monthly AI budget.
 
 
 def test_pending_wallet_reservation_survives_period_renewal(store):
     store.grant_credit("cs_credit", "space-a", "pi_credit", 5_000_000)
     active, _ = run(store)
-    identifier, _ = store.reserve(active, "large", 12_000_000)
+    identifier, _ = store.reserve(active, "large", 4_000_000)
     store.subscription(
         "evt_next",
         "cus_a",
@@ -293,8 +294,8 @@ def test_partial_refund_dispute_and_out_of_order_reversal(store):
     assert store.balance("space-a")["credit_balance"] == 0
     store.grant_credit("cs_next", "space-a", "pi_next", 5_000_000)
     active, _ = run(store)
-    identifier, _ = store.reserve(active, "large", 12_000_000)
-    store.settle(identifier, 12_000_000, b"done")
+    identifier, _ = store.reserve(active, "large", 4_000_000)
+    store.settle(identifier, 4_000_000, b"done")
     store.reverse_credit("pi_next", 1000, 1000)
     assert store.balance("space-a")["credit_balance"] == -2_000_000
     with pytest.raises(Denied, match="refund or dispute"):
@@ -407,7 +408,7 @@ def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(sto
         "stripe.Price.retrieve",
         lambda *a, **kw: {
             "active": True,
-            "unit_amount": 4900,
+            "unit_amount": 1000,
             "currency": "usd",
             "recurring": {"interval": "month", "interval_count": 1},
         },

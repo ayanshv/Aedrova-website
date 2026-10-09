@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ provider }} connected · Aedrova</title>
+<link rel="icon" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/site.css">
+<link rel="stylesheet" href="/static/bud-connected.css">
+<script src="/static/bud-connected.js" defer></script>
+</head>
+<body class="bud-connection-page">
+<header class="bud-connection-header"><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28">Aedrova</a><button class="theme-toggle" aria-label="Change color theme">◐</button></header>
+<main class="bud-connection-main">
+<section class="bud-connection-card" aria-labelledby="connection-title">
+<p class="eyebrow">YOUR BUD’S TOOLKIT</p>
+<div class="connected-bud look-{{ look }}" role="img" aria-label="{{ bud_name }} Bud"></div>
+<div class="connection-check" aria-label="Connection verified">✓</div>
+<h1 id="connection-title">{{ provider }} is connected.</h1>
+<p class="connection-lead"><strong>{{ bud_name }}</strong> {{ capability }}</p>
+<div class="connection-detail"><span class="connection-dot" aria-hidden="true"></span>Verified access · Read-only</div>
+<p class="connection-return">Return to Aedrova and mention <strong>@{{ bud_name }}</strong> to get started.<br>Your Bud updates automatically. You can close this tab.</p>
+<span class="connection-footnote">You control its access. Disconnect anytime in your Bud’s settings.</span>
+</section>
+</main>
+</body></html>
