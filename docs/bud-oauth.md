@@ -159,10 +159,16 @@ page UUID and at most 20 immediate blocks.
 Provider credentials must be stored in ignored .env.dots (0600) and, with
 specific approval, the isolated Render service’s secret environment fields:
 AEDROVA_NOTION_BUD_CLIENT_ID and AEDROVA_NOTION_BUD_CLIENT_SECRET.
-Notion login currently displays mandatory Terms & Conditions acceptance;
-login/account consent is pending. No Notion integration was created, credential
-transferred, page authorized or live read claimed. Workspace selection and
-current registration requirements must be inspected after sign-in.
+Notion login succeeded after explicit Terms & Conditions approval. The developer
+portal has no existing connections. Aedrova Buds OAuth creation is drafted with
+the exact hosted callback. The workspace-specific installation option is disabled
+for Ayansh Varma’s Notion (Development); Any workspace is the available selection.
+This permits installation requests, not access without each user’s page consent.
+Create connection requires separate Notion Developer Terms acceptance.
+Creation, read-only capability configuration, credential transfer to Render and
+access to a dedicated empty validation page await concrete approval.
+No Notion integration was created, credential transferred, page authorized or
+live read claimed.
 
 Official OAuth reference:
 https://developers.notion.com/guides/get-started/authorization
