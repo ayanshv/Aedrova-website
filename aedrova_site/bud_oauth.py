@@ -22,6 +22,11 @@ from aedrova_site.store import Denied
 
 # All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
 PROVIDERS = {
+    "tiktok": (
+        "https://www.tiktok.com/v2/auth/authorize/",
+        "https://open.tiktokapis.com/v2/oauth/token/",
+        "user.info.basic,video.list",
+    ),
     "github": (
         "https://github.com/login/oauth/authorize",
         "https://github.com/login/oauth/access_token",
@@ -81,9 +86,9 @@ class BudOAuth:
         )
 
     def setup_hint(self, provider):
-        if provider == "supabase" and not self.config.origin.startswith("https://"):
+        if provider in {"supabase", "tiktok"} and not self.config.origin.startswith("https://"):
             return (
-                "Supabase requires an HTTPS callback. Aedrova’s owner must configure "
+                provider.title() + " requires an HTTPS callback. Aedrova’s owner must configure "
                 "the HTTPS connection service before account sign-in is available. "
                 "A scoped access token can be used below."
             )
@@ -109,7 +114,11 @@ class BudOAuth:
         hint = self.setup_hint(provider)
         if hint:
             raise Denied(hint)
-        resource = validate_resource(provider, resource)
+        resource = (
+            "me"
+            if provider == "tiktok" and resource.strip() == "me"
+            else validate_resource(provider, resource)
+        )
         if not 1 <= hours <= 2160:
             raise Denied("Choose an access lifetime from 1 hour to 90 days.")
         state = secrets.token_urlsafe(32)
@@ -184,6 +193,8 @@ class BudOAuth:
             response_type="code",
             state=state,
         )
+        if provider == "tiktok":
+            params["client_key"] = params.pop("client_id")
         if scope:
             params["scope"] = scope
         if provider != "notion":
@@ -216,6 +227,9 @@ class BudOAuth:
             # GitHub App user authorization (repository access is selected at installation).
             body.update(client_id=client_id, client_secret=client_secret)
             kwargs = {}
+        if provider == "tiktok":
+            body.update(client_key=client_id, client_secret=client_secret)
+            kwargs = {}
         if provider == "notion":
             kwargs["json"] = body
         else:
@@ -247,9 +261,10 @@ class BudOAuth:
                 raise Denied("Unsupported authorization response.")
             # Reject unexpectedly broad grants where the provider returns OAuth scopes.
             scope = result.get("scope")
-            if scope and provider in {"figma", "supabase"}:
+            if scope and provider in {"figma", "supabase", "tiktok"}:
                 scopes = set(scope.replace(",", " ").split() if isinstance(scope, str) else scope)
                 allowed = {
+                    "tiktok": {"user.info.basic", "video.list"},
                     "figma": {"file_content:read"},
                     "supabase": {"projects:read"},
                 }[provider]
@@ -258,10 +273,16 @@ class BudOAuth:
                         "This OAuth app requests excessive permissions. Ask the owner "
                         "to configure read-only scopes."
                     )
+            if provider == "tiktok":
+                scopes = set(str(scope or "").split(","))
+                if not {"user.info.basic", "video.list"} <= scopes:
+                    raise Denied("Authorize profile and public video access to connect TikTok.")
+                validate_resource(provider, str(result.get("open_id", "")))
             seconds = result.get("expires_in", 28800 if provider == "github" else 3600)
             if type(seconds) is not int or not 1 <= seconds <= 31536000:
                 raise Denied("Unsupported authorization expiry.")
             return {
+                "actor": str(result.get("open_id", "")) if provider == "tiktok" else "",
                 "kind": "oauth",
                 "access": access,
                 "refresh": refresh_token,
@@ -287,12 +308,18 @@ class BudOAuth:
             if not code or len(code) > 2000:
                 raise Denied("Missing authorization code. Connect your tool again.")
             token = self.token(provider, code=code, verifier=payload["verifier"])
+            resource = payload["resource"]
+            if provider == "tiktok":
+                actor = token["actor"]
+                if resource != "me" and resource != actor:
+                    raise Denied("TikTok authorized a different account.")
+                resource = actor
             result = self.connections.connect(
                 payload["session"],
                 payload["dot"]["workspace_id"],
                 payload["dot"]["id"],
                 provider,
-                payload["resource"],
+                resource,
                 token["access"],
                 payload["hours"],
                 oauth=token,

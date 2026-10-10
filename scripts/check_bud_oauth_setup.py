@@ -3,7 +3,7 @@
 import json
 import os
 
-PROVIDERS = ("github", "figma", "notion", "supabase")
+PROVIDERS = ("github", "figma", "notion", "supabase", "tiktok")
 
 
 def main():
@@ -16,8 +16,9 @@ def main():
         result[provider] = {
             "credentials_configured": bool(client_id and secret),
             "partial_configuration": bool(client_id) != bool(secret),
-            "https_required": provider == "supabase",
-            "callback_ready": provider != "supabase" or origin.startswith("https://"),
+            "https_required": provider in {"supabase", "tiktok"},
+            "callback_ready": provider not in {"supabase", "tiktok"}
+            or origin.startswith("https://"),
             "callback": origin + "/buds/oauth/" + provider + "/callback",
         }
     print(json.dumps(result, indent=2))
