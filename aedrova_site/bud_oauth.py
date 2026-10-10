@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from aedrova_site.bud_providers import validate_resource
-from aedrova_site.connection_confirmation import confirmation
+from aedrova_site.connection_confirmation import TEMPLATES, confirmation
 from aedrova_site.store import Denied
 
 # All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
@@ -395,7 +395,18 @@ def install(app, connections, auth):
             user = oauth.dots.identity.user(auth(request))["id"]
         except Denied:
             return RedirectResponse("/auth/google?" + urlencode({"bud": state}), status_code=303)
-        target, payload = oauth.authorize(state, user)
+        try:
+            target, payload = oauth.authorize(state, user)
+        except Denied as error:
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="bud-account-error.html",
+                context={
+                    "message": str(error),
+                    "retry_url": "/auth/google?" + urlencode({"bud": state}),
+                },
+                status_code=403,
+            )
         response = RedirectResponse(target, status_code=303)
         response.set_cookie(
             "aedrova_bud_" + state_key(state)[:16],
