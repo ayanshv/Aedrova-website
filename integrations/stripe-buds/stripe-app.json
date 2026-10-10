@@ -1,14 +1,10 @@
 {
+  "$schema": "https://stripe.com/stripe-app.schema.json",
   "id": "com.aedrova.buds",
-  "version": "0.1.0",
   "name": "Aedrova Buds",
+  "version": "0.1.0",
   "icon": "icon.png",
-  "sandbox_install_compatible": true,
-  "distribution_type": "public",
-  "stripe_api_access_type": "oauth",
-  "allowed_redirect_uris": [
-    "https://aedrova-connectors.onrender.com/buds/oauth/stripe/callback"
-  ],
+  "extensions": null,
   "permissions": [
     {
       "permission": "connected_account_read",
@@ -18,5 +14,11 @@
       "permission": "balance_read",
       "purpose": "Let your Finance Bud summarize your available and pending Stripe balance."
     }
-  ]
+  ],
+  "allowed_redirect_uris": [
+    "https://aedrova-connectors.onrender.com/buds/oauth/stripe/callback"
+  ],
+  "distribution_type": "public",
+  "stripe_api_access_type": "oauth",
+  "sandbox_install_compatible": true
 }

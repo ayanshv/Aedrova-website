@@ -91,7 +91,7 @@ Reference: https://api-dashboard.search.brave.com/documentation/guides/authentic
 ## Verification / release gates
 
 Mock HTTP and native tests validate code behavior; they do not prove provider approval.
-New Stripe/Instagram/Vercel apps and Search funding are missing. Existing GitHub,
+Stripe registration has progressed to an uploaded test version (see the latest status below). Instagram/Vercel registration and Search funding remain pending. Existing GitHub,
 Supabase, Figma, Notion and TikTok configuration remains as documented previously;
 fresh consent/discovery, refresh and revocation acceptance still require actual accounts.
 This work does not enable checkout, publish Marketing media, or advance M14.
@@ -125,3 +125,26 @@ Owner must review https://stripe.com/legal/app-developer-agreement and accept
 for Aedrova, or explicitly authorize this agreement acceptance. CLI-access approval
 does not imply acceptance of this separate agreement. This blocks app upload and
 external OAuth testing; subsequent credentials/review/live acceptance remain pending.
+
+### Apps Agreement accepted; test upload complete (October 10, 2026)
+
+Owner explicitly approved Accept. Stripe confirmed “Terms and Conditions accepted.”
+Aedrova Buds com.aedrova.buds v0.1.0 then passed normal CLI validation and upload
+without forcing validation or enabling live CLI access. Its dashboard reports
+“Approved for testing”; it is not installed or published to the Marketplace.
+The headless package now includes a real npm lockfile with no dependencies.
+Permissions remain connected_account_read and balance_read only.
+
+The live-mode app Details page explicitly reports:
+“Verify your business to get started with external testing.” Attempts to select
+an external test version did not activate a test channel; there was no displayed
+error in that dialog. Business verification is the current owner gate.
+Open https://dashboard.stripe.com/acct_1UMFdU9nkulz5rfT/apps/created/com.aedrova.buds
+and complete Stripe's business verification in the Aedrova account. The owner must
+supply and submit their actual business/identity information privately in Stripe.
+No verification information, payment, or live API authorization was submitted.
+
+After verification: enable external testing, obtain the actual OAuth client ID and
+install link, configure matching developer credentials only on the connector server,
+and perform approved install/consent, account/balance, refresh, and revocation tests.
+The Stripe connector is NOT complete. Checkout/public billing and M14 remain deferred.
