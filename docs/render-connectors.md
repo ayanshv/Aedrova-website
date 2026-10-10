@@ -88,3 +88,14 @@ authorization and real least-privilege reads. This deployment is not acceptance
 of all ten integrations. No paid upgrade was selected.
 
 Linear integration was removed at the owner’s request. The next connector is Stripe for Finance Buds.
+
+## October 10 — all-provider workflow deployment
+
+Commit 60d532d deployed successfully on existing aedrova-connectors service,
+deployment dep-db4v3pqd0e5s73djuas0. /health/ready returned 200; new OAuth callbacks
+without state returned 403; /plans stayed isolated (404); malformed Search POST
+returned 422 without creating a grant. Local service suite: 411 passed.
+Stripe/Instagram/Vercel/Search owner registration/credentials and real customer
+acceptance remain required. See account-connector-setup.md; first owner action is
+Stripe passkey/2FA in the prepared browser. No new SQL, billing change or paid
+purchase. Public readiness is not certified by this deployment.
