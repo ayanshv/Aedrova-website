@@ -138,7 +138,7 @@ class ReadProvider:
     def close(self):
         self.client.close()
 
-    def request(self, token, url, *, headers=None, body=None):
+    def request(self, token, url, *, headers=None, body=None, list_response=False):
         try:
             # URLs below are constructed exclusively by these adapters, never provider payloads.
             with self.client.stream(
@@ -160,7 +160,7 @@ class ReadProvider:
                     if len(payload) > 512 * 1024:
                         raise Denied("Provider data is too large. Choose a smaller resource.")
                 result = json.loads(payload)
-                if not isinstance(result, dict):
+                if not isinstance(result, list if list_response else dict):
                     raise Denied("Unsupported provider response.")
                 return result
         except Denied:

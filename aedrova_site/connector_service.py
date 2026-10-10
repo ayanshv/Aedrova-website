@@ -27,6 +27,7 @@ POST_PATHS = {
     "/api/buds/connections",
     "/api/buds/connections/disconnect",
     "/api/buds/oauth/start",
+    "/api/buds/oauth/select",
 }
 
 

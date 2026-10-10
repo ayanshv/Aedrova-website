@@ -175,3 +175,24 @@ separate acceptance gate and was not exercised by this initial connection test.
 
 Official OAuth reference:
 https://developers.notion.com/guides/get-started/authorization
+
+## October 10 sign-in-first update
+
+Native OAuth can now start without a resource ID. After consent, authorized
+repository/project/page names are offered for selection. Only the selection
+creates a grant, after the existing complete read verification. Figma still
+requires a file link after consent. TikTok remains automatic for its signed-in
+account. No broader permissions are requested. The advanced token option is
+collapsed by default. Unsupported login providers are identified honestly.
+
+Discovery uses fixed GitHub/Supabase/Notion API hosts and bounded names/IDs,
+not resource contents. Temporary tokens and session context remain encrypted
+in the existing ten-minute OAuth state. Selection validates the same account,
+workspace membership, Bud version, allowed choice and single-use state before
+verifying access; success or failure removes temporary credentials. Desktop
+status returns names/IDs only, never tokens. No schema migration is needed.
+
+Local HTTP/security and native UI tests cover the new flow. Fresh real consent,
+provider discovery and selection reads remain separate acceptance checks.
+Existing installations and private app publication restrictions still apply.
+Stripe/Instagram/Vercel/Search are not newly OAuth-enabled by this change.

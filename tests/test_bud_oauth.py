@@ -510,3 +510,55 @@ def test_tiktok_oauth_requires_https_and_rejects_broad_grants(system):
     )
     with pytest.raises(Denied, match="excessive permissions"):
         oauth.token("tiktok", code="code", verifier="verifier")
+
+
+def test_sign_in_first_keeps_token_private_and_requires_verified_resource(system):
+    oauth, dot, _, _ = system
+    state, payload, _ = started(system, resource="")
+    result = oauth.callback("figma", state, payload["proof"], "code")
+    assert result == {"status": "choose_resource"}
+    assert not oauth.connections.rows(dot, payload["user"])
+    status = oauth.status("session", state)
+    assert status == {"status": "choose_resource", "resources": [], "requires_link": True}
+    assert "oauth-access-private" not in json.dumps(status)
+    oauth.dots.identity.require.return_value = {"id": str(uuid4())}
+    with pytest.raises(Denied):
+        oauth.select("other-user", state, "fileKey123")
+    oauth.dots.identity.require.return_value = {"id": payload["user"]}
+    connection = oauth.select("session", state, "fileKey123")
+    assert oauth.status("session", state)["connection"] == connection["id"]
+    oauth.connections.providers["figma"].execute.assert_called_once()
+    with pytest.raises(Denied):
+        oauth.select("session", state, "fileKey123")
+    _, stored = oauth.state(state)
+    assert "token" not in stored and "session" not in stored
+
+
+def test_discovered_resources_are_account_bound_and_not_arbitrary(system, monkeypatch):
+    oauth, _, _, _ = system
+    oauth.config.origin = "https://connections.example.test"
+    monkeypatch.setattr(
+        "aedrova_site.bud_oauth.resources", lambda *args: [{"id": "a" * 20, "name": "My app"}]
+    )
+    state, payload, _ = started(system, "supabase", "")
+    oauth.callback("supabase", state, payload["proof"], "code")
+    assert oauth.status("session", state)["resources"][0]["name"] == "My app"
+    with pytest.raises(Denied, match="authorized account"):
+        oauth.select("session", state, "b" * 20)
+    assert oauth.state(state)[0]["status"] == "choose_resource"
+    oauth.connections.providers["supabase"].execute = MagicMock(return_value={"records": {}})
+    oauth.select("session", state, "a" * 20)
+    oauth.connections.providers["supabase"].execute.assert_called_once_with(
+        "oauth-access-private", "a" * 20, "project", oauth=True
+    )
+
+
+def test_deferred_selection_failure_scrubs_tokens_and_cannot_claim_success(system):
+    oauth, _, _, _ = system
+    state, payload, _ = started(system, resource="")
+    oauth.callback("figma", state, payload["proof"], "code")
+    oauth.connections.providers["figma"].execute.side_effect = Denied("Permission issue")
+    with pytest.raises(Denied):
+        oauth.select("session", state, "fileKey123")
+    assert oauth.status("session", state)["status"] == "failed"
+    assert "token" not in oauth.state(state)[1]

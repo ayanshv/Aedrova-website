@@ -22,7 +22,7 @@ COPY = {
 TEMPLATES = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
-def confirmation(request, provider, bud):
+def confirmation(request, provider, bud, *, selecting=False):
     looks = ("builder", "designer", "marketing", "finance", "research", "product")
     look = bud.get("appearance", "auto")
     if look not in looks:
@@ -36,5 +36,6 @@ def confirmation(request, provider, bud):
             "bud_name": bud["name"],
             "look": look,
             "capability": COPY[provider],
+            "selecting": selecting,
         },
     )
