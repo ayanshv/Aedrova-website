@@ -112,3 +112,16 @@ of the customer-facing Bud app. No live account selected. Until this is authoriz
 the app upload/client ID/external-test setup remains blocked. The temporary device
 pairing may expire; regenerate the CLI login flow if necessary. Do not share secrets.
 The Stripe Apps Agreement remains a separate review/acceptance gate before upload.
+
+### CLI authorization completed; Apps Agreement gate
+
+Owner explicitly authorized clicking Authorize. CLI confirmed Aedrova sandbox/test
+account acct_1UMFdU9nkulz5rfT on October 10; no live environment was added.
+A normal validated test upload was attempted without --accept-tos or --force.
+Stripe rejected it because the Stripe Apps Developer Terms and Conditions have
+not been accepted. No app was uploaded. The signed-in browser is prepared at:
+https://dashboard.stripe.com/acct_1UMFdU9nkulz5rfT/apps/accept-terms
+Owner must review https://stripe.com/legal/app-developer-agreement and accept
+for Aedrova, or explicitly authorize this agreement acceptance. CLI-access approval
+does not imply acceptance of this separate agreement. This blocks app upload and
+external OAuth testing; subsequent credentials/review/live acceptance remain pending.
