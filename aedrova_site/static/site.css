@@ -268,3 +268,16 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 @media(prefers-reduced-motion:reduce){.bud-role .site-bud,.bud-peek .site-bud{animation:none!important}}
 
 .site-bud.look-research,.connected-bud.look-research{filter:hue-rotate(-45deg) saturate(.85)}
+
+/* Quiet, scattered companions stay outside the reading and interaction areas. */
+.inner-page main{position:relative}
+.page-buds{position:absolute;inset:120px 0 auto;height:290px;pointer-events:none;user-select:none}
+.page-buds>span{position:absolute;display:block}
+.page-buds>span:nth-child(1){left:7%;top:8px;transform:rotate(-12deg)}
+.page-buds>span:nth-child(2){right:8%;top:94px;transform:rotate(13deg)}
+.page-buds>span:nth-child(3){left:3%;top:220px;transform:rotate(9deg)}
+.page-buds .site-bud{width:76px;height:76px;animation:bud-breathe 5s ease-in-out infinite}
+.page-buds>span:nth-child(2) .site-bud{animation-delay:-1.5s}
+.page-buds>span:nth-child(3) .site-bud{width:58px;height:58px;animation-delay:-3s}
+@media(max-width:760px){.page-buds{position:relative;inset:auto;height:126px;margin:0 12px}.page-buds>span:nth-child(1){left:3%;top:0}.page-buds>span:nth-child(2){right:4%;top:35px}.page-buds>span:nth-child(3){left:24%;top:78px}.page-buds .site-bud{width:58px;height:58px}.page-buds>span:nth-child(3) .site-bud{width:44px;height:44px}.inner-page .page-buds+.page-header{padding-top:16px}}
+@media(prefers-reduced-motion:reduce){.page-buds .site-bud{animation:none}}

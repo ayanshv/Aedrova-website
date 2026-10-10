@@ -334,6 +334,16 @@ def test_http_routes_google_handoff_cookie_proof_csrf_and_real_callback(tmp_path
             ).status_code
             == 403
         )
+        result = oauth.start("session", dot["workspace_id"], dot["id"], "figma", "fileKey123", 24)
+        identity.user.return_value = {"id": "different-account"}
+        mismatch = client.get(result["url"], follow_redirects=False)
+        assert mismatch.status_code == 403
+        assert "text/html" in mismatch.headers["content-type"]
+        assert "Use the same Google account" in mismatch.text
+        assert "Choose Google account" in mismatch.text
+        assert "Research Bud" in mismatch.text
+        assert "private-oauth-access" not in mismatch.text
+        identity.user.return_value = {"id": "owner"}
         client.cookies.clear()
         result = oauth.start("session", dot["workspace_id"], dot["id"], "figma", "fileKey123", 24)
         identity.user.side_effect = Denied("Sign in")
