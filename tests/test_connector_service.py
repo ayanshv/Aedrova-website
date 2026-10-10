@@ -66,6 +66,11 @@ def test_oauth_static_and_native_authenticated_routes_are_preserved():
     assert allowed("GET", "/static/bud-connected.css")
     assert allowed("POST", "/api/buds/oauth/start")
     assert allowed("POST", "/api/dots/tools")
+    assert allowed("POST", "/api/buds/connections/search")
+    assert not allowed("GET", "/api/buds/connections/search")
+    for provider in ("stripe", "instagram", "vercel"):
+        assert allowed("GET", "/buds/oauth/" + provider + "/callback")
+        assert not allowed("POST", "/buds/oauth/" + provider + "/callback")
     assert not allowed("POST", "/static/site.css")
     assert not allowed("GET", "/buds/oauth/unknown/callback")
 

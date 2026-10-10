@@ -3,7 +3,7 @@
 import json
 import os
 
-PROVIDERS = ("github", "figma", "notion", "supabase", "tiktok")
+PROVIDERS = ("github", "figma", "notion", "supabase", "tiktok", "stripe", "instagram", "vercel")
 
 
 def main():
@@ -16,11 +16,17 @@ def main():
         result[provider] = {
             "credentials_configured": bool(client_id and secret),
             "partial_configuration": bool(client_id) != bool(secret),
-            "https_required": provider in {"supabase", "tiktok"},
-            "callback_ready": provider not in {"supabase", "tiktok"}
+            "https_required": provider in {"supabase", "tiktok", "stripe", "instagram", "vercel"},
+            "callback_ready": provider
+            not in {"supabase", "tiktok", "stripe", "instagram", "vercel"}
             or origin.startswith("https://"),
             "callback": origin + "/buds/oauth/" + provider + "/callback",
         }
+    result["search"] = {
+        "managed_key_configured": bool(os.environ.get("AEDROVA_SEARCH_BUD_KEY")),
+        "customer_key_required": False,
+    }
+    result["vercel"]["slug_configured"] = bool(os.environ.get("AEDROVA_VERCEL_BUD_SLUG"))
     print(json.dumps(result, indent=2))
 
 

@@ -1,12 +1,14 @@
 """Bounded, fixed-host resource discovery after customer OAuth consent."""
 
+from urllib.parse import urlencode
+
 from aedrova_site.bud_providers import ReadProvider, validate_resource
 from aedrova_site.store import Denied
 
-PICKERS = {"github", "supabase", "notion"}
+PICKERS = {"github", "supabase", "notion", "vercel"}
 
 
-def resources(provider, token, transport=None):
+def resources(provider, token, transport=None, *, team=""):
     reader = ReadProvider(provider, transport=transport)
     choices = []
 
@@ -16,7 +18,14 @@ def resources(provider, token, transport=None):
             choices.append({"id": identifier, "name": str(title or identifier)[:160]})
 
     try:
-        if provider == "github":
+        if provider == "vercel":
+            params = {"limit": 100}
+            if team:
+                params["teamId"] = team
+            data = reader.request(token, "https://api.vercel.com/v9/projects?" + urlencode(params))
+            for project in data.get("projects", [])[:100]:
+                add(project["id"], project.get("name"))
+        elif provider == "github":
             data = reader.request(token, "https://api.github.com/user/installations?per_page=100")
             installations = data.get("installations", [])
             for installation in installations[:10]:

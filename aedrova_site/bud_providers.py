@@ -242,7 +242,7 @@ class ReadProvider:
             records = {k: row.get(k) for k in ("id", "name", "region", "status", "created_at")}
             source = "https://supabase.com/dashboard/project/" + resource
         elif self.key == "stripe":
-            if not token.startswith(("rk_live_", "rk_test_")):
+            if not oauth and not token.startswith(("rk_live_", "rk_test_")):
                 raise Denied(
                     "Use a restricted read-only Stripe key, not a secret or publishable key."
                 )
@@ -264,7 +264,7 @@ class ReadProvider:
             coverage = "Balance in minor currency units; not revenue, profit or accounting advice"
         elif self.key == "instagram":
             fields = (
-                "id,username,media_count"
+                ("id,user_id,username,media_count" if oauth else "id,username,media_count")
                 if tool == "profile"
                 else "id,caption,media_type,permalink,timestamp"
             )
@@ -275,7 +275,11 @@ class ReadProvider:
                 + "?"
                 + urlencode({"fields": fields, "limit": 10})
             )
-            if tool == "profile" and str(row.get("id")) != resource:
+            if (
+                tool == "profile"
+                and str((row.get("user_id") or row.get("id")) if oauth else row.get("id"))
+                != resource
+            ):
                 raise Denied("Instagram returned a different account.")
             records = (
                 {k: row.get(k) for k in ("id", "username", "media_count")}
@@ -327,15 +331,24 @@ class ReadProvider:
             source = "https://search.brave.com/search?" + urlencode({"q": resource})
             coverage = "Up to 5 search snippets; linked pages are not fetched"
         elif self.key == "vercel":
+            team = oauth.get("team", "") if isinstance(oauth, dict) else ""
+            if team and not re.fullmatch(r"team_[A-Za-z0-9]{1,100}", team):
+                raise Denied("Unsupported Vercel account.")
             if tool == "project":
-                row = get("https://api.vercel.com/v9/projects/" + resource)
+                row = get(
+                    "https://api.vercel.com/v9/projects/"
+                    + resource
+                    + ("?" + urlencode({"teamId": team}) if team else "")
+                )
                 if row.get("id") != resource:
                     raise Denied("Vercel returned a different project.")
                 records = {k: row.get(k) for k in ("id", "name", "framework", "updatedAt")}
             else:
                 row = get(
                     "https://api.vercel.com/v6/deployments?"
-                    + urlencode({"projectId": resource, "limit": 10})
+                    + urlencode(
+                        {"projectId": resource, "limit": 10, **({"teamId": team} if team else {})}
+                    )
                 )
                 records = [
                     {k: r.get(k) for k in ("uid", "name", "state", "created", "target")}

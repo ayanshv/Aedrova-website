@@ -48,6 +48,17 @@ class Config:
     notion_bud_client_secret: str = field(default="", repr=False)
     supabase_bud_client_id: str = ""
     supabase_bud_client_secret: str = field(default="", repr=False)
+    stripe_bud_client_id: str = ""
+    stripe_bud_client_secret: str = field(default="", repr=False)
+    stripe_bud_authorize_url: str = "https://marketplace.stripe.com/oauth/v2/authorize"
+    instagram_bud_client_id: str = ""
+    instagram_bud_client_secret: str = field(default="", repr=False)
+    vercel_bud_client_id: str = ""
+    vercel_bud_client_secret: str = field(default="", repr=False)
+    vercel_bud_slug: str = ""
+    search_bud_key: str = field(default="", repr=False)
+    search_bud_daily_limit: int = 100
+    search_bud_workspace_daily_limit: int = 10
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
@@ -164,13 +175,27 @@ class Config:
             raise ValueError("Dots require a persistent server encryption key.")
         if bool(self.github_dot_client_id) != bool(self.github_dot_client_secret):
             raise ValueError("Configure both GitHub Dot OAuth credentials server-side.")
-        for provider in ("figma", "notion", "supabase", "tiktok"):
+        for provider in ("figma", "notion", "supabase", "tiktok", "stripe", "instagram", "vercel"):
             if bool(getattr(self, provider + "_bud_client_id")) != bool(
                 getattr(self, provider + "_bud_client_secret")
             ):
                 raise ValueError(
                     "Configure both " + provider + " Bud OAuth credentials server-side."
                 )
+        if self.vercel_bud_slug and not re.fullmatch(
+            r"[a-z0-9][a-z0-9-]{0,100}", self.vercel_bud_slug
+        ):
+            raise ValueError("Configure a valid Vercel integration slug.")
+        stripe_url = urlparse(self.stripe_bud_authorize_url)
+        if (
+            stripe_url.scheme != "https"
+            or stripe_url.netloc != "marketplace.stripe.com"
+            or stripe_url.path != "/oauth/v2/authorize"
+            or stripe_url.fragment
+        ):
+            raise ValueError("Use the Stripe Marketplace OAuth install link.")
+        if self.search_bud_daily_limit < 1 or self.search_bud_workspace_daily_limit < 1:
+            raise ValueError("Managed Search requires positive daily request limits.")
         if self.meeting_context_enabled and not self.meetings_enabled:
             raise ValueError("Meeting context requires the enabled meeting service.")
         if self.speech_rate_microusd_per_minute <= 0:

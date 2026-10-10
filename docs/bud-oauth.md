@@ -202,3 +202,18 @@ Deployment d37628c completed on the existing isolated Render connector service
 rejects unauthenticated access with 403; unrelated plans remain unavailable (404).
 The waitlist website was not redeployed. No credential or provider-scope changes.
 398 service/website tests passed. Fresh customer consent remains untested.
+
+## Remaining account flows — October 10
+
+Stripe Apps, Instagram Login and Vercel integration OAuth now have server adapters.
+Stripe and Instagram bind the verified returned account automatically; Vercel lists
+named projects with installation team scoping. Search has a separate authenticated
+Enable web search flow backed by an owner-funded Brave key and durable daily request
+caps (100 global, 10/workspace default). No fake Search OAuth. Tokens stay encrypted;
+managed Search grants store a pointer, not a copy of the shared key. Read verification
+is still required before Connected. Partial/missing registrations remain unavailable.
+
+See docs/account-connector-setup.md for exact registration and acceptance steps.
+Prior statement that these adapters are unsupported is superseded for code support,
+not account readiness. Stripe passkey/2FA, Meta developer registration, Vercel app
+registration/terms and Brave subscription/key remain real setup gates.

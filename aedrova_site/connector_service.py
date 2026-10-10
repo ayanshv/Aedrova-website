@@ -26,6 +26,7 @@ POST_PATHS = {
     "/api/dots/tools",
     "/api/buds/connections",
     "/api/buds/connections/disconnect",
+    "/api/buds/connections/search",
     "/api/buds/oauth/start",
     "/api/buds/oauth/select",
 }
@@ -39,7 +40,7 @@ def allowed(method, path):
             or bool(
                 re.fullmatch(
                     r"/(?:buds|dots)/authorize/[A-Za-z0-9_-]{40,100}|"
-                    r"/buds/oauth/(?:github|supabase|figma|notion|tiktok)/callback",
+                    r"/buds/oauth/(?:github|supabase|figma|notion|tiktok|stripe|instagram|vercel)/callback",
                     path,
                 )
             )

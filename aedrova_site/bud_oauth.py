@@ -23,6 +23,21 @@ from aedrova_site.store import Denied
 
 # All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
 PROVIDERS = {
+    "stripe": (
+        "https://marketplace.stripe.com/oauth/v2/authorize",
+        "https://api.stripe.com/v1/oauth/token",
+        "",
+    ),
+    "instagram": (
+        "https://www.instagram.com/oauth/authorize",
+        "https://api.instagram.com/oauth/access_token",
+        "instagram_business_basic",
+    ),
+    "vercel": (
+        "https://vercel.com/integrations/",
+        "https://api.vercel.com/v2/oauth/access_token",
+        "",
+    ),
     "tiktok": (
         "https://www.tiktok.com/v2/auth/authorize/",
         "https://open.tiktokapis.com/v2/oauth/token/",
@@ -88,7 +103,20 @@ class BudOAuth:
         )
 
     def setup_hint(self, provider):
-        if provider in {"supabase", "tiktok"} and not self.config.origin.startswith("https://"):
+        if provider == "search":
+            return (
+                "Aedrova’s owner must configure managed web search before it is available. "
+                "No separate customer login is needed."
+            )
+        if provider == "vercel" and not self.config.vercel_bud_slug:
+            return "The Aedrova owner must register its Vercel integration first."
+        if provider in {
+            "supabase",
+            "tiktok",
+            "stripe",
+            "instagram",
+            "vercel",
+        } and not self.config.origin.startswith("https://"):
             return (
                 provider.title() + " requires an HTTPS callback. Aedrova’s owner must configure "
                 "the HTTPS connection service before account sign-in is available. "
@@ -199,11 +227,28 @@ class BudOAuth:
             response_type="code",
             state=state,
         )
+        if provider == "vercel":
+            return (
+                "https://vercel.com/integrations/"
+                + self.config.vercel_bud_slug
+                + "/new?"
+                + urlencode({"state": state}),
+                payload,
+            )
+        if provider == "stripe":
+            # Preserve provider-issued external-test parameters; never accept a client URL.
+            from urllib.parse import parse_qsl, urlsplit, urlunsplit
+
+            parts = urlsplit(self.config.stripe_bud_authorize_url)
+            params = {**dict(parse_qsl(parts.query)), **params}
+            target = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+        if provider == "instagram":
+            params.update(enable_fb_login="0", force_authentication="1")
         if provider == "tiktok":
             params["client_key"] = params.pop("client_id")
         if scope:
             params["scope"] = scope
-        if provider != "notion":
+        if provider not in {"notion", "stripe", "instagram", "vercel"}:
             params.update(
                 code_challenge=base64.urlsafe_b64encode(
                     hashlib.sha256(payload["verifier"].encode()).digest()
@@ -217,6 +262,10 @@ class BudOAuth:
         return target + "?" + urlencode(params), payload
 
     def token(self, provider, *, code=None, verifier=None, refresh=None):
+        if provider in {"stripe", "instagram", "vercel"}:
+            from aedrova_site.bud_account_oauth import exchange
+
+            return exchange(self, provider, code=code, refresh=refresh)
         client_id, client_secret = self.credentials(provider)
         if not client_id or not client_secret:
             raise Denied("Needs authorization")
@@ -225,7 +274,7 @@ class BudOAuth:
             body["refresh_token"] = refresh
         else:
             body.update(code=code, redirect_uri=self.redirect(provider))
-            if provider != "notion":
+            if provider not in {"notion", "stripe", "instagram", "vercel"}:
                 body["code_verifier"] = verifier
         headers = {"Accept": "application/json"}
         kwargs = {"auth": (client_id, client_secret)}
@@ -315,9 +364,18 @@ class BudOAuth:
                 raise Denied("Missing authorization code. Connect your tool again.")
             token = self.token(provider, code=code, verifier=payload["verifier"])
             resource = payload["resource"]
+            if provider in {"stripe", "instagram"}:
+                if resource and resource != token["actor"]:
+                    raise Denied("The provider authorized a different account.")
+                resource = token["actor"]
             if not resource and provider != "tiktok":
                 payload["token"] = token
-                payload["choices"] = resources(provider, token["access"], self.transport)
+                payload["choices"] = resources(
+                    provider,
+                    token["access"],
+                    self.transport,
+                    **({"team": token.get("team", "")} if provider == "vercel" else {}),
+                )
                 payload.pop("proof", None)
                 payload.pop("verifier", None)
                 status = "choose_resource"
