@@ -40,3 +40,11 @@ validated and deploy/render-beta-staging.yaml prepared for a separate free servi
 Sensitive values remain ignored locally; cloud installation still awaits approval.
 Stripe sandbox mode is off because checkout is off and this server enforces HTTPS
 production transport controls. Google staging OAuth remains a separate setup gate.
+
+Approved free staging service deployed successfully from e3da1d7, service
+srv-db58sn8473hc73a9n3qg, deploy dep-db58sn8473hc73a9n580. Origin:
+https://aedrova-beta-staging.onrender.com. Readiness and root return 200; Google
+redirect uses staging Supabase callback. Auto-deploy off; checkout/gateway/release
+off. Owner explicitly approved staging-only credentials uploaded to Render.
+Google staging provider/client and end-to-end authentication remain blocked;
+Phase 1 not complete. Full evidence in companion desktop docs.
