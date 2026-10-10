@@ -196,3 +196,9 @@ Local HTTP/security and native UI tests cover the new flow. Fresh real consent,
 provider discovery and selection reads remain separate acceptance checks.
 Existing installations and private app publication restrictions still apply.
 Stripe/Instagram/Vercel/Search are not newly OAuth-enabled by this change.
+
+Deployment d37628c completed on the existing isolated Render connector service
+(dep-db4uqnlckfvc738ba3ig). HTTPS readiness returned 200; the selection endpoint
+rejects unauthenticated access with 403; unrelated plans remain unavailable (404).
+The waitlist website was not redeployed. No credential or provider-scope changes.
+398 service/website tests passed. Fresh customer consent remains untested.
