@@ -266,3 +266,5 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 @media(max-width:1000px){.buds-lineup{grid-template-columns:repeat(3,1fr);gap:28px}.bud-role .site-bud{width:min(150px,100%);margin:auto}.buds-details{gap:22px}.hero-bud{right:24px;bottom:112px}}
 @media(max-width:600px){.buds-section{padding:64px 24px}.buds-lineup{grid-template-columns:repeat(2,1fr);margin:30px 0}.buds-details{grid-template-columns:1fr;gap:24px}.hero-bud{display:none}.capture-bud{right:0;top:-42px}.capture-bud .site-bud{width:68px;height:68px}.cta-bud{left:8px;bottom:12px}.cta-bud .site-bud{width:65px;height:65px}.footer-bud{right:18px;top:-38px}.footer-bud .site-bud{width:64px;height:64px}}
 @media(prefers-reduced-motion:reduce){.bud-role .site-bud,.bud-peek .site-bud{animation:none!important}}
+
+.site-bud.look-research,.connected-bud.look-research{filter:hue-rotate(-45deg) saturate(.85)}

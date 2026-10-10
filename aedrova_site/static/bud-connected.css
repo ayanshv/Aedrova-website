@@ -19,3 +19,5 @@
 @keyframes bud-arrive{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
 @media(max-width:480px){.bud-connection-header{padding:20px}.bud-connection-card{padding:30px 20px}.bud-connection-main{padding-bottom:40px}}
 @media(prefers-reduced-motion:reduce){.connected-bud{animation:none}}
+
+.site-bud.look-research,.connected-bud.look-research{filter:hue-rotate(-45deg) saturate(.85)}
