@@ -1,0 +1,22 @@
+{
+  "id": "com.aedrova.buds",
+  "version": "0.1.0",
+  "name": "Aedrova Buds",
+  "icon": "icon.png",
+  "sandbox_install_compatible": true,
+  "distribution_type": "public",
+  "stripe_api_access_type": "oauth",
+  "allowed_redirect_uris": [
+    "https://aedrova-connectors.onrender.com/buds/oauth/stripe/callback"
+  ],
+  "permissions": [
+    {
+      "permission": "connected_account_read",
+      "purpose": "Verify the Stripe account you authorize for your Finance Bud."
+    },
+    {
+      "permission": "balance_read",
+      "purpose": "Let your Finance Bud summarize your available and pending Stripe balance."
+    }
+  ]
+}

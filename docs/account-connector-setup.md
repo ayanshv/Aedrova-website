@@ -95,3 +95,20 @@ New Stripe/Instagram/Vercel apps and Search funding are missing. Existing GitHub
 Supabase, Figma, Notion and TikTok configuration remains as documented previously;
 fresh consent/discovery, refresh and revocation acceptance still require actual accounts.
 This work does not enable checkout, publish Marketing media, or advance M14.
+
+## Stripe preparation after dashboard login
+
+The owner signed in to the Aedrova account (test mode). Its Created apps list was
+empty. Stripe Apps CLI plugin v1.21.0 installed locally; proposed headless OAuth
+manifest and 300×300 existing brand icon prepared in integrations/stripe-buds/.
+Local checks confirmed only connected_account_read and balance_read permissions
+and the existing HTTPS callback. No upload, install or publication occurred.
+
+The browser is now at Stripe CLI Review and authorize: Aedrova Test mode,
+Super Administrator, with Stripe's notice that authorization enables CLI access
+for all team members on the selected account. Owner must personally review and
+click Authorize if acceptable. This is developer CLI access, not the permissions
+of the customer-facing Bud app. No live account selected. Until this is authorized,
+the app upload/client ID/external-test setup remains blocked. The temporary device
+pairing may expire; regenerate the CLI login flow if necessary. Do not share secrets.
+The Stripe Apps Agreement remains a separate review/acceptance gate before upload.
