@@ -2,12 +2,15 @@ name: Website checks
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: website-checks-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -25,9 +28,22 @@ jobs:
       - name: Check Python source
         run: |
           uv run ruff check aedrova_site scripts tests
+          uv run python -m scripts.check_release_secrets
           uv run python -m compileall -q aedrova_site scripts
       - name: Run backend and website tests
-        run: uv run pytest -q
+        run: uv run pytest -q --junitxml=work/service-tests.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: service-tests
+          path: work/service-tests.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Private PostgreSQL schema and access checks
+        run: |
+          npm install --prefix work/pglite --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.8
+          uv run python -m scripts.check_postgres_schema --node node --pglite "$PWD/work/pglite/node_modules/@electric-sql/pglite/dist/index.js"
       - name: Build deployment image
         run: docker build --tag aedrova-website:check .
       - name: Check image startup and database readiness

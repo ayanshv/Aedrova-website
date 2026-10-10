@@ -9,3 +9,6 @@ work/
 *.sqlite3*
 dist/
 .DS_Store
+
+# Rebuild from package manifests/lockfiles; never version installed dependencies.
+node_modules/

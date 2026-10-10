@@ -259,9 +259,6 @@ def create_app(config=None):
     from aedrova_site.dots import install as install_dots
 
     install_dots(app, config, store, identity, auth)
-    from aedrova_site.pulse import install as install_pulse
-
-    install_pulse(app, app.state.dots, auth)
 
     def page(request, name, title, **context):
         return templates.TemplateResponse(

@@ -19,6 +19,7 @@ class Config:
     origin: str = "http://127.0.0.1:8090"
     database: str = "sqlite:///work/site.sqlite3"
     production: bool = False
+    deployment_environment: str = "unspecified"
     waitlist_only: bool = False
     supabase_database: bool = False
     db_pool_size: int = 5
@@ -140,6 +141,33 @@ class Config:
                 raise ValueError(
                     "Configure the server encryption key in the deployment secret store."
                 )
+        if self.deployment_environment not in {
+            "unspecified",
+            "development",
+            "staging",
+            "production",
+        }:
+            raise ValueError("Choose development, staging or production environment.")
+        if self.deployment_environment == "staging":
+            # A staging label alone must never permit writes to the existing production project.
+            if not self.production or not self.supabase_database:
+                raise ValueError("Staging requires HTTPS and a separate Supabase database.")
+            if urlparse(self.supabase_url).hostname == "cpelagtufyocepnqcqqd.supabase.co":
+                raise ValueError("Staging must not use the production Supabase project.")
+            if parsed.hostname in {
+                "aedrova.com",
+                "www.aedrova.com",
+                "aedrova-connectors.onrender.com",
+            }:
+                raise ValueError("Staging requires its own service origin.")
+            if self.checkout_enabled or self.release_ready or self.development_ai:
+                raise ValueError(
+                    "Staging cannot enable public checkout, downloads or development bypass."
+                )
+            if self.stripe_key.startswith("sk_live_") or self.stripe_bud_client_secret.startswith(
+                "sk_live_"
+            ):
+                raise ValueError("Staging must use Stripe test credentials only.")
         if self.supabase_database:
             try:
                 database = make_url(self.database)
@@ -148,9 +176,13 @@ class Config:
                 raise ValueError(
                     "Configure a valid private Supabase database connection."
                 ) from None
+            project_host = urlparse(self.supabase_url).hostname or ""
+            if not re.fullmatch(r"[a-z0-9]{20}\.supabase\.co", project_host):
+                raise ValueError("Use a valid hosted Supabase project URL.")
+            project_ref = project_host.split(".")[0]
             if (
                 database.drivername != "postgresql+psycopg"
-                or database.username != "aedrova_website.cpelagtufyocepnqcqqd"
+                or database.username != "aedrova_website." + project_ref
                 or not database.password
                 or not (database.host or "").endswith(".pooler.supabase.com")
                 or database_port != 5432
