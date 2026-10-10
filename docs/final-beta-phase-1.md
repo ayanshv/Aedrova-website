@@ -33,3 +33,10 @@ rebuilt separately; no Windows installer or public service deployment claimed.
 Owner installed the app's 23 staging migrations; hosted Table Editor verified tables.
 Next owner action: run sql/supabase-website.sql ONLY in Aedrova Staging, creating the
 restricted NOLOGIN role/private schema. Password remains a later private handoff.
+
+Owner completed private role creation and LOGIN credential SQL in staging. Actual
+restricted pooler login verified; public workspace read denied. Staging environment
+validated and deploy/render-beta-staging.yaml prepared for a separate free service.
+Sensitive values remain ignored locally; cloud installation still awaits approval.
+Stripe sandbox mode is off because checkout is off and this server enforces HTTPS
+production transport controls. Google staging OAuth remains a separate setup gate.
