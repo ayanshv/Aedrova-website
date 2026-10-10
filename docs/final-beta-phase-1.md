@@ -24,3 +24,12 @@ no classic branch protection/rulesets; Dependabot/CodeQL not yet configured.
 
 Website remains waitlist; customer Stripe connector public review/business verification
 still required. No billing activation, Pulse replacement or installer launch here.
+
+Remote evidence: service baseline a2b1423, GitHub Actions run 38078223509 **passed**,
+including tests, private PostgreSQL permissions/leases, Docker build and startup.
+Desktop companion a7efded pushed; native PostgreSQL CI passed, Windows revealed
+existing Unix-only fcntl imports, which remain a visible release blocker. Mac preview
+rebuilt separately; no Windows installer or public service deployment claimed.
+Owner installed the app's 23 staging migrations; hosted Table Editor verified tables.
+Next owner action: run sql/supabase-website.sql ONLY in Aedrova Staging, creating the
+restricted NOLOGIN role/private schema. Password remains a later private handoff.
