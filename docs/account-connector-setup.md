@@ -13,7 +13,9 @@ Do not put secrets in chat, Git, screenshots or the desktop app.
 - Figma: sign in/approve, paste a file link (not an API key or file ID).
   Figma's current file-content scope does not provide an account-wide file picker.
 - TikTok: sign in/approve; the authorized account is selected automatically.
-- Stripe: install/approve the read-only Stripe App; account selected automatically.
+- Stripe: log in to Stripe, choose the account in Stripe’s own install screen,
+  approve the read-only app, and return automatically to the configured Finance Bud.
+  No customer key, account ID, or authorization code entry is required.
 - Instagram: sign in/approve with a professional Business/Creator account; account
   selected automatically. Personal accounts are not supported by this API.
 - Vercel: install/approve the integration, then pick an authorized project by name.
@@ -148,3 +150,28 @@ After verification: enable external testing, obtain the actual OAuth client ID a
 install link, configure matching developer credentials only on the connector server,
 and perform approved install/consent, account/balance, refresh, and revocation tests.
 The Stripe connector is NOT complete. Checkout/public billing and M14 remain deferred.
+
+### Prepared customer workflow while developer verification is pending
+
+The owner chose to defer Aedrova developer business verification and prepare the
+customer connector without activation. Existing OAuth and automatic account binding
+implement the customer flow: Finance Bud → Connect Stripe → Stripe login → select
+an account in Stripe → approve account/balance reads → automatic Aedrova confirmation.
+The account selected in Stripe is bound from the exchanged token and verified with
+GET /v1/account and GET /v1/balance before displaying Connected. Failure or a mismatched
+account cannot create a grant. Customers do not supply tokens, IDs or manual codes.
+Customers require Stripe Apps administrator rights to install this app.
+
+Verified customer accounts do NOT replace developer verification. This account’s
+Stripe dashboard blocks external testing until Aedrova business verification. Public
+OAuth links also require publication after app review. The current sandbox/test
+upload is not a live customer release, and external testing is not a public launch.
+No checkout, subscription or payout functionality is enabled by this connector.
+
+Required later (not to begin Phase 1): owner completes Aedrova business verification
+in Stripe, enables external testing, securely configures matching app credentials
+and issued install link on the isolated connector service, and authorizes fresh
+account/refresh/disconnect acceptance. Publish only after Stripe review. Keep Connect
+unavailable until that setup exists; do not substitute a fabricated install link.
+Official flow: https://docs.stripe.com/stripe-apps/api-authentication/oauth
+External-test restrictions: https://docs.stripe.com/stripe-apps/test-app

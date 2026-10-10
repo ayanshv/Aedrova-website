@@ -245,3 +245,70 @@ def test_managed_search_global_cap_survives_different_workspace_and_key_rotation
             oauth={"kind": "managed_search", "workspace": "two"},
         )
     assert service.providers["search"].execute.call_count == 1
+
+
+@pytest.mark.parametrize("failure", [None, "account", "balance"])
+def test_stripe_customer_account_selection_verifies_reads_before_connected(system, failure):
+    """Exercise the actual Stripe reader after OAuth, without customer IDs or keys."""
+    seen = []
+    actor = "acct_Customer123"
+
+    def handler(req):
+        seen.append(req.url.path)
+        if req.url.path == "/v1/oauth/token":
+            assert req.method == "POST"
+            assert parse_qs(req.content.decode())["code"] == ["stripe-code"]
+            return httpx.Response(
+                200,
+                json={
+                    "access_token": "customer-access-private",
+                    "refresh_token": "customer-refresh-private",
+                    "stripe_user_id": actor,
+                    "scope": "stripe_apps",
+                    "expires_in": 3600,
+                },
+            )
+        assert req.headers["authorization"] == "Bearer customer-access-private"
+        if req.url.path == "/v1/account":
+            return httpx.Response(
+                200,
+                json={
+                    "id": "acct_Wrong123" if failure == "account" else actor,
+                },
+            )
+        assert req.url.path == "/v1/balance"
+        return httpx.Response(
+            403 if failure == "balance" else 200,
+            json={
+                "livemode": False,
+                "available": [{"amount": 1234, "currency": "usd"}],
+                "pending": [],
+            },
+        )
+
+    oauth, dot, user = configured(system, "stripe", handler)
+    oauth.connections.providers["stripe"].close()
+    oauth.connections.providers["stripe"] = ReadProvider(
+        "stripe", transport=httpx.MockTransport(handler)
+    )
+    oauth.config.stripe_bud_authorize_url = (
+        "https://marketplace.stripe.com/oauth/v2/authorize?test_parameter=provider-issued"
+    )
+    state, payload, target = started(system, "stripe", "")
+    query = parse_qs(urlparse(target).query)
+    assert query["test_parameter"] == ["provider-issued"]
+    assert query["state"] == [state]
+    assert query["redirect_uri"] == [oauth.redirect("stripe")]
+    if failure:
+        with pytest.raises(Denied):
+            oauth.callback("stripe", state, payload["proof"], "stripe-code")
+        assert oauth.status("session", state)["status"] == "failed"
+        assert not oauth.connections.rows(dot, user)
+        if failure == "account":
+            assert "/v1/balance" not in seen
+    else:
+        result = oauth.callback("stripe", state, payload["proof"], "stripe-code")
+        assert oauth.status("session", state) == {"status": "connected", "connection": result["id"]}
+        assert oauth.connections.rows(dot, user)[0]["resource"] == actor
+        assert seen == ["/v1/oauth/token", "/v1/account", "/v1/balance"]
+    assert "customer-access-private" not in json.dumps(oauth.connections.listing(dot, user))
