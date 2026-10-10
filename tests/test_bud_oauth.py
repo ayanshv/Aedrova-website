@@ -440,3 +440,63 @@ def test_supabase_http_callback_is_blocked_before_creating_authorization(system)
     oauth.config.origin = "https://connections.example.test"
     assert oauth.available("supabase")
     assert oauth.redirect("supabase").startswith("https://")
+
+
+def test_tiktok_oauth_uses_client_key_and_resolves_authorized_account(system):
+    oauth, dot, user, _ = system
+    oauth.config.origin = "https://connections.example.com"
+    oauth.config.tiktok_bud_client_id = "tiktok-app"
+    oauth.config.tiktok_bud_client_secret = "tiktok-secret"
+    requests = []
+
+    def exchange(request):
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "access_token": "tiktok-access-private",
+                "refresh_token": "tiktok-refresh-private",
+                "expires_in": 86400,
+                "token_type": "Bearer",
+                "open_id": "account12345",
+                "scope": "user.info.basic,video.list",
+            },
+        )
+
+    oauth.client.close()
+    oauth.client = httpx.Client(transport=httpx.MockTransport(exchange))
+    oauth.connections.providers["tiktok"].execute = MagicMock(return_value={"records": {}})
+    state, payload, target = started(system, "tiktok", "me")
+    params = parse_qs(urlparse(target).query)
+    assert params["client_key"] == ["tiktok-app"]
+    assert "client_id" not in params
+    assert params["scope"] == ["user.info.basic,video.list"]
+    oauth.callback("tiktok", state, payload["proof"], "code")
+    body = parse_qs(requests[0].content.decode())
+    assert body["client_key"] == ["tiktok-app"]
+    assert body["client_secret"] == ["tiktok-secret"]
+    assert "authorization" not in requests[0].headers
+    assert oauth.connections.providers["tiktok"].execute.call_args.args[1] == "account12345"
+
+
+def test_tiktok_oauth_requires_https_and_rejects_broad_grants(system):
+    oauth, _, _, _ = system
+    oauth.config.tiktok_bud_client_id = "app"
+    oauth.config.tiktok_bud_client_secret = "secret"
+    oauth.config.origin = "http://localhost:8090"
+    assert "HTTPS" in oauth.setup_hint("tiktok")
+    oauth.client.close()
+    oauth.client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200,
+                json={
+                    "access_token": "private-token",
+                    "open_id": "account12345",
+                    "scope": "user.info.basic,video.list,video.publish",
+                },
+            )
+        )
+    )
+    with pytest.raises(Denied, match="excessive permissions"):
+        oauth.token("tiktok", code="code", verifier="verifier")

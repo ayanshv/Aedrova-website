@@ -194,6 +194,8 @@ class BudConnections:
             if not envelope["refresh"]:
                 raise Denied("Needs authorization")
             refreshed = self.oauth.token(grant["provider"], refresh=envelope["refresh"])
+            if grant["provider"] == "tiktok" and refreshed.get("actor") != grant["resource"]:
+                raise Denied("Needs authorization")
             encoded = self.store.cipher.encrypt(json.dumps(refreshed).encode()).decode()
             result = db.execute(
                 text("UPDATE bud_connections SET secret=:s WHERE id=:i AND secret=:old"),
