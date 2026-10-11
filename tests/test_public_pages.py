@@ -227,3 +227,20 @@ def test_meeting_links_and_plan_disclosures_preserve_release_gate(client):
     assert "public availability and any meeting limits will be confirmed" in (
         client.get("/plans").text
     )
+
+
+def test_support_and_policy_links_are_public_and_consistent(client):
+    for path in ('/privacy', '/terms', '/support'):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert 'tel:+14086345254' in response.text
+        assert 'aedrovaai@gmail.com' in response.text
+        assert 'October 11, 2026' in response.text
+    privacy = client.get('/privacy').text
+    assert 'may not revoke permission at the provider' in privacy
+    assert 'do not promise zero retention' in privacy
+    terms = client.get('/terms').text
+    assert 'One active build is supported per workspace' not in terms
+    assert 'two simultaneous workflows' in terms
+    assert 'Statutory cancellation and refund rights are not waived' in terms
+    assert 'href="/support"' in client.get('/').text

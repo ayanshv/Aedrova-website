@@ -367,6 +367,10 @@ def create_app(config=None):
     def enterprise(request: Request):
         return page(request, "enterprise", "Let’s talk")
 
+    @app.get("/support")
+    def support(request: Request):
+        return page(request, "support", "Customer support")
+
     @app.get("/privacy")
     def privacy(request: Request):
         return page(request, "legal", "Privacy", kind="privacy")
