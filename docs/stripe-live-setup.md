@@ -8,7 +8,7 @@ No SQL is required for this preparation step. Existing sandbox credentials and r
 
 1. Stripe Dashboard: select the actual Aedrova account, leave the sandbox, and complete
    Activate account / business verification and payout bank details. Use truthful legal-owner
-   information; public brand Aedrova, website https://aedrova.com, support aedrovaai@gmail.com.
+   information; public brand Aedrova, website https://aedrova.com, support contact@aedrova.com.
    This verification must be completed by the owner and unlocks live charges/payouts.
 2. In the live Dashboard → Developers / Workbench → API keys, configure the private key
    in `/Users/ayanshvarma/Documents/Aedrova_site/.env.billing.live` under `AEDROVA_STRIPE_KEY=`.
