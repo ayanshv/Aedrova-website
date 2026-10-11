@@ -3,7 +3,7 @@
     "id": "claude-sonnet-5-5",
     "input_rate": 2000000,
     "output_rate": 10000000,
-    "cache_read_rate": 200000,
+    "cache_read_rate": 100000,
     "cache_write_rate": 2500000,
     "cache_long_write_rate": 4000000,
     "max_input_tokens": 200000,

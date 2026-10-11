@@ -32,3 +32,13 @@ Missing keys, current pricing, actual requests/accounting, fresh runtime and sta
 acceptance remain Phase2 gates.
 
 Official API: https://platform.claude.com/docs/en/api/models/retrieve
+
+## Private setup accepted
+
+Owner saved the key; independent fresh metadata access verified claude-sonnet-5-5
+and regular0600 local storage. No inference or service activation occurred. Official
+standard pricing rechecked: input$2/output$10 per million; cache5m-write$2.50,
+1h-write$4 and read$0.10. Cache read config corrected from the older $0.20 baseline.
+Gateway rejects premium region/speed overrides before reserving or calling provider.
+Source: https://platform.claude.com/docs/en/about-claude/pricing .
+Live requests, staging gateway and full Claude Code/runtime acceptance remain open.

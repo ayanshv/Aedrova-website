@@ -175,3 +175,14 @@ account/refresh/disconnect acceptance. Publish only after Stripe review. Keep Co
 unavailable until that setup exists; do not substitute a fabricated install link.
 Official flow: https://docs.stripe.com/stripe-apps/api-authentication/oauth
 External-test restrictions: https://docs.stripe.com/stripe-apps/test-app
+
+### Phase2 owner handoff — business information form
+
+Signed-in October10 review still reports developer verification required for external
+testing. Owner form prepared: Settings→Business→Business details→Edit business
+details. Select your actual industry, set business website https://aedrova.com and
+write a truthful2–3sentence product/charging description, then Save personally.
+Account representative, public details and service agreement are also marked
+incomplete; walk through them one requirement per response. Do not enable checkout
+or assume this first form alone completes Stripe verification. This blocks Stripe
+Bud external OAuth acceptance, not ongoing independent connector tests.

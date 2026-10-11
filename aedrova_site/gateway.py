@@ -170,6 +170,13 @@ async def inference(request: Request, provider, config, store, identity, *, comp
                 if key in {"input", "instructions", "service_tier"}
             }
     else:
+        # The managed allowance is priced for standard global inference. Client
+        # options must not select a surcharge that reservations don't account for.
+        if (
+            body.get("inference_geo", "global") != "global"
+            or body.get("speed", "standard") != "standard"
+        ):
+            raise Denied("Premium inference modes are not enabled for managed builds.")
         key, output_key = config.anthropic_key, "max_tokens"
         url = "https://api.anthropic.com/v1/messages"
         headers = {
