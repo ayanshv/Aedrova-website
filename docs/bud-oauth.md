@@ -147,7 +147,7 @@ not a database password, publishable key, or service-role key.
 ## Notion setup preparation — October 8
 
 Existing public OAuth and page reader implementation remains in place.
-Use connection name Aedrova Buds, support aedrovaai@gmail.com, homepage
+Use connection name Aedrova Buds, support contact@aedrova.com, homepage
 https://aedrova.com, and redirect
 https://aedrova-connectors.onrender.com/buds/oauth/notion/callback.
 Read content only; no insert/update/comment/user-information capabilities.
