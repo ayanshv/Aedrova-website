@@ -74,7 +74,7 @@ class SpeechService:
                 "Discard this chunk and refresh the meeting."
             ) from error
 
-    def transcribe(self, user, body, *, workspace=None):
+    def transcribe(self, user, body, *, workspace=None, billing_workspace=None):
         if not self.config.speech_enabled:
             raise Denied("Audio transcription is not enabled.")
         audio, duration = decode_audio(body.audio)
@@ -103,7 +103,11 @@ class SpeechService:
                     if not workspace:
                         raise Denied("Transcription requires a verified billing workspace.")
                     access = self.store.create_run(
-                        user, workspace, "speech", "speech:" + values["identifier"]
+                        user,
+                        workspace,
+                        "speech",
+                        "speech:" + values["identifier"],
+                        billing_workspace=billing_workspace,
                     )
                     run = self.store.run(access["token"])
                     estimate = math.ceil(duration / 1000) * math.ceil(

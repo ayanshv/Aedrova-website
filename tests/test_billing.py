@@ -435,5 +435,6 @@ def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(sto
     assert calls[0]["subscription_data"]["metadata"] == {
         "workspace": "space-new",
         "plan": "monthly",
+        "coverage": "entire_team",
     }
     assert store.balance("space-new")["status"] == "pending"

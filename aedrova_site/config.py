@@ -63,6 +63,8 @@ class Config:
     usage_limits: dict = field(default_factory=dict)
     company_budget_microusd: int = 100_000_000
     free_pool_microusd: int = 25_000_000
+    space_hierarchy_enabled: bool = False
+    budget_alert_thresholds: str = "75,90"
     free_enabled: bool = False
     plans: dict = field(default_factory=dict)
     models: dict = field(default_factory=dict)

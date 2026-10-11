@@ -76,7 +76,10 @@ def test_authorization_database_operations_never_run_on_event_loop_thread():
         rate_limit=lambda *a, **kw: worker(None),
         development_workspace=lambda workspace: worker(False),
     )
-    identity = SimpleNamespace(require=lambda *a, **kw: worker({"id": "u"}))
+    identity = SimpleNamespace(
+        billing_context=lambda token, workspace: {"billing_workspace": workspace},
+        require=lambda *a, **kw: worker({"id": "u"}),
+    )
     request = SimpleNamespace(headers={"authorization": "Bearer build-token"})
     asyncio.run(
         authorize_run(

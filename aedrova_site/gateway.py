@@ -106,6 +106,10 @@ async def authorize_run(request: Request, provider, config, store, identity):
     )
     if user["id"] != run["user_id"]:
         raise Denied("Build account changed.")
+    context = await asyncio.to_thread(
+        identity.billing_context, session["access_token"], run["workspace"]
+    )
+    run["billing_workspace"] = context["billing_workspace"]
     await asyncio.to_thread(store.rate_limit, "inference:" + run["id"], limit=120)
     return run
 

@@ -102,6 +102,7 @@ def test_free_expiry_resets_month_but_same_month_reactivation_does_not(ledger):
     with ledger.tx() as db:
         db.execute(text("UPDATE billing SET period_end=0"))
         db.execute(text("UPDATE budget_reservations SET period=:p"), {"p": start - 86400})
+        db.execute(text("UPDATE inference SET created=:p"), {"p": start - 86400})
     assert ledger.balance("one")["available"] == 500_000
     assert ledger.balance("one")["reset_at"] == end
 
