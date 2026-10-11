@@ -104,11 +104,17 @@ class Store:
         company_budget=100_000_000,
         free_pool=25_000_000,
         free_enabled=False,
+        hierarchy_enabled=False,
+        alert_thresholds="75,90",
     ):
         if development_ai and not url.startswith("sqlite:///"):
             raise ValueError("Development allowances require a private SQLite database.")
         self.usage_policy = budgets.policies(usage_limits or {})
         self.company_budget, self.free_pool = company_budget, free_pool
+        self.alert_thresholds = tuple(int(value) for value in alert_thresholds.split(","))
+        if not self.alert_thresholds or any(not 1 <= v <= 100 for v in self.alert_thresholds):
+            raise ValueError("Usage alert thresholds must be percentages from 1 to 100.")
+        self.hierarchy_enabled = hierarchy_enabled
         self.free_enabled = free_enabled
         self.development_ai = development_ai
         if url.startswith("sqlite:///"):
@@ -151,6 +157,49 @@ class Store:
                 db.execute(text("SELECT pg_advisory_xact_lock(73114011)"))
             for statement in SCHEMA:
                 db.execute(text(statement))
+            self.hierarchy_available = self.hierarchy_enabled
+            if db.dialect.name == "postgresql":
+                self.hierarchy_available = bool(
+                    db.scalar(
+                        text(
+                            "SELECT to_regprocedure("
+                            "'public.resolve_billing_space_for_backend(uuid,uuid)') IS NOT NULL"
+                        )
+                    )
+                )
+            run_columns = {c["name"] for c in inspect(db).get_columns("runs")}
+            if "billing_workspace" not in run_columns:
+                db.execute(
+                    text("ALTER TABLE runs ADD COLUMN billing_workspace TEXT NOT NULL DEFAULT ''")
+                )
+                db.execute(text("UPDATE runs SET billing_workspace=workspace"))
+            db.execute(
+                text("""CREATE TABLE IF NOT EXISTS inference_attribution (
+                id TEXT PRIMARY KEY, billing_workspace TEXT NOT NULL,
+                originating_workspace TEXT NOT NULL,
+                user_id TEXT NOT NULL, operation TEXT NOT NULL, bud_id TEXT NOT NULL DEFAULT '')""")
+            )
+            db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS inference_billing_root ON "
+                    "inference_attribution(billing_workspace)"
+                )
+            )
+            db.execute(
+                text("""INSERT INTO inference_attribution(
+                id,billing_workspace,originating_workspace,user_id,operation)
+                SELECT i.id,r.workspace,r.workspace,r.user_id,r.provider FROM inference i
+                JOIN runs r ON r.id=i.run_id
+                WHERE NOT EXISTS(SELECT 1 FROM inference_attribution a WHERE a.id=i.id)""")
+            )
+            db.execute(
+                text("""CREATE TABLE IF NOT EXISTS space_budget_alerts (
+                workspace TEXT NOT NULL, period BIGINT NOT NULL, threshold INTEGER NOT NULL,
+                PRIMARY KEY(workspace,period,threshold))""")
+            )
+            db.execute(
+                text("CREATE INDEX IF NOT EXISTS inference_created_window ON inference(created)")
+            )
             billing_columns = {column["name"] for column in inspect(db).get_columns("billing")}
             if "budget_owner" not in billing_columns:
                 db.execute(
@@ -472,10 +521,40 @@ class Store:
             return self.billing_lock(db, row["workspace"])
         return row
 
+    def billing_root(self, db, workspace, user, suggested=None):
+        if db.dialect.name == "postgresql":
+            installed = db.scalar(
+                text(
+                    "SELECT to_regprocedure("
+                    "'public.resolve_billing_space_for_backend(uuid,uuid)') IS NOT NULL"
+                )
+            )
+            if not installed and not self.hierarchy_enabled:
+                return workspace
+            if not installed:
+                raise Denied("The shared Space migration is required before AI can start.")
+            db.execute(text("SELECT pg_advisory_xact_lock(73114013)"))
+            return str(
+                db.execute(
+                    text(
+                        "SELECT public.resolve_billing_space_for_backend(CAST(:w AS "
+                        "uuid),CAST(:u AS uuid))"
+                    ),
+                    {"w": workspace, "u": user},
+                ).scalar_one()
+            )
+        if not self.hierarchy_enabled:
+            if suggested and suggested != workspace:
+                raise Denied("Shared Space billing is not enabled. No provider request was made.")
+            return workspace
+        # Local tests/development receive the root from the already authorized Identity context.
+        return suggested or workspace
+
     def run_limits(self, run):
         with self.tx(write=False) as db:
             plan = db.execute(
-                text("SELECT plan FROM billing WHERE workspace=:w"), {"w": run["workspace"]}
+                text("SELECT plan FROM billing WHERE workspace=:w"),
+                {"w": run.get("billing_workspace") or run["workspace"]},
             ).scalar()
         return self.usage_policy.get(
             plan,
@@ -500,11 +579,19 @@ class Store:
                 row["available"] = max(0, row["allowance"] - row["spent"] - row["reserved"])
             if wallet["balance"] < 0:
                 row["available"] = 0
-            period, reset = budgets.month()
+            period, reset = budgets.billing_month(row)
             if row["plan"] in self.usage_policy:
                 limits = budgets.scopes(self, row)
                 remaining = [
-                    max(0, cap - budgets.totals(db, scope, period)["used"])
+                    max(
+                        0,
+                        cap
+                        - budgets.totals(
+                            db,
+                            scope,
+                            period if scope.startswith("workspace:") else budgets.month()[0],
+                        )["used"],
+                    )
                     for scope, cap, _ in limits
                 ]
                 row["available"] = max(0, remaining[1]) + (
@@ -530,12 +617,36 @@ class Store:
                     monthly_requests=0,
                     monthly_request_limit=120,
                 )
+            row["five_hour_budget"] = self.usage_policy.get(row["plan"], {}).get(
+                "five_hour_budget", row.get("monthly_budget", row["allowance"])
+            )
+            row["five_hour_spent"] = budgets.rolling(db, workspace)
+            row["available"] = min(
+                row["available"],
+                max(0, row["five_hour_budget"] - row["five_hour_spent"])
+                + (max(0, wallet["balance"] - wallet["reserved"]) if row["plan"] != "free" else 0),
+            )
+            row["usage_alerts"] = []
+            if row.get("monthly_budget", 0):
+                for threshold in self.alert_thresholds:
+                    if row.get("monthly_spent", 0) * 100 >= row["monthly_budget"] * threshold:
+                        row["usage_alerts"].append(threshold)
+                        db.execute(
+                            text(
+                                "INSERT INTO space_budget_alerts VALUES(:w,:p,:t) ON CONFLICT DO "
+                                "NOTHING"
+                            ),
+                            {"w": workspace, "p": period, "t": threshold},
+                        )
             row["reset_at"] = reset
             row["has_billing"] = row["customer"].startswith("cus_")
             return {
                 k: row[k]
                 for k in (
                     "has_billing",
+                    "five_hour_budget",
+                    "five_hour_spent",
+                    "usage_alerts",
                     "reset_at",
                     "monthly_budget",
                     "monthly_spent",
@@ -667,10 +778,12 @@ class Store:
             and row["customer"] == "development:" + user + ":" + row["workspace"]
         )
 
-    def create_run(self, user, workspace, provider, request_key):
+    def create_run(self, user, workspace, provider, request_key, *, billing_workspace=None):
         now = int(time.time())
         run_id, token = secrets.token_urlsafe(24), secrets.token_urlsafe(48)
         with self.tx() as db:
+            origin = workspace
+            workspace = self.billing_root(db, origin, user, billing_workspace)
             if self.engine.dialect.name == "postgresql":
                 db.execute(
                     text("SELECT pg_advisory_xact_lock(hashtextextended(:u,1))"), {"u": user}
@@ -692,7 +805,7 @@ class Store:
             if wallet["balance"] < 0:
                 raise Denied("AI credits require billing review after a refund or dispute.")
             if row["plan"] in self.usage_policy:
-                period, _ = budgets.month()
+                period, _ = budgets.billing_month(row)
                 remaining = (
                     self.usage_policy[row["plan"]]["budget"]
                     - budgets.totals(db, "workspace:" + workspace, period)["used"]
@@ -701,12 +814,12 @@ class Store:
                 remaining = row["allowance"] - row["spent"] - row["reserved"]
             if remaining + wallet["balance"] - wallet["reserved"] <= 0:
                 raise Denied("Your workspace's included AI allowance has been used.")
-            key = digest(user + workspace + request_key)
+            key = digest(user + origin + request_key)
             if db.execute(text("SELECT id FROM runs WHERE request_key=:k"), {"k": key}).first():
                 raise Denied("This request already has a run. It will not be started twice.")
             count = db.execute(
                 text(
-                    "SELECT count(*) FROM runs WHERE workspace=:w AND "
+                    "SELECT count(*) FROM runs WHERE billing_workspace=:w AND "
                     "state='active' AND expires>:now"
                 ),
                 {"w": workspace, "now": now},
@@ -717,10 +830,11 @@ class Store:
                 text(
                     "INSERT INTO "
                     "runs(id,user_id,workspace,provider,token_hash,expires,r"
-                    "equest_key) VALUES(:id,:u,:w,:p,:t,:expires,:key)"
+                    "equest_key,billing_workspace) VALUES(:id,:u,:origin,:p,:t,:expires,:key,:w)"
                 ),
                 {
                     "id": run_id,
+                    "origin": origin,
                     "u": user,
                     "w": workspace,
                     "p": provider,
@@ -752,7 +866,10 @@ class Store:
         with self.tx() as db:
             entry = (
                 db.execute(
-                    text("SELECT workspace,token_hash FROM runs WHERE id=:id AND user_id=:u"),
+                    text(
+                        "SELECT billing_workspace AS workspace,token_hash FROM runs WHERE "
+                        "id=:id AND user_id=:u"
+                    ),
                     {"id": run_id, "u": user},
                 )
                 .mappings()
@@ -771,7 +888,10 @@ class Store:
         identifier = digest(run["id"] + request_hash)
         with self.tx() as db:
             budgets.lock(db)
-            row = self.refresh_free(db, self.billing_lock(db, run["workspace"]))
+            workspace = self.billing_root(
+                db, run["workspace"], run["user_id"], run.get("billing_workspace")
+            )
+            row = self.refresh_free(db, self.billing_lock(db, workspace))
             fresh = (
                 db.execute(text("SELECT state,expires FROM runs WHERE id=:id"), {"id": run["id"]})
                 .mappings()
@@ -808,26 +928,39 @@ class Store:
             cap = self.usage_policy.get(row["plan"], {}).get("run_calls", 120)
             if calls >= cap:
                 raise Denied("This workflow reached its model-call limit. Start a smaller task.")
-            wallet = self.wallet(db, run["workspace"])
+            wallet = self.wallet(db, workspace)
             if wallet["balance"] < 0:
                 raise Denied("AI credits require billing review after a refund or dispute.")
             base = min(amount, max(0, row["allowance"] - row["spent"] - row["reserved"]))
             if row["plan"] in self.usage_policy:
-                period, _ = budgets.month()
-                used = budgets.totals(db, "workspace:" + run["workspace"], period)["used"]
+                period, _ = budgets.billing_month(row)
+                used = budgets.totals(db, "workspace:" + workspace, period)["used"]
                 base = min(amount, max(0, self.usage_policy[row["plan"]]["budget"] - used))
             credit = amount - base
             if row["plan"] == "free" and credit:
                 raise Denied("Free AI allowance reached. Upgrade or wait for the monthly reset.")
             if credit > wallet["balance"] - wallet["reserved"]:
                 raise Denied("Not enough included AI remains for this request. No overage charged.")
+            active = db.execute(
+                text(
+                    "SELECT COUNT(*) FROM runs WHERE billing_workspace=:w AND "
+                    "state='active' AND expires>:now AND id<>:id"
+                ),
+                {"w": workspace, "now": int(time.time()), "id": run["id"]},
+            ).scalar()
+            if active >= row["concurrency"]:
+                raise Denied("Your team's shared workflow limit is reached.")
+            db.execute(
+                text("UPDATE runs SET billing_workspace=:w WHERE id=:id"),
+                {"w": workspace, "id": run["id"]},
+            )
             try:
                 budgets.reserve(self, db, row, identifier, amount, base)
             except BudgetDenied as error:
                 raise Denied(str(error)) from error
             db.execute(
                 text("UPDATE billing SET reserved=reserved+:n WHERE workspace=:w"),
-                {"n": base, "w": run["workspace"]},
+                {"n": base, "w": workspace},
             )
             db.execute(
                 text(
@@ -844,6 +977,19 @@ class Store:
                     "base": base,
                     "credit": credit,
                     "now": int(time.time()),
+                },
+            )
+            db.execute(
+                text("""INSERT INTO inference_attribution(
+                id,billing_workspace,originating_workspace,user_id,operation,bud_id)
+                VALUES(:id,:w,:origin,:u,:op,:bud)"""),
+                {
+                    "id": identifier,
+                    "w": workspace,
+                    "origin": run["workspace"],
+                    "u": run["user_id"],
+                    "op": run["provider"],
+                    "bud": run.get("bud_id", ""),
                 },
             )
             db.execute(
@@ -864,7 +1010,7 @@ class Store:
             )
             db.execute(
                 text("UPDATE wallets SET reserved=reserved+:n WHERE workspace=:w"),
-                {"n": credit, "w": run["workspace"]},
+                {"n": credit, "w": workspace},
             )
         self.budget_health()
         return identifier, None
@@ -876,8 +1022,8 @@ class Store:
             entry = (
                 db.execute(
                     text(
-                        "SELECT inference.*,runs.workspace FROM inference JOIN "
-                        "runs ON runs.id=inference.run_id WHERE inference.id=:id"
+                        "SELECT inference.*,a.billing_workspace AS workspace FROM inference JOIN "
+                        "inference_attribution a ON a.id=inference.id WHERE inference.id=:id"
                     ),
                     {"id": identifier},
                 )

@@ -21,6 +21,7 @@ PLAN_POLICY = {
 USAGE_POLICY = {
     "free": {
         "budget": 500_000,
+        "five_hour_budget": 500_000,
         "requests": 40,
         "input_tokens": 32_000,
         "output_tokens": 2048,
@@ -31,6 +32,7 @@ USAGE_POLICY = {
     },
     "monthly": {
         "budget": 2_000_000,
+        "five_hour_budget": 2_000_000,
         "requests": 200,
         "input_tokens": 96_000,
         "output_tokens": 8192,
@@ -41,6 +43,7 @@ USAGE_POLICY = {
     },
     "annual": {
         "budget": 4_000_000,
+        "five_hour_budget": 4_000_000,
         "requests": 400,
         "input_tokens": 128_000,
         "output_tokens": 8192,

@@ -16,6 +16,7 @@ def price(name, live=True):
     policy = PLAN_POLICY[name]
     return {
         "id": "price_" + name,
+        "product": "prod_live",
         "livemode": live,
         "active": True,
         "currency": "usd",
@@ -51,6 +52,11 @@ def test_provision_live_namespaced_and_private(tmp_path, monkeypatch):
             or {"data": [price("annual" if "annual" in kw["lookup_keys"][0] else "monthly")]}
         ),
     )
+    monkeypatch.setattr(
+        "stripe.Product.retrieve",
+        lambda *a, **kw: {"id": "prod_live", "metadata": {"application": "aedrova"}},
+    )
+    monkeypatch.setattr("stripe.Product.modify", lambda *a, **kw: {"id": "prod_live"})
     target = tmp_path / "plans.json"
     provision(Config(stripe_key="sk_live_fixture"), target, live=True)
     assert any(call.get("metadata", {}).get("contact_only") == "true" for call in calls)
