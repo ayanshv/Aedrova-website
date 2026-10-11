@@ -29,3 +29,50 @@ Opened Business details→Edit business details for owner to complete actual ind
 website and product description. No sensitive fields submitted. Stripe connector
 remains blocked pending verification and later install/credential/live acceptance.
 No deployment, production merge or paid/public access enabled.
+
+### Stripe business information saved — service agreement handoff
+
+Owner reported saved; dashboard independently confirms business website
+https://aedrova.com, public name Aedrova, and industry/product description provided.
+Business information no longer shows Incomplete. Opened Service agreement → Review
+without submitting. Next owner requirement: review the Stripe Services Agreement
+and Acquirer Disclosure in the open Terms of service modal; click Continue personally
+only if authorized and in agreement. The modal also includes consent to Stripe text
+messages and a representation that business information is complete/correct. No
+agreement accepted by the agent. Representative/public details/descriptor still
+incomplete; full verification and Stripe external testing remain blocked. Phase2
+is active; no later phase or live billing enabled.
+
+### Stripe agreement completed — public support details handoff
+
+Owner reports agreement done; independent dashboard observation shows Service
+agreement no longer listed as Incomplete. Opened Public details → Edit public
+details → Add customer support details without entering/submitting fields. Next
+owner requirement is to complete truthful support phone/address/email/URL and
+applicable published privacy/terms URLs, then Save personally. Business name and
+website already show Aedrova/https://aedrova.com. The form defaults to showing the
+support phone on receipts/invoices; owner must choose the appropriate public
+contact information. Representative and descriptor remain Incomplete. Full Stripe
+verification/external testing and Phase2 acceptance remain open; no billing enabled.
+
+### October11 — policies live and Stripe URLs saved
+
+Website PR4 https://github.com/ayanshv/Aedrova-website/pull/4 merged after green
+CI38120908946; main commit8bb942d, mainCI38121001131 also green. Render website
+srv-db0a8o7avr4c73eqcj4g auto-deploymentdep-db5jhsmk1f9s73eeecdg succeeded.
+Live browser verification confirms new Privacy/Terms effectiveOctober11 and Support
+with authorized phone(408)634-5254. Waitlist retained; release/billing gates untouched.
+Current website development branch integrates the same pages:431 tests passed,
+tracked secret check passed.
+
+Entered https://aedrova.com/support, https://aedrova.com/privacy and
+https://aedrova.com/terms into configured Stripe form and clicked Save under explicit
+owner authorization. Modal closed; Customer-facing information no longer Incomplete
+and saved Terms plus other provided URLs appear. No private address guessed/entered.
+Stripe still marks representative/statement descriptor incomplete. Active Account
+status task: Provide an external account; Stripe says no bank account on file.
+Opened task details, no bank information entered. Next owner requirement: click
+Start on this task and provide their valid bank account privately/personally.
+This is Stripe account readiness, not evidence of full connector external-testing
+acceptance. No later milestone started. Legal/business identity and jurisdiction
+review remain required before paid public Beta; policies are not a compliance guarantee.
