@@ -77,3 +77,17 @@ The site's exact required status context is `verify`. Detailed steps are in the
 native repository's docs/phase-1-owner-handoff.md. Two disposable isolation fixtures
 remain as optional staging cleanup, not a failed isolation check. Do not merge or
 deploy production, enable checkout/downloads or begin Phase 2 without its approval.
+
+## Final verified Phase 1 engineering baseline
+
+Native tested code `8a98c27`: run 38111786891 passed all required jobs. Windows,
+macOS and Ubuntu each passed all 732 tests; PostgreSQL RLS checks also passed.
+Website/backend tested source `1a183ff`: run 38111715356 passed `verify`.
+
+Independent Phase 1 engineering is complete and pushed. Full Phase 1 sign-off
+remains pending owner desktop acceptance and active main-branch required-check
+rulesets in both repositories. Exact steps are in the companion desktop repository
+`docs/phase-1-owner-handoff.md`. Phase 2 is not authorized by this handoff.
+
+This commit records results only and skips rerunning unchanged code. Staging remains
+on deployed service source `e3da1d7`, with auto-deploy off; production is unchanged.
