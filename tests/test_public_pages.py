@@ -234,7 +234,7 @@ def test_support_and_policy_links_are_public_and_consistent(client):
         response = client.get(path)
         assert response.status_code == 200
         assert 'tel:+14086345254' in response.text
-        assert 'aedrovaai@gmail.com' in response.text
+        assert 'contact@aedrova.com' in response.text
         assert 'October 11, 2026' in response.text
     privacy = client.get('/privacy').text
     assert 'may not revoke permission at the provider' in privacy
