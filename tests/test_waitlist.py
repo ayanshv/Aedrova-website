@@ -125,7 +125,7 @@ def test_export_neutralizes_spreadsheet_formulas(client, tmp_path):
 def test_waitlist_publishes_owner_contact_and_deletion_instructions(client):
     for path in ("/", "/privacy", "/terms"):
         page = client.get(path)
-        assert 'href="mailto:aedrovaai@gmail.com"' in page.text
+        assert 'href="mailto:contact@aedrova.com"' in page.text
     privacy = client.get("/privacy").text
     assert "requests to remove your waitlist registration" in privacy
     assert "not used as AI build context" in privacy
