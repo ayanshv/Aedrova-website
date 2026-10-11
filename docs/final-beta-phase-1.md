@@ -48,3 +48,32 @@ redirect uses staging Supabase callback. Auto-deploy off; checkout/gateway/relea
 off. Owner explicitly approved staging-only credentials uploaded to Render.
 Google staging provider/client and end-to-end authentication remain blocked;
 Phase 1 not complete. Full evidence in companion desktop docs.
+
+
+## October 10 — verified hosted staging and final owner handoff
+
+Staging Google provider enabled; two distinct real test accounts completed native
+PKCE loopback sign-in. Both directions passed own-message reads and foreign
+workspace/channel/message/member read denial plus foreign message write denial.
+The restricted staging backend cannot read public workspaces. Final staging health
+returned 200 and the removed Pulse route returned 404. Google OAuth setup is no
+longer blocked; the earlier entries above are historical.
+
+The native repository now has portable process leases, Windows bounded pipe reads,
+provider process-tree containment, UTF-8 emoji loading and timestamp/layout fixes.
+Full updated native local suite: 732 passed. All native migration/RLS and optional
+meeting-order checks passed. Final Windows/Linux/macOS CI results are recorded in
+the companion native baseline. Windows installer/ACL/live runtime certification
+remains a later release gate, not a claim made from CI.
+
+Source deployment remains e3da1d7 at the separate free staging Render service;
+auto-deploy is off and production is unchanged. No additional service code changes
+in this documentation handoff. Service tests/private ledger/container CI was green
+at f70a958 (run 38079110811); this documentation push runs Website checks again.
+
+Required owner actions to close Phase 1: accept the source staging desktop account
+journey and activate main-branch PR/required-check rulesets in both repositories.
+The site's exact required status context is `verify`. Detailed steps are in the
+native repository's docs/phase-1-owner-handoff.md. Two disposable isolation fixtures
+remain as optional staging cleanup, not a failed isolation check. Do not merge or
+deploy production, enable checkout/downloads or begin Phase 2 without its approval.
