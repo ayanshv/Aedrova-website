@@ -284,3 +284,18 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 
 /* Readable public policies and a direct support path. */
 .policy-document{max-width:850px}.policy-document h1{font-size:clamp(40px,6vw,64px);line-height:1.08}.policy-document h2{font-size:25px;line-height:1.3;scroll-margin-top:120px}.policy-document p{font-size:16px;line-height:1.8}.policy-document a:not(.button){text-decoration:underline;text-underline-offset:3px}.policy-date{font-size:13px!important;color:var(--muted)}.policy-index{display:flex;flex-wrap:wrap;gap:12px 22px;padding:20px 0;border-bottom:1px solid var(--edge);font-size:14px}.support-contact{margin:30px 0}.support-contact .button{display:inline-flex}.support-contact p{margin-top:18px}
+/* Team coverage is part of the price hierarchy, not a footer disclaimer. */
+.plan .price{min-height:190px;display:flex;flex-wrap:wrap;align-items:baseline;align-content:flex-start;gap:8px}
+.plan .price small{font-size:16px;white-space:normal}
+.team-coverage{letter-spacing:normal;display:block;width:100%;font-size:15px;line-height:1.5;font-weight:500;color:var(--text);margin-top:12px}
+.team-visual{letter-spacing:normal;display:flex;align-items:center;margin-top:12px;width:100%;font-size:12px;line-height:1.5;color:var(--muted)}
+.team-visual>span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e4eaf7;color:#466ab4;border:2px solid var(--surface);margin-right:-7px}
+.team-visual b{margin-left:16px;font-weight:500}
+.team-order{padding:24px;background:var(--surface);border:1px solid var(--edge);border-radius:18px;margin:20px 0}
+.team-order dl{display:grid;grid-template-columns:1fr 1.4fr;gap:12px;font-size:15px}
+.team-order dd{margin:0;font-weight:600}.team-order dt{color:var(--muted)}
+.checkout-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5;margin-bottom:20px}
+.checkout-consent input{width:18px;height:18px;flex-shrink:0;margin-top:3px}
+@media(max-width:650px){.plan .price{min-height:0}.team-order{padding:18px}.team-order dl{grid-template-columns:1fr}.team-order dd{margin-bottom:10px}}
+
+.team-visual svg{width:20px;height:20px;fill:currentColor}.team-order h3{margin:0;font-size:24px;letter-spacing:-.025em}

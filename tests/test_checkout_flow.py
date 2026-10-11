@@ -50,6 +50,9 @@ def client(tmp_path, monkeypatch):
             raise Denied("Workspace access denied.")
         return {"id": "user-a"}
 
+    app.state.identity.workspaces = lambda token: [
+        {"id": "space-a", "name": "Acme", "role": "owner"}
+    ]
     app.state.identity.user = user
     app.state.identity.require = require
     monkeypatch.setattr(
@@ -313,6 +316,11 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
 
     calls = []
     monkeypatch.setattr("stripe.Product.create", lambda **kw: {"id": "prod_fixture"})
+    monkeypatch.setattr(
+        "stripe.Product.retrieve",
+        lambda *a, **kw: {"id": "prod_fixture", "metadata": {"application": "aedrova"}},
+    )
+    monkeypatch.setattr("stripe.Product.modify", lambda *a, **kw: {"id": "prod_fixture"})
 
     def listing(**kw):
         if "annual" in kw["lookup_keys"][0]:
@@ -320,6 +328,7 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
                 "data": [
                     {
                         "id": "price_annual",
+                        "product": "prod_fixture",
                         "livemode": False,
                         "active": True,
                         "unit_amount": 20000,
@@ -336,6 +345,7 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
         calls.append(kw)
         return {
             "id": "price_monthly",
+            "product": "prod_fixture",
             "livemode": False,
             "active": True,
             "unit_amount": kw["unit_amount"],

@@ -40,7 +40,10 @@ def totals(db, scope, period):
         db.execute(
             text("""SELECT COALESCE(SUM(CASE WHEN actual IS NULL THEN amount
         ELSE actual END),0) AS used, COUNT(*) AS requests
-        FROM budget_reservations WHERE scope=:scope AND period=:period"""),
+        FROM budget_reservations b WHERE scope=:scope AND
+        (CASE WHEN :scope LIKE 'workspace:%' THEN EXISTS
+        (SELECT 1 FROM inference i WHERE i.id=b.id AND i.created>=:period)
+        ELSE period=:period END)"""),
             {"scope": scope, "period": period},
         )
         .mappings()
@@ -64,8 +67,17 @@ def scopes(store, row):
 
 def reserve(store, db, row, identifier, amount, base):
     period, _ = month()
+    policy = store.usage_policy.get(row["plan"])
+    if policy and rolling(db, row["workspace"]) + base > policy.get(
+        "five_hour_budget", policy["budget"]
+    ):
+        raise BudgetDenied(
+            "Shared five-hour AI capacity reached. Work pauses until capacity "
+            "returns; human chat remains available."
+        )
     for scope, ceiling, requests in scopes(store, row):
-        used = totals(db, scope, period)
+        scope_period = billing_month(row)[0] if scope.startswith("workspace:") else period
+        used = totals(db, scope, scope_period)
         charge = amount if scope in {"company", "free-pool"} else base
         if used["used"] + charge > ceiling:
             raise BudgetDenied(
@@ -77,7 +89,7 @@ def reserve(store, db, row, identifier, amount, base):
         db.execute(
             text("""INSERT INTO budget_reservations
             (id,scope,period,amount) VALUES(:id,:scope,:period,:amount)"""),
-            {"id": identifier, "scope": scope, "period": period, "amount": charge},
+            {"id": identifier, "scope": scope, "period": scope_period, "amount": charge},
         )
 
 
@@ -88,3 +100,41 @@ def settle(db, identifier, charge, base_charge):
         WHERE id=:id AND actual IS NULL"""),
         {"id": identifier, "charge": charge, "base": base_charge},
     )
+
+
+def billing_month(row):
+    """Monthly anniversary windows even when the subscription renews annually."""
+    import calendar
+    import time
+
+    if row["plan"] == "free" or not row["period_start"]:
+        return month()
+    anchor = datetime.fromtimestamp(row["period_start"], UTC)
+    now = datetime.fromtimestamp(time.time(), UTC)
+
+    def boundary(offset):
+        index = anchor.year * 12 + anchor.month - 1 + offset
+        year, m = divmod(index, 12)
+        return anchor.replace(
+            year=year, month=m + 1, day=min(anchor.day, calendar.monthrange(year, m + 1)[1])
+        )
+
+    offset = max(0, (now.year - anchor.year) * 12 + now.month - anchor.month)
+    if boundary(offset) > now and offset:
+        offset -= 1
+    return int(boundary(offset).timestamp()), min(
+        int(boundary(offset + 1).timestamp()), row["period_end"]
+    )
+
+
+def rolling(db, workspace):
+    import time
+
+    used = db.execute(
+        text("""SELECT COALESCE(SUM(CASE WHEN i.actual IS NULL THEN i.base_reserved
+        WHEN i.actual<i.base_reserved THEN i.actual ELSE i.base_reserved END),0) FROM inference i
+        JOIN inference_attribution a ON a.id=i.id
+        WHERE a.billing_workspace=:w AND i.created>:since"""),
+        {"w": workspace, "since": int(time.time()) - 18000},
+    ).scalar()
+    return used

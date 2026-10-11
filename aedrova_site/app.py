@@ -43,10 +43,17 @@ ROOT = Path(__file__).parent
 
 
 class WorkspaceBody(BaseModel):
+    parent_id: str | None = Field(default=None, max_length=100)
     name: str = Field(min_length=1, max_length=60)
     nickname: str = Field(
         default="Aedrova", min_length=1, max_length=32, pattern=r"^[A-Za-z0-9][A-Za-z0-9 _-]*$"
     )
+
+
+class MoveSpaceBody(BaseModel):
+    parent_id: str = Field(min_length=1, max_length=100)
+    expected_parent: str = Field(min_length=1, max_length=100)
+    confirmed: bool = False
 
 
 class CheckoutBody(BaseModel):
@@ -123,6 +130,8 @@ def create_app(config=None):
             company_budget=config.company_budget_microusd,
             free_pool=config.free_pool_microusd,
             free_enabled=config.free_enabled,
+            hierarchy_enabled=config.space_hierarchy_enabled,
+            alert_thresholds=config.budget_alert_thresholds,
             pool_size=config.db_pool_size,
             max_overflow=config.db_max_overflow,
             pool_timeout=config.db_pool_timeout,
@@ -130,6 +139,7 @@ def create_app(config=None):
         ),
         Identity(config),
     )
+    identity.hierarchy_available = store.hierarchy_available
     asset_version = hashlib.sha256(
         (ROOT / "static/site.css").read_bytes() + (ROOT / "static/site.js").read_bytes()
     ).hexdigest()[:12]
@@ -513,6 +523,7 @@ def create_app(config=None):
             "checkout_enabled": config.checkout_enabled,
             "topup_enabled": bool(config.checkout_enabled and config.topup_price_id),
             "stripe_test_mode": config.stripe_test_mode,
+            "space_hierarchy_enabled": config.space_hierarchy_enabled,
         }
 
     @app.post("/api/logout")
@@ -532,6 +543,17 @@ def create_app(config=None):
         token = auth(request, change=True)
         user = identity.user(token)
         store.rate_limit("create-workspace:" + user["id"], limit=5)
+        if body.parent_id:
+            if not config.space_hierarchy_enabled:
+                raise Denied("Subspaces are being prepared. No billing change was made.")
+            identity.require(token, body.parent_id, billing=True)
+            workspace = identity.request(
+                "/rest/v1/rpc/create_subspace",
+                token,
+                method="POST",
+                data={"p_parent": body.parent_id, "p_name": body.name.strip()},
+            )
+            return {"id": workspace}
         workspace = identity.request(
             "/rest/v1/rpc/onboard_workspace",
             token,
@@ -544,11 +566,30 @@ def create_app(config=None):
         )
         return {"id": workspace}
 
+    @app.post("/api/subspaces/{workspace}/move")
+    def move_subspace(request: Request, workspace: str, body: MoveSpaceBody):
+        if not config.space_hierarchy_enabled or not body.confirmed:
+            raise Denied("Review and confirm the subspace billing move first.")
+        token = auth(request, change=True)
+        user = identity.require(token, workspace, billing=True)
+        store.rate_limit("move-space:" + user["id"], limit=5)
+        result = identity.request(
+            "/rest/v1/rpc/move_subspace",
+            token,
+            method="POST",
+            data={
+                "p_workspace": workspace,
+                "p_parent": body.parent_id,
+                "p_expected_parent": body.expected_parent,
+            },
+        )
+        return {"id": result}
+
     @app.get("/api/balance/{workspace}")
     def balance(request: Request, workspace: str):
-        identity.require(auth(request), workspace)
+        context = identity.billing_context(auth(request), workspace)
         try:
-            return store.balance(workspace)
+            return {**store.balance(context["billing_workspace"]), **context}
         except Denied:
             return {
                 "plan": "",
@@ -564,16 +605,51 @@ def create_app(config=None):
     def activate_free(request: Request, workspace: str):
         if not config.free_enabled or config.waitlist_only:
             raise Denied("Free access opens after the waitlist. No AI usage was started.")
-        user = identity.require(auth(request, change=True), workspace, billing=True)
+        token = auth(request, change=True)
+        context = identity.billing_context(token, workspace)
+        workspace = context["billing_workspace"]
+        user = identity.require(token, workspace, billing=True)
         store.rate_limit("free:" + user["id"], limit=5)
         return store.activate_free(user["id"], workspace)
 
     @app.post("/api/checkout")
     def checkout(request: Request, body: CheckoutBody):
-        user = identity.require(auth(request, change=True), body.workspace, billing=True)
+        token = auth(request, change=True)
+        context = identity.billing_context(token, body.workspace)
+        if context["billing_workspace"] != body.workspace:
+            raise Denied(
+                "This subspace shares its parent's subscription. Manage team billing "
+                "from the parent Space."
+            )
+        user = identity.require(token, body.workspace, billing=True)
         store.rate_limit("checkout:" + user["id"], limit=10)
+        spaces = identity.workspaces(token)
+        space = next((space for space in spaces if space["id"] == body.workspace), None)
+        if not space:
+            raise Denied("Your workspace access changed. Refresh before checking out.")
+        name = space["name"]
+        owner = user
+        if space["role"] != "owner":
+            roster = identity.request("/rest/v1/rpc/list_members", token, method="POST", data={})
+            owner = next(
+                (
+                    {"id": m["user_id"], "email": m.get("email", "")}
+                    for m in roster
+                    if m["workspace_id"] == body.workspace and m["role"] == "owner"
+                ),
+                None,
+            )
+            if not owner:
+                raise Denied("The workspace billing owner could not be verified.")
         return {
-            "url": payments.checkout(body.workspace, body.plan, body.request_id, owner=user["id"])
+            "url": payments.checkout(
+                body.workspace,
+                body.plan,
+                body.request_id,
+                owner=owner["id"],
+                owner_email=owner.get("email", ""),
+                workspace_name=name,
+            )
         }
 
     @app.get("/api/checkout/status")
@@ -610,13 +686,19 @@ def create_app(config=None):
 
     @app.post("/api/topup")
     def topup(request: Request, body: CheckoutBody):
-        user = identity.require(auth(request, change=True), body.workspace, billing=True)
+        token = auth(request, change=True)
+        context = identity.billing_context(token, body.workspace)
+        workspace = context["billing_workspace"]
+        user = identity.require(token, workspace, billing=True)
         store.rate_limit("topup:" + user["id"], limit=5)
-        return {"url": payments.topup(body.workspace, body.request_id)}
+        return {"url": payments.topup(workspace, body.request_id)}
 
     @app.post("/api/portal/{workspace}")
     def portal(request: Request, workspace: str):
-        identity.require(auth(request, change=True), workspace, billing=True)
+        token = auth(request, change=True)
+        context = identity.billing_context(token, workspace)
+        workspace = context["billing_workspace"]
+        identity.require(token, workspace, billing=True)
         return {"url": payments.portal(workspace)}
 
     @app.post("/stripe/webhook")
@@ -723,7 +805,10 @@ def create_app(config=None):
             raise Denied("Channel access changed.")
         workspace = channels[0]["workspace_id"]
         identity.require(token, workspace)
-        return speech.transcribe(user["id"], body, workspace=workspace)
+        context = identity.billing_context(token, workspace)
+        return speech.transcribe(
+            user["id"], body, workspace=workspace, billing_workspace=context["billing_workspace"]
+        )
 
     @app.get("/api/meetings/transcript/{meeting}")
     def meeting_transcript(request: Request, meeting: UUID, page: int = 0):
@@ -886,11 +971,18 @@ def create_app(config=None):
         )
         store.rate_limit("runs:" + user["id"], limit=20)
         store.reconcile_expired()
-        run = store.create_run(user["id"], body.workspace, body.provider, body.request_id)
+        context = identity.billing_context(token, body.workspace)
+        run = store.create_run(
+            user["id"],
+            body.workspace,
+            body.provider,
+            body.request_id,
+            billing_workspace=context["billing_workspace"],
+        )
         store.session(run["token"], {"access_token": token}, lifetime=7200)
         return {
             **run,
-            "limits": store.run_limits({"workspace": body.workspace}),
+            "limits": store.run_limits({"workspace": context["billing_workspace"]}),
             "model": config.models[body.provider]["id"],
             "base_url": config.origin
             + "/gateway/"

@@ -61,12 +61,37 @@ class Identity:
             token,
         )
         spaces = self.request("/rest/v1/workspaces?select=id,name", token)
-        return [
+        result = [
             {**space, "role": member["role"]}
             for space in spaces
             for member in memberships
             if space["id"] == member["workspace_id"]
         ]
+
+        if self.config.space_hierarchy_enabled or getattr(self, "hierarchy_available", False):
+            for space in result:
+                space.update(self.billing_context(token, space["id"]))
+        return result
+
+    def billing_context(self, token, workspace):
+        user = self.require(token, workspace)
+        if not (self.config.space_hierarchy_enabled or getattr(self, "hierarchy_available", False)):
+            return {
+                "workspace": workspace,
+                "billing_workspace": workspace,
+                "billing_name": "",
+                "parent_id": None,
+                "user_id": user["id"],
+            }
+        context = self.request(
+            "/rest/v1/rpc/space_billing_context",
+            token,
+            method="POST",
+            data={"p_workspace": workspace},
+        )
+        if not isinstance(context, dict) or context.get("user_id") != user["id"]:
+            raise Denied("Could not verify your Space's shared billing.")
+        return context
 
     def require(self, token, workspace, *, billing=False):
         user = self.user(token)
@@ -102,8 +127,15 @@ class Payments:
             settings["icon"] = {"type": "file", "file": self.config.stripe_icon_file}
         return settings
 
-    def checkout(self, workspace, plan, request_id, *, owner=""):
+    def checkout(self, workspace, plan, request_id, *, owner="", workspace_name="", owner_email=""):
         config = self.config
+        if owner:
+            with self.store.tx() as db:
+                if self.store.billing_root(db, workspace, owner) != workspace:
+                    raise Denied(
+                        "Subspaces share their parent's team subscription. "
+                        "No separate checkout was created."
+                    )
         if not config.checkout_enabled or plan not in config.plans:
             raise Denied("Paid beta checkout is being prepared. No payment has been taken.")
         approved = config.plans[plan]
@@ -125,7 +157,9 @@ class Payments:
             row = self.store.customer(workspace, existing)
         else:
             customer = stripe.Customer.create(
-                metadata={"workspace": workspace},
+                name=workspace_name or "Aedrova team workspace",
+                **({"email": owner_email} if owner_email else {}),
+                metadata={"workspace": workspace, "coverage": "entire_team"},
                 idempotency_key="aedrova-customer-" + workspace,
                 api_key=config.stripe_key,
             )
@@ -193,7 +227,17 @@ class Payments:
             line_items=[{"price": approved["price_id"], "quantity": 1}],
             client_reference_id=workspace,
             metadata={"workspace": workspace, "plan": plan},
-            subscription_data={"metadata": {"workspace": workspace, "plan": plan}},
+            subscription_data={
+                "metadata": {"workspace": workspace, "plan": plan, "coverage": "entire_team"},
+                "description": "Aedrova Team · " + (workspace_name or workspace),
+            },
+            custom_text={
+                "submit": {
+                    "message": "One subscription covers "
+                    + (workspace_name or "your entire team")
+                    + ". Additional member charges: $0."
+                }
+            },
             success_url=config.origin + "/welcome?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=config.origin
             + "/account?"

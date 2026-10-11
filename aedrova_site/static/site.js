@@ -146,7 +146,11 @@ if ($('#workspace')) {
     const address = new URL(location.href); address.searchParams.set('plan', plan);
     history.replaceState(null, '', address.href);
     $('#selected-plan').textContent = planSelect.selectedOptions[0].dataset.description +
-      ', renews until cancelled. Review details before paying on Stripe.';
+      ', renews until cancelled. One subscription covers your entire team.';
+    $('#order-billing').textContent = plan === 'annual' ? 'Annual' : 'Monthly';
+    $('#order-price').textContent = planSelect.selectedOptions[0].dataset.description;
+    $('#confirm-team-checkout').checked = false;
+    $('#checkout').disabled = true;
   }
   $('#activate-free').addEventListener('click', () => busy($('#activate-free'), async () => { await api('/api/free/' + encodeURIComponent(select.value), {}); await balance(); }));
   renderPlan();
@@ -177,13 +181,24 @@ if ($('#workspace')) {
       return;
     }
     const entry = spaces.find(space => space.id === selected);
-    const canManage = ['owner', 'admin'].includes(entry?.role);
+    let canManage = ['owner', 'admin'].includes(entry?.billing_role || entry?.role);
+    const child = !!entry?.parent_id;
+    $('#move-subspace-panel').hidden = !child || entry?.billing_role !== 'owner' || entry?.role !== 'owner';
+    $('#confirm-space-move').checked = false;
+    $('#billing-controls').hidden = !canManage || child;
+    $('#checkout').hidden = !canManage || child;
+    $('#activate-free').hidden = !canManage || child;
+    $('#portal').hidden = !canManage;
+    $('#order-workspace').textContent = entry?.name || 'Your workspace';
+    $('#confirm-team-checkout').checked = false;
     status.textContent = 'Checking this workspace…';
     const data = await api('/api/balance/' + encodeURIComponent(selected));
     if (revision !== balanceRevision) return;
     $('#balance').replaceChildren();
     $('#portal').disabled = !canManage || !data.has_billing || ['no_plan', 'pending'].includes(data.status);
-    $('#checkout').disabled = !canManage || !checkoutReady || (data.status === 'active' && data.plan !== 'free');
+    $('#checkout').disabled = true;
+    $('#checkout').dataset.available = String(canManage && !child && checkoutReady && !(data.status === 'active' && data.plan !== 'free'));
+    $('#topup').hidden = !canManage || child || $('#topup').dataset.enabled !== 'true';
     $('#activate-free').disabled = $('#activate-free').dataset.enabled !== 'true' || !canManage || data.status === 'active';
     if (data.status === 'active') {
       const monthlyBudget = Math.max(1, data.monthly_budget || data.allowance);
@@ -195,10 +210,12 @@ if ($('#workspace')) {
       const reset = document.createElement('p');
       reset.textContent = 'Monthly reset: ' + new Date((data.reset_at || data.period_end) * 1000).toLocaleDateString() + ' · ' + (data.monthly_requests || 0) + '/' + (data.monthly_request_limit || 0) + ' model requests';
       $('#balance').append(reset);
+      if (data.five_hour_budget) { const rolling = document.createElement('p'); rolling.textContent = 'Shared five-hour capacity: ' + Math.max(0, Math.round(100 * (1 - data.five_hour_spent / data.five_hour_budget))) + '% available.'; $('#balance').append(rolling); }
+      if (data.usage_alerts?.length && canManage) { const alert = document.createElement('p'); alert.textContent = 'Your team has used ' + Math.max(...data.usage_alerts) + '% of its monthly AI capacity.'; $('#balance').append(alert); }
       $('#balance').hidden = false;
       $('#topup').disabled = !canManage || data.plan === 'free';
       status.textContent = testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
-        'Your ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. ' + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the Mac app.');
+        'Your team’s ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. One subscription covers your team. ' + (child ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the Mac app.');
     } else {
       status.textContent = !canManage ? 'Your workspace owner or admin manages the subscription.' :
         checkoutReady ? 'Review your selected plan on Stripe before confirming. ' + (testMode ? 'Test payments only.' : '') :
@@ -208,13 +225,18 @@ if ($('#workspace')) {
   async function load(preferredWorkspace = '') {
     const session = await api('/api/session');
     csrf = session.csrf; checkoutReady = session.checkout_enabled; testMode = session.stripe_test_mode;
+    $('#topup').dataset.enabled = String(session.topup_enabled);
     $('#topup').hidden = !session.topup_enabled;
+    $('#subspace-creation').hidden = !session.space_hierarchy_enabled;
     spaces = await api('/api/workspaces'); select.replaceChildren();
     if (!spaces.length) {
       const option = document.createElement('option'); option.value = ''; option.textContent = 'Your first workspace'; select.append(option);
     }
+    $('#subspace-parent').replaceChildren();
+    $('#move-parent').replaceChildren();
     for (const space of spaces) {
-      const option = document.createElement('option'); option.value = space.id; option.textContent = space.name + ' · ' + space.role; select.append(option);
+      const option = document.createElement('option'); option.value = space.id; option.textContent = (space.parent_id ? '↳ ' : '') + space.name + ' · ' + space.role; select.append(option);
+      if (['owner','admin'].includes(space.billing_role || space.role) && ['owner','admin'].includes(space.role)) { const parent = document.createElement('option'); parent.value = space.id; parent.textContent = space.name; $('#subspace-parent').append(parent); const destination = parent.cloneNode(true); $('#move-parent').append(destination); }
     }
     const saved = preferredWorkspace || new URL(location.href).searchParams.get('workspace') || storage.get('aedrova-workspace');
     if (spaces.some(space => space.id === saved)) select.value = saved;
@@ -230,6 +252,17 @@ if ($('#workspace')) {
     storage.set('aedrova-workspace', result.id); $('#new-workspace').value = '';
     await load(result.id); notice('Your team’s workspace is ready.');
   }));
+  $('#move-subspace').addEventListener('click', event => busy(event.currentTarget, async () => {
+    const entry = spaces.find(space => space.id === selected);
+    if (!$('#confirm-space-move').checked) throw new Error('Confirm the shared billing change before moving.');
+    const result = await api('/api/subspaces/' + encodeURIComponent(selected) + '/move', {parent_id:$('#move-parent').value,expected_parent:entry.parent_id,confirmed:true}); await load(result.id); notice('Subspace moved. New work uses the destination’s shared capacity.');
+  }));
+  $('#confirm-team-checkout').addEventListener('change', event => { $('#checkout').disabled = !event.target.checked || $('#checkout').dataset.available !== 'true'; });
+  $('#create-subspace').addEventListener('click', event => busy(event.currentTarget, async () => {
+    const name = $('#new-workspace').value.trim(), parent_id = $('#subspace-parent').value;
+    if (!name || !parent_id) throw new Error('Choose a parent Space and name your subspace.');
+    const result = await api('/api/workspaces', {name, parent_id}); await load(result.id); notice('Subspace ready. Your parent’s subscription is shared.');
+  }));
   function redirectStripe(value, hostname) {
     const target = new URL(value);
     if (target.protocol !== 'https:' || target.hostname !== hostname || target.username || target.password)
@@ -237,6 +270,7 @@ if ($('#workspace')) {
     location.href = target.href;
   }
   $('#checkout').addEventListener('click', event => busy(event.currentTarget, async () => {
+    if (!$('#confirm-team-checkout').checked) throw new Error('Review and confirm your team’s order summary first.');
     const result = await api('/api/checkout', {workspace: selected, plan, request_id: checkoutKey()});
     redirectStripe(result.url, 'checkout.stripe.com');
   }));

@@ -18,10 +18,11 @@ def provision(config, output, *, live=False):
         mode = "live" if live else "test"
         raise ValueError(f"Only Stripe {mode} keys are accepted by this setup command.")
     product = stripe.Product.create(
-        name="Aedrova workspace",
-        description="Private team workspace with a named coding agent and shared AI allowance.",
+        name="Aedrova Team — Workspace subscription",
+        description="One subscription covers the entire team workspace and its eligible "
+        "members. Additional member charges: $0.",
         metadata={"application": "aedrova", "environment": environment},
-        idempotency_key=f"aedrova-{environment}-product-v1",
+        idempotency_key=f"aedrova-{environment}-team-product-v3",
         api_key=config.stripe_key,
     )
     stripe.Product.create(
@@ -49,12 +50,25 @@ def provision(config, output, *, live=False):
                 unit_amount=policy["amount_cents"],
                 recurring={"interval": policy["interval"], "interval_count": 1},
                 lookup_key=lookup,
-                nickname="Aedrova " + PLAN_NAMES[name],
+                nickname="Aedrova " + PLAN_NAMES[name] + " — per team",
                 metadata={"application": "aedrova", "environment": environment},
                 idempotency_key="aedrova-" + environment + "-price-" + name + "-v2",
                 api_key=config.stripe_key,
             )
         validate_price(price, policy, live=live)
+        # Existing immutable Price amounts are retained; update their product presentation.
+        linked = stripe.Product.retrieve(price["product"], api_key=config.stripe_key)
+        if linked.get("metadata", {}).get("application") != "aedrova":
+            raise ValueError("The existing price is not linked to an Aedrova product.")
+        stripe.Product.modify(
+            linked["id"],
+            name="Aedrova Team — Workspace subscription",
+            description=(
+                "One subscription covers the entire team workspace and its eligible "
+                "members. Additional member charges: $0."
+            ),
+            api_key=config.stripe_key,
+        )
         plans[name] = {**policy, "price_id": price["id"]}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plans, indent=2) + "\n")
