@@ -63,6 +63,7 @@ class Config:
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
+    chat_speech_enabled: bool = False
     speech_rate_microusd_per_minute: int = 6000
     speech_key: str = field(default="", repr=False)
     livekit_url: str = ""
@@ -200,6 +201,7 @@ class Config:
             self.checkout_enabled
             or self.gateway_enabled
             or self.meetings_enabled
+            or self.chat_speech_enabled
             or self.free_enabled
         ):
             raise ValueError(
@@ -234,6 +236,10 @@ class Config:
             raise ValueError("Meeting context requires the enabled meeting service.")
         if self.speech_rate_microusd_per_minute <= 0:
             raise ValueError("Configure a positive speech cost estimate.")
+        if self.chat_speech_enabled and (not self.supabase_database or not self.speech_key):
+            raise ValueError(
+                "Chat dictation needs restricted Supabase and a server-only speech key."
+            )
         if self.speech_enabled and (
             not self.meeting_context_enabled or not self.supabase_database or not self.speech_key
         ):
@@ -281,7 +287,9 @@ class Config:
         usage_policy = policies(self.usage_limits)
         if min(self.company_budget_microusd, self.free_pool_microusd) <= 0:
             raise ValueError("Company and Free pool budgets must be positive.")
-        if self.free_enabled and not (self.gateway_enabled or self.speech_enabled):
+        if self.free_enabled and not (
+            self.gateway_enabled or self.speech_enabled or self.chat_speech_enabled
+        ):
             raise ValueError("Free activation requires a configured AI or speech service.")
         for name, plan in self.plans.items():
             if name not in {"monthly", "annual"} or not plan.get("price_id", "").startswith(

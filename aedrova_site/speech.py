@@ -16,10 +16,10 @@ from sqlalchemy import text
 from aedrova_site.store import Denied
 
 
-def decode_audio(encoded):
+def decode_audio(encoded, *, max_seconds=10):
     try:
         data = base64.b64decode(encoded, validate=True)
-        if not 32044 <= len(data) <= 320044:
+        if not 32044 <= len(data) <= max_seconds * 32000 + 44:
             raise ValueError("size")
         with wave.open(io.BytesIO(data)) as wav:
             if (wav.getnchannels(), wav.getsampwidth(), wav.getframerate(), wav.getcomptype()) != (
@@ -31,7 +31,7 @@ def decode_audio(encoded):
                 raise ValueError("format")
             n = wav.getnframes()
             pcm = wav.readframes(n)
-            if not 16000 <= n <= 160000 or len(pcm) != n * 2:
+            if not 16000 <= n <= max_seconds * 16000 or len(pcm) != n * 2:
                 raise ValueError("duration")
             # Re-encode only PCM. Discard arbitrary RIFF metadata/trailing payloads.
             result = io.BytesIO()
@@ -157,6 +157,69 @@ class SpeechService:
                     "This speech chunk could not be saved. Check consent, "
                     "provider availability and allowance. No automatic retry."
                 ) from error
+        finally:
+            if access:
+                self.store.end_run(access["id"], user)
+            self.slots.release()
+
+
+class DictationService(SpeechService):
+    """One deliberate draft, at most 30 seconds. Shares plan accounting, stores no text/audio."""
+
+    def transcribe_draft(self, user, body, *, workspace, billing_workspace):
+        if not self.config.chat_speech_enabled:
+            raise Denied("Chat dictation is being prepared. You can still type your message.")
+        audio, duration = decode_audio(body.audio, max_seconds=30)
+        self.store.rate_limit("dictation:" + user, limit=6)
+        if not self.slots.acquire(blocking=False):
+            raise Denied("Dictation is busy. Try again shortly.")
+        access = reservation = None
+        try:
+            access = self.store.create_run(
+                user,
+                workspace,
+                "speech",
+                "dictation:" + str(body.identifier),
+                billing_workspace=billing_workspace,
+            )
+            run = self.store.run(access["token"])
+            estimate = math.ceil(duration / 1000) * math.ceil(
+                self.config.speech_rate_microusd_per_minute / 60
+            )
+            reservation, _ = self.store.reserve(
+                run, hashlib.sha256(audio).hexdigest(), estimate, {"id": "whisper-1"}
+            )
+            started = time.monotonic()
+            with self.client.stream(
+                "POST",
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={
+                    "Authorization": "Bearer " + self.config.speech_key,
+                    "Accept-Encoding": "identity",
+                },
+                data={"model": "whisper-1", "response_format": "json"},
+                files={"file": ("dictation.wav", audio, "audio/wav")},
+            ) as response:
+                response.raise_for_status()
+                data = bytearray()
+                for chunk in response.iter_bytes():
+                    if time.monotonic() - started > 25 or len(data) + len(chunk) > 16384:
+                        raise ValueError("Dictation response exceeded bounds")
+                    data.extend(chunk)
+                import json
+
+                result = json.loads(data).get("text")
+                if not isinstance(result, str) or len(result.strip()) > 4000:
+                    raise ValueError("Invalid dictation")
+            self.store.settle(reservation, estimate, b"completed")
+            reservation = None
+            return {"text": result.strip()}
+        except Exception as error:
+            if reservation:
+                self.store.settle(reservation, None)
+            raise Denied(
+                "Dictation unavailable. Check your team AI allowance or try typing."
+            ) from error
         finally:
             if access:
                 self.store.end_run(access["id"], user)

@@ -36,7 +36,7 @@ from aedrova_site.observability import (
 )
 from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.services import Identity, Payments, random_token
-from aedrova_site.speech import SpeechService
+from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
 
 ROOT = Path(__file__).parent
@@ -99,6 +99,19 @@ class MeetingSpeechBody(MeetingJoinBody):
     audio: str = Field(min_length=1, max_length=427000)
 
 
+class DictationBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    channel: UUID
+    identifier: UUID
+    audio: str = Field(min_length=1, max_length=1280100)
+
+
+class VerifyUploadBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    identifier: UUID
+    parent: UUID | None = None
+
+
 class MeetingTranscriptEdit(BaseModel):
     model_config = {"extra": "forbid"}
     identifier: UUID
@@ -155,6 +168,7 @@ def create_app(config=None):
     templates = Jinja2Templates(directory=ROOT / "templates")
     leases = MeetingLeases(store, require_external=config.production)
     speech = SpeechService(config, store)
+    dictation = DictationService(config, store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -175,6 +189,7 @@ def create_app(config=None):
             for provider in _app.state.dots.providers.values():
                 await asyncio.to_thread(provider.close)
             await asyncio.to_thread(speech.close)
+            await asyncio.to_thread(dictation.close)
             await asyncio.to_thread(store.engine.dispose)
 
     app = FastAPI(
@@ -182,6 +197,40 @@ def create_app(config=None):
     )
     app.state.meeting_leases = leases
     app.state.speech = speech
+    app.state.dictation = dictation
+
+    from aedrova_site.uploads import UploadVerifier
+
+    uploads = UploadVerifier(identity, store)
+    app.state.uploads = uploads
+
+    @app.post("/api/files/verify")
+    def verify_upload(request: Request, body: VerifyUploadBody):
+        return uploads.verify(auth(request, change=True), body.identifier, body.parent)
+
+    @app.get("/api/chat/speech/capabilities")
+    def dictation_capabilities(request: Request):
+        identity.user(auth(request))
+        return {"enabled": config.chat_speech_enabled, "max_seconds": 30}
+
+    @app.post("/api/chat/speech")
+    def chat_dictation(request: Request, body: DictationBody):
+        if not config.chat_speech_enabled:
+            raise Denied("Chat dictation is being prepared. You can still type your message.")
+        token = auth(request, change=True)
+        user = identity.user(token)
+        channels = identity.request(
+            "/rest/v1/channels?id=eq." + str(body.channel) + "&select=workspace_id", token
+        )
+        if len(channels) != 1:
+            raise Denied("Channel access changed.")
+        workspace = channels[0]["workspace_id"]
+        identity.require(token, workspace)
+        context = identity.billing_context(token, workspace)
+        return dictation.transcribe_draft(
+            user["id"], body, workspace=workspace, billing_workspace=context["billing_workspace"]
+        )
+
     app.state.config, app.state.store, app.state.identity, app.state.payments = (
         config,
         store,
@@ -857,7 +906,9 @@ def create_app(config=None):
     def meeting_wrapup(request: Request, meeting: UUID):
         token = meeting_context_token(request)
         return identity.request(
-            "/rest/v1/rpc/meeting_wrapup_status", token, method="POST",
+            "/rest/v1/rpc/meeting_wrapup_status",
+            token,
+            method="POST",
             data={"p_meeting": str(meeting)},
         )
 
@@ -865,11 +916,16 @@ def create_app(config=None):
     def meeting_confirm(request: Request, body: MeetingConfirmBody):
         token = meeting_context_token(request)
         count = identity.request(
-            "/rest/v1/rpc/confirm_meeting_transcript", token, method="POST",
-            data={"p_meeting": str(body.meeting), "p_segments": [
-                {"identifier": str(row.identifier), "version": row.version, "body": row.body}
-                for row in body.segments
-            ]},
+            "/rest/v1/rpc/confirm_meeting_transcript",
+            token,
+            method="POST",
+            data={
+                "p_meeting": str(body.meeting),
+                "p_segments": [
+                    {"identifier": str(row.identifier), "version": row.version, "body": row.body}
+                    for row in body.segments
+                ],
+            },
         )
         return {"confirmed": count}
 
