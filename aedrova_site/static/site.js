@@ -92,13 +92,16 @@ if(form){
   let step=0;
   const fields=[...form.querySelectorAll('fieldset')];
   const lastStep=fields.length-1;
-  const nickname=$('#nickname'),firstWin=$('#first-win');
+  const nickname=$('#nickname'),firstWin=$('#first-win'),referralDetail=$('#referral-detail');
   nickname.value=state.nickname||'Aedrova';
   firstWin.value=state.first_win||'';
+  referralDetail.value=state.referral==='prefer_not'?'':state.referral_detail||'';
+  referralDetail.disabled=state.referral==='prefer_not';
   function save(){
     delete state.step;
     state.nickname=nickname.value;
     state.first_win=firstWin.value;
+    state.referral_detail=referralDetail.value;
     storage.set('aedrova-intro',state);
   }
   function show(advance=false){
@@ -115,18 +118,19 @@ if(form){
   form.querySelectorAll('.option-grid').forEach(group=>{
     const response=group.closest('fieldset').querySelector('.intro-response');
     group.querySelectorAll('button').forEach(button=>{
-      const selected=state[group.dataset.answer]===button.textContent;
+      const selected=state[group.dataset.answer]===(button.dataset.value||button.textContent);
       button.setAttribute('aria-pressed',String(selected));
       if(selected&&response)response.textContent=button.dataset.response||'';
       button.addEventListener('click',()=>{
-        state[group.dataset.answer]=button.textContent;
+        state[group.dataset.answer]=button.dataset.value||button.textContent;
+        if(group.dataset.answer==='referral'){referralDetail.disabled=state.referral==='prefer_not';if(referralDetail.disabled)referralDetail.value='';}
         group.querySelectorAll('button').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
         if(response)response.textContent=button.dataset.response||'';
         save();
       });
     });
   });
-  nickname.addEventListener('input',save);firstWin.addEventListener('input',save);
+  nickname.addEventListener('input',save);firstWin.addEventListener('input',save);referralDetail.addEventListener('input',save);
   $('#wizard-back').addEventListener('click',()=>{if(step>0){step--;show(true);}});
   $('#wizard-next').addEventListener('click',()=>{if(step===lastStep){save();location.href='/plans';}else{step++;show(true);}});
   form.addEventListener('submit',event=>{event.preventDefault();$('#wizard-next').click();});
@@ -321,7 +325,9 @@ if(waitlistForm){
     error.hidden=true;submit.disabled=true;submit.setAttribute('aria-busy','true');
     try{
       const fields=new FormData(waitlistForm);
-      await api('/api/waitlist',{email:String(fields.get('email')).trim(),consent:fields.get('consent')==='on'});
+      const intro=storage.get('aedrova-intro',{});
+      const source=['chatgpt','claude','gemini','perplexity','search','social','friend','other','prefer_not'].includes(intro?.referral)?intro.referral:'';
+      await api('/api/waitlist',{email:String(fields.get('email')).trim(),consent:fields.get('consent')==='on',referral_source:source,referral_detail:source&&source!=='prefer_not'?String(intro.referral_detail||'').slice(0,160):''});
       $('#waitlist-entry').hidden=true;$('#waitlist-success').hidden=false;$('#waitlist-success').focus();
       waitlistForm.reset();
     }catch(problem){error.textContent=problem.message;error.hidden=false;}

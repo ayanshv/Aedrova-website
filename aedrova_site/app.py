@@ -8,20 +8,21 @@ import re
 import secrets
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 from urllib.parse import urlencode
 from uuid import UUID
 
 import stripe
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from aedrova_site import discovery
 from aedrova_site.boundaries import BodyLimit
 from aedrova_site.config import Config
 from aedrova_site.gateway import authorize_run, inference
@@ -75,6 +76,19 @@ class MeetingJoinBody(BaseModel):
 class WaitlistBody(BaseModel):
     email: str = Field(min_length=3, max_length=254)
     consent: bool = False
+    referral_source: Literal[
+        "",
+        "chatgpt",
+        "claude",
+        "gemini",
+        "perplexity",
+        "search",
+        "social",
+        "friend",
+        "other",
+        "prefer_not",
+    ] = ""
+    referral_detail: str = Field(default="", max_length=160)
 
 
 class MeetingConsentBody(MeetingJoinBody):
@@ -209,6 +223,11 @@ def create_app(config=None):
         )
         if not request.url.path.startswith("/static"):
             response.headers["Cache-Control"] = "no-store"
+        if (
+            not discovery.public_deployment(config)
+            or request.url.path not in discovery.PUBLIC_PAGES
+        ):
+            response.headers["X-Robots-Tag"] = "noindex"
         if config.production:
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
         return response
@@ -279,6 +298,7 @@ def create_app(config=None):
             name=name + ".html",
             context={
                 "title": title,
+                "seo": discovery.metadata(config, request.url.path, title),
                 "stripe_test_mode": config.stripe_test_mode,
                 "checkout_enabled": config.checkout_enabled,
                 "waitlist_only": config.waitlist_only,
@@ -293,6 +313,18 @@ def create_app(config=None):
     @app.get("/")
     def home(request: Request):
         return page(request, "home", "Talk. Build. Together")
+
+    @app.get("/product")
+    def product(request: Request):
+        return page(request, "product", "What is Aedrova?")
+
+    @app.get("/robots.txt")
+    def crawl_rules():
+        return Response(discovery.robots(config), media_type="text/plain")
+
+    @app.get("/sitemap.xml")
+    def crawl_sitemap():
+        return Response(discovery.sitemap(config), media_type="application/xml")
 
     @app.get("/waitlist")
     def waitlist(request: Request):
@@ -315,15 +347,21 @@ def create_app(config=None):
         )
         store.session(
             "waitlist:" + hashlib.sha256(email.encode()).hexdigest(),
-            {"kind": "waitlist", "email": email, "consent": "launch-updates-v1"},
+            {
+                "kind": "waitlist",
+                "email": email,
+                "consent": "launch-updates-v1",
+                "referral_source": body.referral_source,
+                "referral_detail": body.referral_detail.strip()
+                if body.referral_source not in {"", "prefer_not"}
+                else "",
+            },
             lifetime=365 * 86400,
         )
         return {"ok": True}
 
     @app.get("/onboarding")
     def onboarding(request: Request):
-        if config.waitlist_only:
-            return RedirectResponse("/waitlist", status_code=303)
         return page(request, "onboarding", "Make room for your next idea")
 
     @app.get("/plans")

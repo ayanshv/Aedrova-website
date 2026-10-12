@@ -24,8 +24,9 @@ def test_waitlist_replaces_entry_points_and_blocks_signup(client):
         assert page.status_code == 200
         assert "Join waitlist today" in page.text
         assert 'href="/account?plan=' not in page.text
-        assert 'href="/onboarding"' not in page.text
-    for path in ("/onboarding", "/account", "/auth/google"):
+        assert 'href="/onboarding"' in page.text
+    assert client.get("/onboarding").status_code == 200
+    for path in ("/account", "/auth/google"):
         assert client.get(path, follow_redirects=False).headers["location"] == "/waitlist"
 
 
