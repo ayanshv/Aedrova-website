@@ -445,6 +445,15 @@ def create_app(config=None):
     def terms(request: Request):
         return page(request, "legal", "Terms", kind="terms")
 
+    @app.get("/data-controls")
+    @app.get("/subprocessors")
+    @app.get("/cookies")
+    @app.get("/acceptable-use")
+    @app.get("/security")
+    def trust(request: Request):
+        kind = request.url.path.strip("/")
+        return page(request, "trust", kind.replace("-", " ").title(), kind=kind)
+
     @app.get("/health")
     def health():
         return {
