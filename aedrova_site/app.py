@@ -99,16 +99,23 @@ class MeetingSpeechBody(MeetingJoinBody):
     audio: str = Field(min_length=1, max_length=427000)
 
 
-class MeetingReviewBody(BaseModel):
+class MeetingTranscriptEdit(BaseModel):
     model_config = {"extra": "forbid"}
     identifier: UUID
     version: int = Field(ge=0, strict=True)
     body: str = Field(min_length=1, max_length=2000)
+
+
+class MeetingReviewBody(MeetingTranscriptEdit):
     decision: bool = Field(default=False, strict=True)
 
 
 class MeetingWithdrawBody(MeetingJoinBody):
     delete: bool = Field(default=False, strict=True)
+
+
+class MeetingConfirmBody(MeetingJoinBody):
+    segments: list[MeetingTranscriptEdit] = Field(min_length=1, max_length=10000)
 
 
 class InquiryBody(BaseModel):
@@ -845,6 +852,26 @@ def create_app(config=None):
             },
         )
         return {"version": version}
+
+    @app.get("/api/meetings/wrapup/{meeting}")
+    def meeting_wrapup(request: Request, meeting: UUID):
+        token = meeting_context_token(request)
+        return identity.request(
+            "/rest/v1/rpc/meeting_wrapup_status", token, method="POST",
+            data={"p_meeting": str(meeting)},
+        )
+
+    @app.post("/api/meetings/transcript/confirm")
+    def meeting_confirm(request: Request, body: MeetingConfirmBody):
+        token = meeting_context_token(request)
+        count = identity.request(
+            "/rest/v1/rpc/confirm_meeting_transcript", token, method="POST",
+            data={"p_meeting": str(body.meeting), "p_segments": [
+                {"identifier": str(row.identifier), "version": row.version, "body": row.body}
+                for row in body.segments
+            ]},
+        )
+        return {"confirmed": count}
 
     @app.post("/api/meetings/consent")
     def meeting_consent(request: Request, body: MeetingConsentBody):

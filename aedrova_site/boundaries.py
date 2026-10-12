@@ -16,8 +16,10 @@ class BodyLimit:
         maximum = (
             self.maximum
             if scope["path"].startswith("/gateway/")
-            else (512 * 1024 if scope["path"] == "/api/meetings/speech" else
+            else (2 * 1024 * 1024 if scope["path"] == "/api/meetings/transcript/confirm" else
+                  (512 * 1024 if scope["path"] == "/api/meetings/speech" else
                   (1024 * 1024 if scope["path"] == "/stripe/webhook" else 64 * 1024))
+                  )
         )
         chunks, length = [], 0
         try:
