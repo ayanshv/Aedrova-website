@@ -100,3 +100,12 @@ confirmation/error templates. Public deployment uses isolated website PR #9; no
 backend/API/permission changes are part of that PR. Native custom working-style
 preferences persist through the existing versioned Bud instruction field and require
 no SQL. Phase 3 live dictation/upload acceptance remains pending owner native sign-in.
+
+### Voice recording replaces the default microphone flow — October 12
+
+Owner requested voice messages instead of dictation. Matching file policy now validates only
+mono 16 kHz 16-bit PCM WAV of 1–30 seconds, with bounded payload and exact RIFF/frame size.
+Existing private upload, rate limit, hash verification and RLS remain enforced. Owner reports
+202610120002_voice_messages.sql installed in Staging. Native explicit preview/send uses no
+speech-provider/API allowance; only normal workspace storage. Deploy this branch to the existing
+staging service; keep production, meetings, checkout and release gates unchanged.

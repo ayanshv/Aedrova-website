@@ -2,6 +2,7 @@
 
 import io
 import struct
+import wave
 import zipfile
 from pathlib import PurePosixPath
 
@@ -42,8 +43,33 @@ def inspect_file(name, data):
         raise ValueError("Unsupported filename.")
     suffix = PurePosixPath(name).suffix.lower()
     invalid = (
-        "File content does not match its type. Choose text, PDF, PNG, JPEG or Office documents."
+        "File content does not match its type. "
+        "Choose text, PDF, PNG, JPEG, voice WAV or Office documents."
     )
+    if suffix == ".wav":
+        try:
+            if (
+                data[:4] != b"RIFF"
+                or data[8:12] != b"WAVE"
+                or int.from_bytes(data[4:8], "little") + 8 != len(data)
+            ):
+                raise ValueError(invalid)
+            with wave.open(io.BytesIO(data), "rb") as audio:
+                frames = audio.getnframes()
+                if (
+                    audio.getnchannels(),
+                    audio.getsampwidth(),
+                    audio.getframerate(),
+                    audio.getcomptype(),
+                ) != (1, 2, 16000, "NONE") or not 16000 <= frames <= 480000:
+                    raise ValueError(
+                        "Voice messages must be mono 16 kHz PCM WAV, between 1 and 30 seconds."
+                    )
+                if len(audio.readframes(frames)) != frames * 2:
+                    raise ValueError(invalid)
+            return "audio/wav"
+        except (wave.Error, EOFError) as error:
+            raise ValueError(invalid) from error
     if suffix in TEXT:
         try:
             value = data.decode("utf-8-sig")
