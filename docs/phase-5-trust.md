@@ -104,3 +104,35 @@ request has been fulfilled or that all launch risks are resolved.
 Validation: 465 website tests passed before adding the third rollback regression;
 all three trust/removal tests pass afterward. Ruff and diff checks passed. Desktop
 visual/settings suite: 7 passed. Publication branch is tested separately against main.
+
+
+## October 12 — expanded Privacy and Terms
+
+Owner requests substantially deeper documents. Privacy now has 25 sections and
+Terms 27, each approximately 4,600 rendered words including its contents list.
+Documents are split into policies/privacy.html and policies/terms.html, with a
+shared legal page and accessible, collapsible full contents. Existing public URLs,
+contact details, plan prices and waitlist gates are preserved.
+
+New depth covers information categories/sources/purposes, sensitive content,
+biometrics boundaries, local versus hosted AI, category-specific retention,
+verification/representatives/appeals, applicable regional rights, incident handling,
+independent recipients and business transfers. Terms expand license/IP, workspace
+control, generated-work risks, execution approvals, taxes/payment disputes, capacity,
+suspension, termination effects, warranties, liability, business claims and general
+contractual provisions. The changes do not implement new privacy/backend controls.
+
+Material legal/business choices for qualified review before paid launch: business-only
+aggregate liability cap based on twelve preceding months' affected-workspace fees;
+limited business-customer reimbursement for covered third-party claims, excluding
+Aedrova's own misconduct/breach and ordinary inaccurate output. Consumers retain
+mandatory remedies. No chosen law/forum, forced arbitration or class-action waiver
+was invented. Final enforceability is not established by document length or code tests.
+
+Owner action: provide the actual legal operator/contracting name (individual or
+registered entity) and have qualified counsel review the final documents, markets,
+liability/claim allocation, subscription rights, processing arrangements and required
+contact/representative details. Provider regions/backup handling must be verified.
+Phase 6 must validate affirmative acceptance/version records and material-change
+notice where appropriate; publishing a page does not establish valid contract assent
+from every existing user. Keep checkout and legal-ready gates off pending approval.
