@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block main %}
+<article class="legal policy-document">
+<span class="eyebrow">YOUR TEAM, PLUS AI</span>
+<h1>What is Aedrova?</h1>
+<p>Aedrova is a collaborative AI workspace for startup teams. It brings team conversations, configurable AI teammates called Buds, and coding agents into one shared place, so authorized team context can help turn decisions into working software.</p>
+<div class="notice">{% if waitlist_only %}Aedrova is currently accepting waitlist registrations. Public paid checkout and desktop downloads are not open.{% else %}Availability depends on invitations, enabled services and release readiness. Check the current access information before choosing a plan.{% endif %}</div>
+<nav class="policy-index" aria-label="Product guide"><a href="#workspace">The workspace</a><a href="#buds">Buds</a><a href="#building">Building</a><a href="#questions">Questions</a></nav>
+<h2 id="workspace">A workspace for conversations and delivery</h2>
+<p>Teams can organize workspaces, channels and private conversations, reply in threads, react to messages, share verified files and send voice messages. Project, work and file views keep related work near the conversation. Audio and video meetings are part of the application; hosted transcription remains subject to infrastructure and acceptance checks.</p>
+<p>The intended audience is founders and startup teams coordinating product work: discussing requirements, preserving decisions, reviewing project changes and keeping teammates informed. Aedrova combines communication with AI-assisted delivery; it does not promise to replace every existing tool.</p>
+<h2 id="buds">Buds are configurable AI teammates</h2>
+<p>Buds have names, appearances and working-style preferences. Builder, Designer, Marketing, Finance, Research and Product are the available role orientations. Mention a configured Bud in chat to request help within its authorized context and resources. Buds are software assistants, not human employees or independent professional advisers.</p>
+<p>Connections bring permitted information from external services into supported tasks. Role-based recommendations help people choose relevant tools. Provider authorization, account eligibility, selected resources and actual integration readiness still determine access. A connector listing is not a promise that every provider is fully approved and available.</p>
+<h2 id="building">Build from shared context</h2>
+<p>The coding workflow can use permitted workspace discussions and connected project context to plan work, edit a separate build copy and run supported checks. Users can select a supported Codex or Claude Code runtime. Applying changes to the original project and publishing retain their relevant approval gates.</p>
+<p>Aedrova’s distinction is the connection between team conversations, authorized context, requested AI work and reviewable project results. Buds participate in conversation; coding agents carry out supported software work. AI results still need human review, testing and appropriate permissions.</p>
+<h2 id="questions">Common questions</h2>
+<h3>Is Aedrova a chat app or an AI coding tool?</h3><p>It combines team collaboration with configurable AI teammates and an agent-assisted coding workflow. Conversations provide context for supported requested work rather than being an unrelated chat window.</p>
+<h3>Who is Aedrova for?</h3><p>Startup teams and founders who want to coordinate decisions, discuss product work and use AI with shared project context. Independent builders can also use a workspace.</p>
+<h3>What can a Bud access?</h3><p>Only the supported resources and context available under its grant and the requesting user’s permissions. A workspace invitation does not automatically expose every private channel or connected account. See <a href="/data-controls">Data & AI controls</a>.</p>
+<h3>Can Buds generate social-media images and videos?</h3><p>Marketing image/video generation is planned. It is not advertised here as an implemented customer capability.</p>
+<h3>Is the subscription charged for each teammate?</h3><p>The published paid model is per team workspace. One subscription covers its eligible members, with no additional member charges. See the <a href="/plans">current intended plans</a> for price, capacity and availability.</p>
+<h3>Does it process everything on my computer?</h3><p>No. Hosted features and configured runtimes can send permitted prompts, content or audio to relevant providers. Aedrova does not promise exclusively local AI or end-to-end encryption. Review <a href="/privacy">the Privacy policy</a> before sharing sensitive work.</p>
+<h3>Can I download it today?</h3><p>{% if waitlist_only %}Public downloads are not open. Join the waitlist for launch updates.{% else %}Check the current release and access requirements; a proposed Windows build is not a released installer.{% endif %}</p>
+<div class="support-contact"><a class="button" href="/onboarding">Meet your next workspace →</a><p><a href="/support">Ask the Aedrova team a question</a></p></div>
+</article>
+{% endblock %}

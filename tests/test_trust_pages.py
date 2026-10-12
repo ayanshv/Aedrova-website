@@ -51,7 +51,7 @@ def test_trust_destinations_and_local_anchors_work_without_opening_checkout(clie
         assert "Footer navigation" in response.text
         parsed[path] = Links()
         parsed[path].feed(response.text)
-        assert 'href="/onboarding"' not in response.text
+        assert 'href="/account?plan=' not in response.text
     for path, parser in parsed.items():
         for href in parser.links:
             target, _, anchor = href.partition("#")

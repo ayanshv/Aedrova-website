@@ -31,11 +31,14 @@ def export(store, destination):
             email = payload["email"]
             if email.startswith(("=", "+", "-", "@")):
                 email = "'" + email  # Prevent spreadsheet formula execution on CSV open.
-            contacts.append((email, payload["consent"]))
+            detail = str(payload.get("referral_detail", ""))
+            if detail.startswith(("=", "+", "-", "@")):
+                detail = "'" + detail
+            contacts.append((email, payload["consent"], payload.get("referral_source", ""), detail))
     descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", newline="") as output:
         writer = csv.writer(output)
-        writer.writerow(("email", "consent"))
+        writer.writerow(("email", "consent", "referral_source", "referral_detail"))
         writer.writerows(sorted(contacts))
     return len(contacts)
 
