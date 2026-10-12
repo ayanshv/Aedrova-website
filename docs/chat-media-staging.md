@@ -81,3 +81,14 @@ final waitlist gate checked separately. All embedded PostgreSQL migration/RLS te
 including verified publication, other uploader denial, idempotency and cancellation,
 passed. Light/dark native components inspected at 900 and 360 px using fixture states,
 not a claim of live microphone recording. Secret scans and scoped lint passed.
+
+Hosted update: owner approved the existing OpenAI key transfer and bounded Free chat
+activation. Render free staging service deployed backend 36aba62 successfully
+(dep-db693oid0e5s739s1gd0). Meetings/coding/checkout/public release stay disabled.
+Upload SQL installed and restricted role EXECUTE verified. Actual workspace allowance
+activation and physical microphone/provider acceptance remain pending.
+The authenticated owner activated limited Free on existing disposable workspace
+Beta isolation 1 eb8958 (100% capacity, 0/40 requests), without paid checkout.
+Health ready returned 200; unauthenticated capability access denied 403. Source
+native app launched against staging; native sign-in/physical/provider and hosted
+upload acceptance remain pending owner actions, not completed tests.
