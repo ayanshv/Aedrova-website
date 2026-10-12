@@ -92,3 +92,11 @@ Beta isolation 1 eb8958 (100% capacity, 0/40 requests), without paid checkout.
 Health ready returned 200; unauthenticated capability access denied 403. Source
 native app launched against staging; native sign-in/physical/provider and hosted
 upload acceptance remain pending owner actions, not completed tests.
+
+### Subsequent Bud presentation update
+
+October 12: shared website Bud blink script also included on staging pages and OAuth
+confirmation/error templates. Public deployment uses isolated website PR #9; no
+backend/API/permission changes are part of that PR. Native custom working-style
+preferences persist through the existing versioned Bud instruction field and require
+no SQL. Phase 3 live dictation/upload acceptance remains pending owner native sign-in.
