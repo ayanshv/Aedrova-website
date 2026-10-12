@@ -1,0 +1,78 @@
+# MANUAL IMPORT ONLY: one $7/month base guard worker, after owner cost approval.
+# First upgrade and configure the EXISTING aedrova-beta-staging API.
+# Copies only the guard's required staging configuration; no speech/provider key.
+services:
+  - type: worker
+    name: aedrova-beta-meeting-guard
+    runtime: docker
+    plan: 0.5c-512mb
+    region: oregon
+    branch: codex/bud-connectors-https
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m scripts.meeting_guard
+    autoDeployTrigger: off
+    envVars:
+      - key: AEDROVA_DATABASE
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_DATABASE
+      - key: AEDROVA_ENCRYPTION_KEY
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_ENCRYPTION_KEY
+      - key: AEDROVA_SUPABASE_URL
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_SUPABASE_URL
+      - key: AEDROVA_SUPABASE_KEY
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_SUPABASE_KEY
+      - key: AEDROVA_LIVEKIT_URL
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_LIVEKIT_URL
+      - key: AEDROVA_LIVEKIT_API_KEY
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_LIVEKIT_API_KEY
+      - key: AEDROVA_LIVEKIT_API_SECRET
+        fromService:
+          type: web
+          name: aedrova-beta-staging
+          envVarKey: AEDROVA_LIVEKIT_API_SECRET
+      - key: AEDROVA_DEPLOYMENT_ENVIRONMENT
+        value: "staging"
+      - key: AEDROVA_PRODUCTION
+        value: "true"
+      - key: AEDROVA_ORIGIN
+        value: "https://aedrova-beta-staging.onrender.com"
+      - key: AEDROVA_SUPABASE_DATABASE
+        value: "true"
+      - key: AEDROVA_DB_POOL_SIZE
+        value: "1"
+      - key: AEDROVA_DB_MAX_OVERFLOW
+        value: "0"
+      - key: AEDROVA_WAITLIST_ONLY
+        value: "false"
+      - key: AEDROVA_MEETINGS_ENABLED
+        value: "true"
+      - key: AEDROVA_MEETING_CONTEXT_ENABLED
+        value: "false"
+      - key: AEDROVA_SPEECH_ENABLED
+        value: "false"
+      - key: AEDROVA_GATEWAY_ENABLED
+        value: "false"
+      - key: AEDROVA_CHECKOUT_ENABLED
+        value: "false"
+      - key: AEDROVA_FREE_ENABLED
+        value: "false"
+      - key: AEDROVA_RELEASE_READY
+        value: "false"

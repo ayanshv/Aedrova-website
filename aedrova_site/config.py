@@ -281,8 +281,8 @@ class Config:
         usage_policy = policies(self.usage_limits)
         if min(self.company_budget_microusd, self.free_pool_microusd) <= 0:
             raise ValueError("Company and Free pool budgets must be positive.")
-        if self.free_enabled and not self.gateway_enabled:
-            raise ValueError("Free activation requires the configured managed gateway.")
+        if self.free_enabled and not (self.gateway_enabled or self.speech_enabled):
+            raise ValueError("Free activation requires a configured AI or speech service.")
         for name, plan in self.plans.items():
             if name not in {"monthly", "annual"} or not plan.get("price_id", "").startswith(
                 "price_"

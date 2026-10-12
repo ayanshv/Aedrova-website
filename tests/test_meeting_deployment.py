@@ -85,3 +85,31 @@ def test_http_entrypoint_disables_access_logs_and_untrusted_forwarded_headers(mo
     monkeypatch.setenv("AEDROVA_TRUSTED_PROXY_IPS", "*")
     with pytest.raises(SystemExit, match="wildcard"):
         main()
+
+
+def test_speech_preflight_requires_real_server_configuration():
+    with pytest.raises(ValueError, match="Enable speech"):
+        check(staging(), speech=True)
+
+
+def test_database_check_cannot_be_requested_without_speech_mode():
+    with pytest.raises(ValueError, match="speech mode"):
+        check(staging(), database=True)
+
+
+def test_speech_only_free_access_keeps_coding_gateway_disabled():
+    config = staging()
+    config.database = (
+        "postgresql+psycopg://aedrova_website.cpelagtufyocepnqcqqd:fixture-only@"
+        "aws-0-example.pooler.supabase.com:5432/postgres?sslmode=require"
+    )
+    config.supabase_database = True
+    config.db_pool_size, config.db_max_overflow = 1, 0
+    config.meeting_context_enabled = config.speech_enabled = config.free_enabled = True
+    config.speech_key = "fixture-only-speech-key"
+    result = check(config, speech=True)
+    assert result["transcription"] == "configured; provider capture not tested"
+    assert not config.gateway_enabled and not config.checkout_enabled
+    config.speech_enabled = False
+    with pytest.raises(ValueError, match="configured AI or speech service"):
+        config.validate()
