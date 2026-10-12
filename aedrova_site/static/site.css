@@ -336,3 +336,12 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .policy-document li{margin-bottom:10px}
 @media(max-width:960px){footer.trust-footer{grid-template-columns:1fr;gap:32px}}
 @media(max-width:600px){.footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 20px}.footer-bottom{flex-direction:column}}
+
+/* Layered navigation keeps detailed legal documents easy to scan. */
+.policy-contents{margin:24px 0 34px;padding:18px 20px;background:var(--surface);border:1px solid var(--edge);border-radius:12px}
+.policy-contents summary{cursor:pointer;font-size:15px;font-weight:600;line-height:1.6}
+.policy-contents summary:focus-visible{outline:2px solid var(--blue);outline-offset:5px}
+.policy-contents ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 30px;padding-left:20px;margin:20px 0 0;font-size:14px}
+.policy-contents li{margin:0;line-height:1.6}
+.policy-document h3{font-size:19px;line-height:1.45;margin:28px 0 14px}
+@media(max-width:600px){.policy-contents ol{grid-template-columns:1fr}.policy-contents{padding:16px}}
