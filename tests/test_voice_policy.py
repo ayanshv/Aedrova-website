@@ -18,6 +18,6 @@ def audio(seconds=1, channels=1, rate=16000):
 
 def test_server_accepts_only_bounded_voice_pcm():
     assert inspect_file("voice.wav", audio()) == "audio/wav"
-    for data in (audio(31), audio(channels=2), audio(rate=48000), audio()[:-2], audio() + b"junk"):
+    for data in (audio(301), audio(channels=2), audio(rate=48000), audio()[:-2], audio() + b"junk"):
         with pytest.raises(ValueError):
             inspect_file("voice.wav", data)

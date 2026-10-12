@@ -33,7 +33,7 @@ Dictation adds an accessible microphone beside Send in channel/thread composers.
 Explicit press checks service availability before requesting OS microphone access.
 Visible listening timer and real audio-level waveform, Done and Cancel, themed light/
 dark surfaces and narrow-layout controls. No hardware check/permission on launch.
-At most 30 seconds of mono 16 kHz PCM in memory, no audio file. Cancel, account/
+At most 5 minutes of mono 16 kHz PCM in memory, no audio file. Cancel, account/
 channel/thread changes, closing the window, starting a meeting or sending the typed
 message stop capture and discard late results. One recording per window. Microphones
 without the supported format fail with a clear device error; physical compatibility
@@ -104,7 +104,7 @@ no SQL. Phase 3 live dictation/upload acceptance remains pending owner native si
 ### Voice recording replaces the default microphone flow — October 12
 
 Owner requested voice messages instead of dictation. Matching file policy now validates only
-mono 16 kHz 16-bit PCM WAV of 1–30 seconds, with bounded payload and exact RIFF/frame size.
+mono 16 kHz 16-bit PCM WAV of 1–5 minutes, with bounded payload and exact RIFF/frame size.
 Existing private upload, rate limit, hash verification and RLS remain enforced. Owner reports
 202610120002_voice_messages.sql installed in Staging. Native explicit preview/send uses no
 speech-provider/API allowance; only normal workspace storage. Deploy this branch to the existing
