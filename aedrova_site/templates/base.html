@@ -27,7 +27,17 @@
   <nav aria-label="Mobile navigation"><a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/#ai-teammates">Buds</a><a href="/#meetings">Meetings</a><a href="/plans">Plans</a>{% if not waitlist_only %}<a href="/account">Sign in</a>{% endif %}<a href="/download">Mac download</a><a class="button" href="{{ "/waitlist" if waitlist_only else "/onboarding" }}">{{ "Join waitlist today" if waitlist_only else "Get started" }} ↗</a><button class="theme-toggle" aria-label="Change color theme">Change appearance ◐</button></nav>
 </div>
 <main id="main">{% if stripe_test_mode %}<aside class="sandbox-badge" role="status">Stripe sandbox · Test payments only</aside>{% endif %}{% if request.url.path != '/' %}<div class="page-buds" aria-hidden="true"><span><span class="site-bud look-builder"></span></span><span><span class="site-bud look-marketing"></span></span><span><span class="site-bud look-research"></span></span></div>{% endif %}{% block main %}{% endblock %}</main>
-<footer class="bud-corner-section"><span class="bud-peek footer-bud" aria-hidden="true"><span class="site-bud look-product"></span></span><div><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team. Your work. Connected.</p></div><div class="footer-links"><a href="/download">For Mac</a><a href="/enterprise">Let’s talk</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Contact support</a><a href="mailto:contact@aedrova.com">Email us</a></div><span class="footer-note">The workspace where teams and AI build together.</span></footer>
+<footer class="trust-footer bud-corner-section">
+<span class="bud-peek footer-bud" aria-hidden="true"><span class="site-bud look-product"></span></span>
+<div class="footer-brand"><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team, plus AI.</p></div>
+<nav class="footer-columns" aria-label="Footer navigation">
+<div><h2>Product</h2><a href="/#features">The workspace</a><a href="/#ai-teammates">Meet your Buds</a><a href="/plans">Plans for your team</a><a href="{{ '/waitlist' if waitlist_only else '/download' }}">{{ 'Join the waitlist' if waitlist_only else 'Downloads' }}</a></div>
+<div><h2>Resources</h2><a href="/support">Help & troubleshooting</a><a href="/data-controls">Data & AI controls</a><a href="/enterprise">Enterprise inquiries</a></div>
+<div><h2>Trust</h2><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/acceptable-use">Acceptable use</a><a href="/subprocessors">Service providers</a><a href="/cookies">Cookies & storage</a></div>
+<div><h2>Support</h2><a href="/support">Contact us</a><a href="/security">Security reporting</a><a href="/data-controls#requests">Privacy requests</a><a href="/security#availability">Beta availability</a></div>
+</nav>
+<div class="footer-bottom"><span>© 2026 Aedrova. All rights reserved.</span><a href="mailto:contact@aedrova.com">contact@aedrova.com</a></div>
+</footer>
 <div class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
