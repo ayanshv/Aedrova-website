@@ -223,10 +223,11 @@ def create_app(config=None):
         )
         if not request.url.path.startswith("/static"):
             response.headers["Cache-Control"] = "no-store"
-        if (
-            not discovery.public_deployment(config)
-            or request.url.path not in discovery.PUBLIC_PAGES
-        ):
+        if not discovery.public_deployment(config) or request.url.path not in {
+            *discovery.PUBLIC_PAGES,
+            "/robots.txt",
+            "/sitemap.xml",
+        }:
             response.headers["X-Robots-Tag"] = "noindex"
         if config.production:
             response.headers["Strict-Transport-Security"] = "max-age=31536000"

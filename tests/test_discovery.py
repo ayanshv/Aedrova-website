@@ -50,6 +50,8 @@ class Schema(HTMLParser):
 
 def test_public_crawl_rules_allow_discovery_not_private_routes(public_client):
     response = public_client.get("/robots.txt")
+    assert "x-robots-tag" not in response.headers
+    assert "x-robots-tag" not in public_client.get("/sitemap.xml").headers
     parser = RobotFileParser()
     parser.parse(response.text.splitlines())
     for agent in [
