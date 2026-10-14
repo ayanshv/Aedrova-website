@@ -105,3 +105,27 @@ Production app review/demo and token-refresh acceptance are still release gates.
 Instagram remains unconfigured in staging and correctly shows Service setup
 required. Evidence is saved locally under `work/social-oauth-staging/` (deployment
 and live login handoff screenshots); no credentials are stored in these docs.
+
+## October 14 account mismatch and Instagram prerequisite
+
+After the owner prioritized social OAuth, the actual signed-in Safari TikTok
+profile link was inspected: @aedrova5. This explains non_sandbox_target: the
+existing sandbox lists @aedrova only. Add account opens a concrete Connect TikTok
+account dialog; linking @aedrova5 as an additional tester is pending owner approval.
+No sandbox target was silently added. Existing callbacks and read-only scopes stay
+unchanged.
+
+Meta developer registration is now accessible in the in-app browser. It shows
+Create a Meta for Developers account: Register incomplete, Verify account/Contact
+info/About you pending. Continue explicitly accepts Meta Platform Terms and
+Developer Policies, so action-time approval is requested before submitting it.
+Instagram client ID/secret are absent from the ignored local configuration; no
+credentials can be deployed until the Instagram app is registered. Next stages:
+registration, Instagram Login app with instagram_business_basic only, exact
+staging callback https://aedrova-beta-staging.onrender.com/buds/oauth/instagram/callback,
+private server credentials, professional tester login, callback and actual reader
+verification. Public App Review/live approval is a separate provider gate.
+
+The owner reported creating the error fallback Worker. Safari confirms its actual
+name aedrovaerrorfallback with no custom domain or routes. It remains untouched and
+unrouted while social OAuth is the priority.
