@@ -53,3 +53,20 @@ and live deployment status must be recorded separately. Cloudflare routing is no
 active merely because these source files exist. A total DNS/Cloudflare failure
 cannot show our hosted page. Instagram OAuth remains pending service setup;
 TikTok's approved staging configuration is independent.
+
+### Live publication
+
+PR #15 passed the required GitHub verify check and was squash-merged as 2f083e4.
+Render's automatic production deployment became Live in 1m12s. Real browser GET
+`https://aedrova.com/missing-page-check` returns branded HTTP 404 with embedded
+Buds and hashed CSP; live screenshot saved in work/error-page-live.png. The
+production candidate passed all 432 tests; the development backend passed 512.
+
+Cloudflare's in-app dashboard failed loading a dynamic module. Safari successfully
+opened the existing authenticated free account (100,000 daily requests), but its
+Start with Hello World control did not advance under native automation. No Worker,
+new permissions, paid upgrade or domain route was created. Owner handoff: in the
+open Safari Cloudflare Create an app screen, click Start with Hello World, name it
+`aedrova-error-fallback`, deploy on the existing free plan, leave it open and reply
+created. Do not add routes yet; the starter must be replaced with the tested
+fallback before any live routing. This still blocks host-outage UI acceptance.
