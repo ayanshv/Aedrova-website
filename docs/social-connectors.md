@@ -73,3 +73,35 @@ Safari's earlier `aedrova5` account was not on the sandbox target list and corre
 failed with non_sandbox_target; no permissions were bypassed.
 Production app review and a live refresh acceptance test remain pending. Instagram
 OAuth setup remains pending.
+
+## October 14 staging activation
+
+With the owner's explicit approval, the existing sandbox client key and secret
+were copied from the ignored private local configuration into the two private
+TikTok settings on Render `aedrova-beta-staging`. The existing sandbox now also
+allows `https://aedrova-beta-staging.onrender.com/buds/oauth/tiktok/callback`;
+the older connector-service callback remains registered. Scopes remain
+`user.info.basic` and `video.list`, and the existing target user remains `aedrova`.
+No production settings, scopes, purchases or SQL migrations were changed.
+
+Render deployment `dep-db80612j9qps73b4soq0` is Live (environment update;
+existing deployed source `e375bdc10ac513c0273fc393c60471c5b263dd23`).
+Staging HTTPS readiness returned 200 and 58 focused OAuth tests passed locally.
+The real source preview, signed into the first staging Google account, created
+the synthetic Marketing Bud `TikTok staging audit` in `Beta isolation 1 eb8958`.
+Its Marketing gallery offers Connect TikTok. Connect account requests 24-hour
+read-only access and opens account-bound Google sign-in, then TikTok's real login
+page with the staging callback, without manual codes or resource IDs.
+
+Required live acceptance step: in Safari's open TikTok login tab, the owner must
+sign in to sandbox target `@aedrova` and leave the consent screen open. A fresh
+grant, staging callback completion and profile/video reader verification remain
+pending; the earlier successful old-service connection does not prove these.
+The owner signed in during this attempt, but TikTok returned
+`non_sandbox_target`. The developer portal still lists only `aedrova`; no target
+users were added or restrictions bypassed. The next attempt must use that account
+or obtain separate approval to link another intended sandbox test account.
+Production app review/demo and token-refresh acceptance are still release gates.
+Instagram remains unconfigured in staging and correctly shows Service setup
+required. Evidence is saved locally under `work/social-oauth-staging/` (deployment
+and live login handoff screenshots); no credentials are stored in these docs.
