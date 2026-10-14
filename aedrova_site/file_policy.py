@@ -63,7 +63,8 @@ def inspect_file(name, data):
                     audio.getcomptype(),
                 ) != (1, 2, 16000, "NONE") or not 16000 <= frames <= 4800000:
                     raise ValueError(
-                        "Voice messages must be mono 16 kHz PCM WAV, between 1 second and 5 minutes."
+                        "Voice messages must be mono 16 kHz PCM WAV, "
+                        "between 1 second and 5 minutes."
                     )
                 if len(audio.readframes(frames)) != frames * 2:
                     raise ValueError(invalid)
