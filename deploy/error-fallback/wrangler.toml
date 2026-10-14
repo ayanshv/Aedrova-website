@@ -1,0 +1,6 @@
+name = "aedrova-error-fallback"
+main = "worker.mjs"
+compatibility_date = "2026-10-14"
+workers_dev = false
+# Enable routes only after preview acceptance; leave DNS and origin unchanged.
+# routes = [{ pattern = "aedrova.com/*", zone_name = "aedrova.com" }, { pattern = "www.aedrova.com/*", zone_name = "aedrova.com" }]

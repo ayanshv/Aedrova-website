@@ -25,6 +25,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from aedrova_site import discovery
 from aedrova_site.boundaries import BodyLimit
 from aedrova_site.config import Config
+from aedrova_site.error_pages import BrowserErrors
 from aedrova_site.gateway import authorize_run, inference
 from aedrova_site.meeting_leases import MeetingLeases
 from aedrova_site.meetings import issue_meeting_access
@@ -236,6 +237,7 @@ def create_app(config=None):
     app.add_middleware(BodyLimit)
     app.add_middleware(Admission, maximum=config.gateway_max_concurrency)
     app.add_middleware(RequestEvents)
+    app.add_middleware(BrowserErrors)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request, _exc):
