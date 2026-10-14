@@ -129,3 +129,17 @@ verification. Public App Review/live approval is a separate provider gate.
 The owner reported creating the error fallback Worker. Safari confirms its actual
 name aedrovaerrorfallback with no custom domain or routes. It remains untouched and
 unrouted while social OAuth is the priority.
+
+Owner approved adding @aedrova5 and Meta registration. Meta registration was
+completed after owner-performed SMS verification; existing contact email confirmed
+without marketing opt-in, founder role selected. The Instagram app draft is now
+Aedrova Buds / contact@aedrova.com, Instagram API use case, no business portfolio
+claimed. Final Create app presents applicable terms and is awaiting separate
+approval. No app credentials exist yet.
+
+Owner signed into the developer account in Safari. Sandbox Add account → Continue
+successfully opens TikTok's native tester-link popup there (in-app browser popup
+failed). TikTok requires a fresh account login; the owner reached password reset.
+Credential change/code entry must be completed personally. Tester addition and
+fresh Aedrova OAuth callback remain unverified until that login and provider
+confirmation finish. Existing user @aedrova is preserved.
