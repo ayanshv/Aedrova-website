@@ -175,3 +175,31 @@ No successful fresh staging callback or profile/video read is claimed yet.
 Follow-up requested after social OAuth: add an accessible + next to Direct Messages
 using the existing coworker DM picker; assess Bud DMs; report remaining signed DMG
 and Windows launch-build gates. Do not let these displace the OAuth acceptance work.
+
+## October 14 — Instagram live staging acceptance passed
+
+The owner identified @aedrova_ai, accepted its Instagram Tester invitation, and
+personally clicked Allow on the exact instagram_business_basic consent screen.
+Meta Roles no longer shows Pending. The Instagram professional account is confirmed
+by its signed-in settings and professional-account controls. The source Marketing
+Bud (synthetic name "TikTok staging audit") opened the account-bound staging flow
+without manual codes, keys or resource IDs. The branded callback says Instagram is
+connected; native accessibility also reported Connection verified and Connected.
+The connect implementation reads BOTH catalog tools, profile and posts, against
+the real provider before saving a Connected grant. Thus both API endpoints passed;
+this does not establish that the account contains posts or that generated advice
+is correct. Requested connection lifetime was 24 hours. No publishing/message access.
+
+Evidence: work/social-oauth-staging/instagram-tester-accepted.png and
+instagram-callback-connected.png. A background native screenshot returned an older
+TikTok view despite current accessibility showing Instagram success; do not use
+instagram-native-connected.png as visual acceptance evidence. No code fix or new
+test run was needed for this grant. Refresh, revocation/reconnect acceptance and
+public App Review/access verification remain open, as does production configuration.
+
+TikTok now reports "Maximum number of attempts reached. Try again later" to the
+owner. Stop initiating authorizations; do not bypass or invent a cooldown duration.
+After TikTok permits login again, resume ONE staging connection as approved @aedrova
+and verify callback plus profile/public-video reads. Until then fresh staging TikTok
+acceptance remains blocked. Instagram success does not close the overall social or
+Phase 2 gate. DM + / Bud DM assessment remains queued after social completion.
