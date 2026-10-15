@@ -143,3 +143,35 @@ failed). TikTok requires a fresh account login; the owner reached password reset
 Credential change/code entry must be completed personally. Tester addition and
 fresh Aedrova OAuth callback remain unverified until that login and provider
 confirmation finish. Existing user @aedrova is preserved.
+
+## October 14 Instagram app and staging credentials installed
+
+Owner approved the final app terms and completed password confirmations. Parent
+Meta app `3077883259220045` (Aedrova Buds) is created, unpublished, with
+contact@aedrova.com and no business portfolio claimed. Instagram app
+`2156018749127516` (Aedrova Buds-IG) has the exact HTTPS staging callback saved.
+Only instagram_business_basic was added; Meta marks it Ready for testing. The
+publishing, messaging, comments and insights permissions were not added.
+
+With explicit approval, the Instagram ID/secret were stored in ignored .env.dots
+(mode 0600) and the two private Render aedrova-beta-staging environment settings.
+The secret was remasked by reloading Meta. Environment-only deployment
+`dep-db85045g1s2s7392hcs0` became Live in 51.3s, reusing e375bdc. The real native
+Marketing gallery now offers Connect Instagram. No production credentials/settings
+or purchases changed. The owner must identify the exact professional Instagram
+handle and approve its Instagram Tester role; that question is pending. Then
+accept its tester invitation and validate the actual account grant/profile/media.
+Public review/access verification, token renewal and revocation acceptance remain
+separate gates.
+
+TikTok's tester-link confirmation was completed in Safari. On reloading the saved
+sandbox, the target list contains @aedrova (one item) with Oct 14 4:14 PM; the flow
+resolved to this account rather than adding @aedrova5. A fresh source staging
+session and Google account-bound grant were started. TikTok's valid authorization
+page now renders blank in Safari, including after one reload. Owner handoff asks
+them to complete the existing read-only grant if it renders, or report blank.
+No successful fresh staging callback or profile/video read is claimed yet.
+
+Follow-up requested after social OAuth: add an accessible + next to Direct Messages
+using the existing coworker DM picker; assess Bud DMs; report remaining signed DMG
+and Windows launch-build gates. Do not let these displace the OAuth acceptance work.
