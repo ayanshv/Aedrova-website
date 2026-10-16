@@ -31,3 +31,10 @@ SPEECH_KEY if shared, save/deploy, revoke old key and update ignored local confi
 Do not paste credentials into chat. Repeat hosted smoke after replacement. Claude
 remains separately unfunded and disabled. The pending wording above is historical;
 this record supersedes it for the actual deployment status.
+
+October 15 owner decision: retain the existing OpenAI key; do not generate or revoke
+keys. Desktop automation runtime was cleared and tracked desktop source/Step 2
+artifacts were checked without printing the credential. This cannot erase the
+earlier tool output or undo the exposure. No Render settings or credentials were
+changed in the follow-up. Rotation above remains the original recommendation,
+not a newly required owner action. See desktop docs/workspace-ai-setup-step-3.md.
