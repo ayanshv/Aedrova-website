@@ -555,6 +555,7 @@ def create_app(config=None):
             + urlencode(
                 {
                     "provider": "google",
+                    "scopes": "openid email profile",
                     "redirect_to": config.origin + "/auth/callback",
                     "code_challenge": challenge,
                     "code_challenge_method": "s256",

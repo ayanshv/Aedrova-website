@@ -349,6 +349,8 @@ def test_cost_accounts_for_provider_specific_caches():
 
 
 def test_oauth_pkce_one_use_and_error_redirect(client, monkeypatch):
+    from urllib.parse import parse_qs, urlsplit
+
     response = client.get("/auth/google", follow_redirects=False)
     assert (
         response.status_code == 303 and "code_challenge_method=s256" in response.headers["location"]
@@ -357,6 +359,8 @@ def test_oauth_pkce_one_use_and_error_redirect(client, monkeypatch):
         "HttpOnly" in response.headers["set-cookie"]
         and "SameSite=lax" in response.headers["set-cookie"]
     )
+    query = parse_qs(urlsplit(response.headers["location"]).query)
+    assert query["scopes"] == ["openid email profile"]
     monkeypatch.setattr(
         client.app.state.identity, "request", lambda *a, **kw: {"access_token": "access-a"}
     )
