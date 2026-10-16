@@ -552,9 +552,21 @@ def install(app, connections, auth):
     def callback(request: Request, provider: str, state: str = "", code: str = "", error: str = ""):
         oauth.dots.enabled()
         cookie = "aedrova_bud_" + state_key(state)[:16]
-        result = oauth.callback(
-            provider, state, request.cookies.get(cookie, ""), code, denied=bool(error)
-        )
+        try:
+            result = oauth.callback(
+                provider, state, request.cookies.get(cookie, ""), code, denied=bool(error)
+            )
+        except Denied:
+            row, payload = oauth.state(state)
+            if not error or row["status"] != "failed" or payload["provider"] != provider:
+                raise
+            response = TEMPLATES.TemplateResponse(
+                request=request,
+                name="bud-account-error.html",
+                context={"cancelled": True},
+            )
+            response.delete_cookie(cookie, path="/buds/oauth/" + provider)
+            return response
         _, payload = oauth.state(state)
         response = confirmation(
             request, provider, payload["dot"], selecting=result.get("status") == "choose_resource"

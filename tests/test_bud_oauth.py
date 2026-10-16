@@ -344,6 +344,19 @@ def test_http_routes_google_handoff_cookie_proof_csrf_and_real_callback(tmp_path
         assert "Research Bud" in mismatch.text
         assert "private-oauth-access" not in mismatch.text
         identity.user.return_value = {"id": "owner"}
+        cancelled = oauth.start(
+            "session", dot["workspace_id"], dot["id"], "figma", "fileKey123", 24
+        )
+        client.get(cancelled["url"], follow_redirects=False)
+        cancelled_page = client.get(
+            "/buds/oauth/figma/callback",
+            params={"state": cancelled["state"], "error": "access_denied"},
+        )
+        assert cancelled_page.status_code == 200
+        assert "Connection cancelled. No new access was added." in cancelled_page.text
+        assert "Choose Google account" not in cancelled_page.text
+        assert oauth.status("session", cancelled["state"])["status"] == "failed"
+        assert "Max-Age=0" in cancelled_page.headers["set-cookie"]
         client.cookies.clear()
         result = oauth.start("session", dot["workspace_id"], dot["id"], "figma", "fileKey123", 24)
         identity.user.side_effect = Denied("Sign in")
