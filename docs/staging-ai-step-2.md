@@ -15,3 +15,19 @@ Existing OpenAI key/model lookup and real loopback inference passed. Anthropic
 key/model lookup passed but inference returned a credit-balance rejection; leave
 Claude disabled until its owner funds the provider and approves its deployment.
 No secret values are included in this document or the deployment overlay.
+
+## Activation result
+
+Owner approved October 15. Render staging deployment dep-db8o043l550s73ej2i90 is
+Live, reusing backend e375bdc. Saved gateway/model/cap settings and live health were
+verified. Real fresh native-session main/Bud replies, private assistant save/reopen
+and metered settlement passed. See the desktop Step 2 record for exact timings,
+coverage and limitations. Production/checkout/downloads remain unchanged.
+
+Required owner credential rotation before broader testing: the masked Render field
+was unexpectedly exposed in a browser automation DOM snapshot. No credential was
+committed. Create replacement in OpenAI privately, update staging OPENAI_KEY and
+SPEECH_KEY if shared, save/deploy, revoke old key and update ignored local config.
+Do not paste credentials into chat. Repeat hosted smoke after replacement. Claude
+remains separately unfunded and disabled. The pending wording above is historical;
+this record supersedes it for the actual deployment status.
