@@ -1,36 +1,31 @@
-# Connector certification — October 15, 2026
+# Connector live acceptance — October 15–16, 2026
 
-Current authoritative audit, all-nine provider status and consolidated owner handoff:
+Authoritative results/owner handoff:
 /Users/ayanshvarma/Documents/Aedrova/docs/connector-certification-step-6.md.
-Step 6 is in progress, not launch-certified. Fresh authenticated staging catalog
-now reports GitHub/Supabase/Figma/Notion plus Instagram/TikTok OAuth enabled,
-with no active grants in the named test workspace. The four existing credential
-pairs were specifically approved, saved privately to staging, and deployed with
-verified staging callbacks while retaining existing callbacks/scopes/settings. Stripe bank/business setup stays
-deferred; Vercel registration and Brave Search setup remain separate gates.
 
-Prepared non-secret staging overlay checklist:
-deploy/staging-connector-certification.env.example. Never import its blank values
-as a complete environment. Existing database/encryption/AI/speech/social values and
-provider callbacks must be preserved. No new keys or broader scopes requested.
+GitHub/Supabase/Figma/Notion passed actual staging callbacks, scoped resource
+selection, real reads, local disconnect and denied reads afterward. GitHub also
+passed fresh reconnect. All four test grants removed; native session signed out.
+Instagram/TikTok reach actual provider login but need signed-in test accounts.
+Stripe/Vercel/Search authenticated starts correctly reject missing owner setup.
+No all-nine launch certification, live renewal or provider-global revocation claim.
 
-Source fixes preserve intentional token-exchange authorization errors, distinguish
-429/5xx from grant loss, normalize equivalent TikTok scope delimiters without
-accepting extra scopes and remove stale manual-token fallback copy. No automatic
-exchange retry was added. Added all-nine synthetic-provider grant lifecycle and
-isolation checks. Full backend suite 528 passed after final changes; Ruff/diff pass.
-These are controlled tests, not fresh provider consent/renewal/publication evidence.
+Fix a55cf9d adds standard OpenID scopes to browser Google handoffs, retaining PKCE.
+It deployed Live on staging (dep-db8s578n74is73cknu6g); fresh product handoff reached
+provider pages. Shared Notion app was reduced to No user information, preserving
+Read content; reloaded consent verified page-only access. No email/profile data read.
+Fix 6a3cc90 gives cancelled OAuth a branded recovery screen without claiming access;
+regression preserves failed state and cookie removal. Full suite 528 passed after
+changes; Ruff/diff pass. 6a3cc90 is Live (Render reports success, 1m03s). A reused live cancellation URL
+still returned 403; fresh valid live cancellation remains separately unaccepted.
 
-Staging deployment da30ebf390627f0d289896b58a125b6035008431 is Live on
-Render dep-db8s0huq1p3s7396bdfg. Eight variables added; all 34 prior variables
-retained. No secrets printed/committed, new keys, scope expansion, purchase or
-production change. Fresh authenticated catalog and health 200 passed, managed AI
-true and checkout false. Backend rerun: 528 passed; Ruff/diff pass. Fresh native
-session signed out and private login URL cleaned. All four callback lists were
-re-read after save; Figma/Notion also verified after reload.
+Existing eight credential additions and saved callbacks remain intact. No new key,
+broader grant, purchase, production deployment or installer release. No privacy
+policy claim of blanket account access. Current grants remain explicitly scoped.
 
-No owner action is required for this completed configuration batch. Fresh provider
-consent, named-resource reads, renewal/revocation and public provider review remain
-open. No real fresh grant was completed. Step 6 remains open; Step 7 has not started.
-Prepare exact provider sign-in/consent handoffs sequentially; do not reuse expired
-links or request secrets in chat.
+Owner social checks: Aedrova Staging → Marketing Bud → Connectors → Instagram →
+Connect your account → @aedrova_ai; then TikTok → approved @aedrova sandbox account.
+Use fresh login buttons; leave read-only consent open. Never paste credentials.
+Stop if TikTok reports maximum attempts. Stripe setup stays deferred until release.
+Step 7 meeting reliability has not started and needs owner approval with remaining
+external connector gates explicit. Public launch remains gated.
