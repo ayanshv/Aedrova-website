@@ -119,8 +119,7 @@ class BudOAuth:
         } and not self.config.origin.startswith("https://"):
             return (
                 provider.title() + " requires an HTTPS callback. Aedrova’s owner must configure "
-                "the HTTPS connection service before account sign-in is available. "
-                "A scoped access token can be used below."
+                "the HTTPS connection service before account sign-in is available."
             )
         if (
             provider not in PROVIDERS
@@ -129,7 +128,7 @@ class BudOAuth:
         ):
             return (
                 "The Aedrova owner must configure this provider’s OAuth app first. "
-                "You can use a scoped access token meanwhile."
+                "Your Bud can be saved while account sign-in is set up."
             )
         return ""
 
@@ -293,6 +292,8 @@ class BudOAuth:
             with self.client.stream(
                 "POST", PROVIDERS[provider][1], headers=headers, **kwargs
             ) as response:
+                if response.status_code == 429:
+                    raise Denied("Authorization provider rate limit reached. Try again later.")
                 if response.status_code in {400, 401, 403}:
                     raise Denied("Needs authorization")
                 response.raise_for_status()
@@ -329,7 +330,7 @@ class BudOAuth:
                         "to configure read-only scopes."
                     )
             if provider == "tiktok":
-                scopes = set(str(scope or "").split(","))
+                scopes = set(str(scope or "").replace(",", " ").split())
                 if not {"user.info.basic", "video.list"} <= scopes:
                     raise Denied("Authorize profile and public video access to connect TikTok.")
                 validate_resource(provider, str(result.get("open_id", "")))

@@ -312,3 +312,49 @@ def test_stripe_customer_account_selection_verifies_reads_before_connected(syste
         assert oauth.connections.rows(dot, user)[0]["resource"] == actor
         assert seen == ["/v1/oauth/token", "/v1/account", "/v1/balance"]
     assert "customer-access-private" not in json.dumps(oauth.connections.listing(dot, user))
+
+
+@pytest.mark.parametrize(
+    "status,expected",
+    [(429, "rate limit"), (500, "unavailable"), (503, "unavailable"), (401, "Needs authorization")],
+)
+def test_account_oauth_classifies_temporary_failures_without_provider_payload(status, expected):
+    from aedrova_site.bud_account_oauth import response
+
+    with httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(status, json={"error": "private-provider-detail"})
+        )
+    ) as transport:
+        with pytest.raises(Denied, match=expected) as caught:
+            response(transport, "POST", "https://api.stripe.com/v1/oauth/token")
+    assert "private-provider-detail" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "scope",
+    ["user.info.basic,video.list", "user.info.basic, video.list", "user.info.basic video.list"],
+)
+def test_tiktok_accepts_equivalent_read_only_scope_delimiters(system, scope):
+    oauth, _, _, _ = system
+    oauth.config.tiktok_bud_client_id = "test-client"
+    oauth.config.tiktok_bud_client_secret = "test-secret"
+    oauth.client.close()
+    oauth.client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "access_token": "private-access-fixture",
+                    "refresh_token": "private-refresh-fixture",
+                    "scope": scope,
+                    "open_id": "valid_actor",
+                    "expires_in": 86400,
+                    "token_type": "Bearer",
+                },
+            )
+        )
+    )
+    assert (
+        oauth.token("tiktok", code="test-code", verifier="test-verifier")["actor"] == "valid_actor"
+    )

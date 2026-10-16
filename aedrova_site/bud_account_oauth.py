@@ -28,6 +28,10 @@ logging.getLogger("httpx").addFilter(PrivateOAuthURLs())
 def response(client, method, url, **kwargs):
     try:
         with client.stream(method, url, **kwargs) as result:
+            if result.status_code == 429:
+                raise Denied("Authorization provider rate limit reached. Try again later.")
+            if result.status_code >= 500:
+                raise Denied("Authorization provider unavailable. Retry shortly.")
             if result.status_code != 200:
                 raise Denied("Needs authorization")
             raw = bytearray()
@@ -39,6 +43,8 @@ def response(client, method, url, **kwargs):
             if not isinstance(data, dict) or data.get("error"):
                 raise Denied("Needs authorization")
             return data
+    except Denied:
+        raise
     except (httpx.HTTPError, ValueError):
         raise Denied("Authorization provider unavailable. Retry shortly.") from None
 
