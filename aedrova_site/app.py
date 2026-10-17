@@ -915,10 +915,15 @@ def create_app(config=None):
         )
 
     @app.get("/api/meetings/transcript/{meeting}")
-    def meeting_transcript(request: Request, meeting: UUID, page: int = 0):
+    def meeting_transcript(request: Request, meeting: UUID, page: int = 0, latest: bool = False):
         token = meeting_context_token(request)
         if not 0 <= page <= 199:
             raise Denied("Invalid transcript page.")
+        if latest:
+            return identity.request(
+                "/rest/v1/meeting_transcript_segments?meeting_id=eq." + str(meeting)
+                + "&select=*&order=created_at.desc,id.desc&limit=20", token,
+            )
         return identity.request(
             "/rest/v1/meeting_transcript_segments?meeting_id=eq."
             + str(meeting)
