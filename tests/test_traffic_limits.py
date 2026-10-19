@@ -39,6 +39,10 @@ def test_unknown_routes_and_metadata_are_bounded(tmp_path):
     with TestClient(app) as client:
         oversized = client.get("/missing?value=" + "x" * 8200)
         assert oversized.status_code == 431
+        ambiguous = client.get(
+            "/missing", headers=[("authorization", "one"), ("authorization", "two")]
+        )
+        assert ambiguous.status_code == 400
         # Unmatched paths share the same bucket; random URLs cannot grow keys.
         calls = []
         original = app.state.store.rate_limit
@@ -61,6 +65,7 @@ def test_malformed_and_control_character_json_is_rejected_without_echo(tmp_path)
             b'{"email":"private\\u0000value"}',
             b'"\xff"',
             b'{"number":NaN}',
+            b'{"number":1e999}',
         ):
             result = client.post(
                 "/api/waitlist", content=body, headers={"content-type": "application/json"}

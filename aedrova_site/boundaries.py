@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import math
 
 from starlette.responses import JSONResponse
 
@@ -68,6 +69,8 @@ class BodyLimit:
                 while pending:
                     item, depth = pending.pop()
                     count += 1
+                    if isinstance(item, float) and not math.isfinite(item):
+                        raise ValueError("Non-finite JSON number")
                     if depth > 64 or count > 20000:
                         raise ValueError("structure")
                     if isinstance(item, str) and any(

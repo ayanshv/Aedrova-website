@@ -37,6 +37,23 @@ class TrafficLimits:
             return
         path = scope.get("path", "")
         headers = scope.get("headers", [])
+        names = [key.lower() for key, _ in headers]
+        if any(
+            names.count(name) > 1
+            for name in (
+                b"content-type",
+                b"content-length",
+                b"authorization",
+                b"host",
+                b"x-csrf-token",
+            )
+        ):
+            await JSONResponse(
+                {"error": "Ambiguous request headers."},
+                status_code=400,
+                headers={"Cache-Control": "no-store"},
+            )(scope, receive, send)
+            return
         if (
             len(path.encode()) > 4096
             or len(scope.get("query_string", b"")) > 8192
