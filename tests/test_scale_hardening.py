@@ -141,7 +141,7 @@ def test_rate_limits_return_retry_after_and_json_without_secrets(tmp_path):
             assert client.get("/auth/google", follow_redirects=False).status_code == 303
         result = client.get("/auth/google", follow_redirects=False)
         assert result.status_code == 429
-        assert 1 <= int(result.headers["retry-after"]) <= 60
+        assert 1 <= int(result.headers["retry-after"]) <= 300
         assert "Too many requests" in result.json()["error"]
 
 

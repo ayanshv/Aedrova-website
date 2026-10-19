@@ -89,6 +89,9 @@ def test_http_boundary_blocks_product_routes_without_calling_them(monkeypatch):
         calls.append(path)
         return {"downstream": path}
 
+    from types import SimpleNamespace
+
+    app.state.store = SimpleNamespace(rate_limit=lambda *args, **kwargs: None)
     monkeypatch.setattr(connector_service, "create_app", lambda config: app)
     with TestClient(connector_service.create_connector_app(config())) as client:
         assert client.get("/").json()["service"] == "Aedrova Bud connections"

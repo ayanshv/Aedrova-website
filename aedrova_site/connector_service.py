@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
+from aedrova_site.traffic_limits import TrafficLimits
 
 GET_PATHS = {
     "/health",
@@ -102,4 +103,7 @@ def create_connector_app(config=None):
         )
         return response
 
+    # Keep admission outside this service's early root/404 responses, too.
+    app.user_middleware = [m for m in app.user_middleware if m.cls is not TrafficLimits]
+    app.add_middleware(TrafficLimits, store=app.state.store)
     return app

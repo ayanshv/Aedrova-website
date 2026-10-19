@@ -1,8 +1,13 @@
 """Bound request bodies even when a client omits Content-Length."""
 
 import asyncio
+import json
 
 from starlette.responses import JSONResponse
+
+
+def reject_constant(_value):
+    raise ValueError("Non-finite JSON number")
 
 
 class BodyLimit:
@@ -10,7 +15,7 @@ class BodyLimit:
         self.app, self.maximum = app, maximum
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] not in {"POST", "PUT", "PATCH"}:
+        if scope["type"] != "http" or scope["method"] in {"GET", "HEAD", "OPTIONS"}:
             await self.app(scope, receive, send)
             return
         maximum = (
@@ -52,14 +57,42 @@ class BodyLimit:
                 {"error": "Request upload timed out. Retry when connected."}, status_code=408
             )(scope, receive, send)
             return
+        body = b"".join(chunks)
+        chunks.clear()
+        headers = dict(scope.get("headers", []))
+        if headers.get(b"content-type", b"").split(b";", 1)[0].strip() == b"application/json":
+            try:
+                value = json.loads(body, parse_constant=reject_constant)
+                pending = [(value, 0)]
+                count = 0
+                while pending:
+                    item, depth = pending.pop()
+                    count += 1
+                    if depth > 64 or count > 20000:
+                        raise ValueError("structure")
+                    if isinstance(item, str) and any(
+                        ord(c) < 32 and c not in "\t\n\r" for c in item
+                    ):
+                        raise ValueError("control")
+                    if isinstance(item, dict):
+                        pending.extend((entry, depth + 1) for entry in item.keys())
+                        pending.extend((entry, depth + 1) for entry in item.values())
+                    elif isinstance(item, list):
+                        pending.extend((entry, depth + 1) for entry in item)
+            except (ValueError, RecursionError, UnicodeError):
+                gateway = scope["path"].startswith("/gateway/")
+                await JSONResponse(
+                    {"error": "Malformed request or excessive nesting. Check your input."},
+                    status_code=403 if gateway else 422,
+                    headers={"Cache-Control": "no-store"},
+                )(scope, receive, send)
+                return
         supplied = False
 
         async def buffered():
             nonlocal supplied
             if not supplied:
                 supplied = True
-                body = b"".join(chunks)
-                chunks.clear()
                 return {"type": "http.request", "body": body, "more_body": False}
             return await receive()
 

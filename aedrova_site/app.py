@@ -18,7 +18,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -40,8 +41,13 @@ from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
+from aedrova_site.traffic_limits import TrafficLimits
 
 ROOT = Path(__file__).parent
+
+
+class BaseModel(PydanticBaseModel):
+    model_config = {"extra": "forbid", "str_max_length": 65536}
 
 
 class WorkspaceBody(BaseModel):
@@ -291,6 +297,7 @@ def create_app(config=None):
         return response
 
     app.add_middleware(BodyLimit)
+    app.add_middleware(TrafficLimits, store=store)
     app.add_middleware(Admission, maximum=config.gateway_max_concurrency)
     app.add_middleware(RequestEvents)
     app.add_middleware(BrowserErrors)
