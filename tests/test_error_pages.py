@@ -5,7 +5,7 @@ from starlette.responses import JSONResponse
 
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
-from aedrova_site.error_pages import error_response
+from aedrova_site.error_pages import error_response, logo_url
 
 
 @pytest.fixture
@@ -65,6 +65,8 @@ def test_browser_errors_are_branded_keep_status_and_do_not_leak(client, status):
     assert response.status_code == status
     assert response.headers["retry-after"] == "17"
     assert "Aedrova" in response.text and "data:image/png;base64," in response.text
+    assert logo_url() in response.text
+    assert "✦ Aedrova" not in response.text
     assert "private implementation detail" not in response.text
     assert "style-src 'sha256-" in response.headers["content-security-policy"]
     assert response.headers["cache-control"] == "no-store"
