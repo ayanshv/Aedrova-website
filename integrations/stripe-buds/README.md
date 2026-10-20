@@ -31,7 +31,11 @@ external test version and Test OAuth install links; it remains unpublished and h
 zero tested accounts. The older business-verification blocker text above describes
 October 10 and must not be used as the current external-testing status.
 
-v0.1.1 is prepared locally with the additional Aedrova Beta Staging HTTPS callback.
-It preserves both read permissions and the original callback. Upload and moving
-matching test developer credentials into staging await the explicit approval request;
-preparing/committing the manifest is not evidence the version is uploaded or active.
+v0.1.1 was uploaded through the official CLI after explicit owner approval and selected
+as the external test version. Its actual redirect list includes the staging callback
+and original callback; the same two read permissions remain. The provider-issued
+external Test mode install URL/client ID are saved privately. The CLI now uses a login
+session credential, with no reusable test developer API key in its config. Hosted
+activation awaits a matching test app-developer API key in the private prepared
+.env.stripe-bud-staging file. No checkout credential was reused and no partial invalid
+Render config was saved. Customer grant/read acceptance remains open.

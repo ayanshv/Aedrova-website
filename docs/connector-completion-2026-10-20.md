@@ -48,16 +48,21 @@ remain open, additionally blocked by Meta identity confirmation for admin change
 TikTok production is Draft with no production scopes/products and no genuine
 end-to-end review video. Its existing sandbox remains distinct from public approval.
 Vercel now has real registration, staging configuration and scoped callback/discovery;
-final reads/disconnect and sole-project callback acceptance remain open.
-Stripe external testing is enabled; staging callback/credentials and actual grant
-acceptance remain open. Brave Search needs the owner's own activation/credential.
+sole-project callback, both real readers and local disconnect/denial now passed (see final acceptance below).
+Stripe v0.1.1 external testing is enabled with the staging callback; matching developer API key, hosted activation and actual grant acceptance remain open. Brave Search needs the owner's own activation/credential.
 Figma still requires a file link because the implemented scope offers no account-wide
 file discovery; login-only must not be advertised for this connector's entire flow.
 
 ## Required owner handoffs
 
-1. Respond to the pending Stripe v0.1.1/staging-credential approval request. Nothing
-   will be uploaded or copied to the server until that specific approval is received.
+1. Stripe activation approval was received and v0.1.1 uploaded/selected. The CLI
+   session has no reusable test developer API key in its configuration. Do not reuse
+   checkout credentials or copy a CLI user-access token. In Stripe, obtain an existing
+   matching TEST app-developer API secret (not a publishable key), then save it privately
+   as AEDROVA_STRIPE_BUD_CLIENT_SECRET in ignored mode-0600 .env.stripe-bud-staging.
+   The actual provider-issued external test URL/client ID are already saved there.
+   Never send this file/key in chat. This blocks Render activation/token exchange;
+   no partial ID-only Render configuration was saved because config requires both.
 2. In the open Meta/Facebook checkpoint, select an email you control, click Next,
    and enter its confirmation code privately. This blocks Instagram admin/review access.
 3. Sign in to the open Instagram login as professional tester @aedrova_ai and TikTok
@@ -73,3 +78,44 @@ https://vercel.com/docs/integrations/create-integration/vercel-api-integrations
 https://developers.tiktok.com/docs/en/app-review-guidelines
 https://docs.stripe.com/stripe-apps/api-authentication/oauth
 https://api-dashboard.search.brave.com/documentation/quickstart
+
+## Final acceptance this turn
+
+- Website PR #19 passed both required checks and merged as 3a1f43b; Render production
+  reports Live. Equivalent staging f06e0bd reports Live. Both hosted health checks
+  return 200; browser HTML 404s use the actual embedded PNG logo and no-store.
+- Vercel: fresh callback automatically selected the sole provider-authorized project
+  amicus-website-mq, then returned branded Connected. Actual project and deployments
+  tools both passed. Local disconnect passed; a later project read was denied.
+  Provider installation remains until uninstall (provider_revoked=false); this is
+  not evidence of provider-side revocation or public approval.
+- GitHub: fresh real callback, repository selection, repository/changes/issues/
+  deployments tools all passed. Local disconnect passed; later repository read denied.
+- Supabase: fresh existing Aedrova organization Projects READ consent and callback
+  passed. Selected only Aedrova Staging; actual project read passed. Disconnect and
+  post-disconnect denial passed. Production project was not selected/read.
+- Notion: fresh consent retained only the already-approved Aedrova connector validation
+  page; other private pages remained unchecked. Callback, page/block read, local
+  disconnect and post-disconnect denial passed.
+- Stripe: owner approved v0.1.1 callback/upload/credential activation. Official CLI
+  test upload succeeded and Stripe reports Approved for testing. Selected external
+  test version 0.1.1; actual external-test redirect list includes staging. Saved the
+  provider-issued external Test mode URL and client ID privately. CLI config uses
+  a session credential rather than an app-developer API key; no credential was
+  invented/extracted from unrelated stores, no checkout key reused, and no partial
+  invalid server config deployed. Actual customer install/read remains BLOCKED.
+- Existing Figma Oct 15-16 and Instagram Oct 14 reads remain historical evidence,
+  not new acceptance this turn. No fresh TikTok grant, Brave activation or public
+  connector approval claimed. No payments or scope expansion.
+
+Controlled backend suite: 573 passed. Focused desktop connector/recovery suite:35
+passed. The rebuilt internal staging DMG is source 31d5d2a, sha256
+977c7ed7c2d2acc74a8b87763f37904d0dc32f6d461afa3d1954fe159d033458; image
+CRC and deep/strict app signature checks passed. This is an ad-hoc preview with
+public_release=false, not a commercial signed/notarized release.
+
+Private evidence (not committed): companion app work/connector-completion-oct20/
+live-batch.json, vercel-connected.png, stripe-staging-version.png; private provider
+settings remain ignored and mode 0600. All successful grants in this batch were
+locally disconnected. Public review, live renewal and provider-wide revocation
+remain launch gates.
