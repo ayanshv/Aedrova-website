@@ -519,7 +519,20 @@ def install(app, connections, auth):
     @app.get("/buds/authorize/{state}")
     def authorize(request: Request, state: str):
         oauth.dots.enabled()
-        oauth.state(state)
+        try:
+            oauth.state(state)
+        except Denied:
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="bud-account-error.html",
+                context={
+                    "message": "This connection link has expired or was already used. "
+                    "Return to your Bud and choose Connect your account for a fresh link.",
+                    "expired": True,
+                },
+                status_code=403,
+                headers={"X-Aedrova-Branded-Error": "1"},
+            )
         try:
             user = oauth.dots.identity.user(auth(request))["id"]
         except Denied:
@@ -535,6 +548,7 @@ def install(app, connections, auth):
                     "retry_url": "/auth/google?" + urlencode({"bud": state}),
                 },
                 status_code=403,
+                headers={"X-Aedrova-Branded-Error": "1"},
             )
         response = RedirectResponse(target, status_code=303)
         response.set_cookie(

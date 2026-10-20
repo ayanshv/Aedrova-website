@@ -336,11 +336,20 @@ def test_http_routes_google_handoff_cookie_proof_csrf_and_real_callback(tmp_path
         )
         result = oauth.start("session", dot["workspace_id"], dot["id"], "figma", "fileKey123", 24)
         identity.user.return_value = {"id": "different-account"}
-        mismatch = client.get(result["url"], follow_redirects=False)
+        mismatch = client.get(
+            result["url"], follow_redirects=False, headers={"Accept": "text/html"}
+        )
         assert mismatch.status_code == 403
         assert "text/html" in mismatch.headers["content-type"]
         assert "Use the same Google account" in mismatch.text
         assert "Choose Google account" in mismatch.text
+        assert "x-aedrova-branded-error" not in mismatch.headers
+        recovered = client.get("/buds/authorize/" + "x" * 50, headers={"Accept": "text/html"})
+        assert recovered.status_code == 403
+        assert "fresh connection" in recovered.text
+        assert "Connect your account for a fresh link" in recovered.text
+        assert "Choose Google account" not in recovered.text
+        assert "x-aedrova-branded-error" not in recovered.headers
         assert "Research Bud" in mismatch.text
         assert "private-oauth-access" not in mismatch.text
         identity.user.return_value = {"id": "owner"}
