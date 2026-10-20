@@ -101,7 +101,15 @@ def test_vercel_discovery_and_reads_keep_team_context_and_named_selection(system
                 200, json={"access_token": "private-vercel-token", "team_id": "team_123abc"}
             )
         assert req.url.params["teamId"] == "team_123abc"
-        return httpx.Response(200, json={"projects": [{"id": "prj_123abc", "name": "Website"}]})
+        return httpx.Response(
+            200,
+            json={
+                "projects": [
+                    {"id": "prj_123abc", "name": "Website"},
+                    {"id": "prj_456def", "name": "Workspace"},
+                ]
+            },
+        )
 
     oauth, dot, user = configured(system, "vercel", handler)
     reader = oauth.connections.providers["vercel"]
@@ -109,7 +117,10 @@ def test_vercel_discovery_and_reads_keep_team_context_and_named_selection(system
     state, payload, target = started(system, "vercel", "")
     assert target.startswith("https://vercel.com/integrations/aedrova-buds/new?")
     oauth.callback("vercel", state, payload["proof"], "code")
-    assert oauth.status("session", state)["resources"] == [{"id": "prj_123abc", "name": "Website"}]
+    assert oauth.status("session", state)["resources"] == [
+        {"id": "prj_123abc", "name": "Website"},
+        {"id": "prj_456def", "name": "Workspace"},
+    ]
     with pytest.raises(Denied, match="Choose a resource"):
         oauth.select("session", state, "prj_other123")
     result = oauth.select("session", state, "prj_123abc")
@@ -358,3 +369,35 @@ def test_tiktok_accepts_equivalent_read_only_scope_delimiters(system, scope):
     assert (
         oauth.token("tiktok", code="test-code", verifier="test-verifier")["actor"] == "valid_actor"
     )
+
+
+@pytest.mark.parametrize("read_fails", [False, True])
+def test_vercel_single_authorized_project_connects_without_second_picker(system, read_fails):
+    def handler(req):
+        if req.url.path == "/v2/oauth/access_token":
+            return httpx.Response(
+                200, json={"access_token": "private-vercel-token", "team_id": "team_123abc"}
+            )
+        assert req.url.params["teamId"] == "team_123abc"
+        return httpx.Response(200, json={"projects": [{"id": "prj_123abc", "name": "Website"}]})
+
+    oauth, dot, user = configured(system, "vercel", handler)
+    reader = oauth.connections.providers["vercel"]
+    reader.execute = MagicMock(return_value={"records": {}})
+    if read_fails:
+        reader.execute.side_effect = Denied("Needs authorization")
+    state, payload, _ = started(system, "vercel", "")
+    if read_fails:
+        with pytest.raises(Denied):
+            oauth.callback("vercel", state, payload["proof"], "code")
+        assert oauth.status("session", state)["status"] == "failed"
+        assert not oauth.connections.listing(dot, user)
+    else:
+        result = oauth.callback("vercel", state, payload["proof"], "code")
+        assert oauth.status("session", state)["status"] == "connected"
+        assert result["id"]
+        assert reader.execute.call_count == 2
+        assert reader.execute.call_args.args[1] == "prj_123abc"
+        assert reader.execute.call_args.kwargs["oauth"]["team"] == "team_123abc"
+        with pytest.raises(Denied):
+            oauth.callback("vercel", state, payload["proof"], "code")

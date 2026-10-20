@@ -377,10 +377,15 @@ class BudOAuth:
                     self.transport,
                     **({"team": token.get("team", "")} if provider == "vercel" else {}),
                 )
-                payload.pop("proof", None)
-                payload.pop("verifier", None)
-                status = "choose_resource"
-                return {"status": status}
+                if provider == "vercel" and len(payload["choices"]) == 1:
+                    # Vercel already lets the customer restrict the install to a project.
+                    # Do not ask them to select that sole authorized project a second time.
+                    resource = payload["choices"][0]["id"]
+                else:
+                    payload.pop("proof", None)
+                    payload.pop("verifier", None)
+                    status = "choose_resource"
+                    return {"status": status}
             if provider == "tiktok":
                 actor = token["actor"]
                 if resource != "me" and resource != actor:
