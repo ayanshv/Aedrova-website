@@ -1,6 +1,33 @@
 'use strict';
 const $ = (selector) => document.querySelector(selector);
-const storage = {get(key, fallback=null){try{return JSON.parse(localStorage.getItem(key)) ?? fallback;}catch{return fallback;}},set(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch{}}};
+// Only persist optional preferences after a clear storage choice. No tracking SDKs.
+const memory = new Map();
+let preferenceChoice = null;
+try{preferenceChoice=JSON.parse(localStorage.getItem('aedrova-storage-choice'));}catch{}
+const storage = {
+  get(key,fallback=null){
+    if(memory.has(key))return memory.get(key);
+    if(preferenceChoice==='preferences')try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{}
+    return fallback;
+  },
+  set(key,value){memory.set(key,value);if(preferenceChoice==='preferences')try{localStorage.setItem(key,JSON.stringify(value));}catch{}}
+};
+const storageNotice=document.querySelector('#storage-notice');
+function showStorageChoices(){if(storageNotice)storageNotice.hidden=false;}
+document.querySelectorAll('[data-storage-settings]').forEach(button=>button.addEventListener('click',()=>{showStorageChoices();storageNotice?.querySelector('button')?.focus();}));
+if(storageNotice){
+  storageNotice.hidden=['preferences','essential'].includes(preferenceChoice);
+  storageNotice.querySelectorAll('[data-storage-choice]').forEach(button=>button.addEventListener('click',()=>{
+    preferenceChoice=button.dataset.storageChoice;
+    try{
+      localStorage.setItem('aedrova-storage-choice',JSON.stringify(preferenceChoice));
+      const keys=['aedrova-theme','aedrova-intro','aedrova-plan','aedrova-intro-complete'];
+      if(preferenceChoice==='essential')keys.forEach(key=>localStorage.removeItem(key));
+      else memory.forEach((value,key)=>localStorage.setItem(key,JSON.stringify(value)));
+    }catch{}
+    storageNotice.hidden=true;
+  }));
+}
 const savedTheme = storage.get('aedrova-theme');
 const theme = savedTheme === 'dark' ? 'dark' : 'light';
 document.documentElement.dataset.theme=theme;
@@ -80,7 +107,7 @@ if(menuButton&&menu){
 
 if(!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window){document.documentElement.classList.add('js-motion');const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));}
 let toastTimer;function notice(message){const toast=$('.toast');toast.textContent=message;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),6500);}
-let csrf='';async function api(path,body){const response=await fetch(path,{credentials:'same-origin',method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body===undefined?undefined:JSON.stringify(body)});let data;try{data=await response.json();}catch{throw new Error('The service did not respond. Please try again.');}if(!response.ok)throw new Error(data.error||data.detail||'Could not complete this request. Please retry.');return data;}
+let csrf='';async function api(path,body,signal){const response=await fetch(path,{signal,credentials:'same-origin',method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body===undefined?undefined:JSON.stringify(body)});let data;try{data=await response.json();}catch{throw new Error('The service did not respond. Please try again.');}if(!response.ok)throw new Error(data.error||data.detail||'Could not complete this request. Please retry.');return data;}
 async function busy(button,operation){const children=[...button.childNodes];button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='One moment…';try{await operation();}catch(error){notice(error.message);}finally{button.disabled=false;button.removeAttribute('aria-busy');button.replaceChildren(...children);}}
 const params=new URLSearchParams(location.search);if(['monthly','annual'].includes(params.get('plan')))storage.set('aedrova-plan',params.get('plan'));
 if(params.has('cancelled'))notice('Checkout cancelled. No new subscription was confirmed.');if(params.has('login_error'))notice('Google sign-in did not finish. Please try again.');
@@ -132,7 +159,9 @@ if(form){
   });
   nickname.addEventListener('input',save);firstWin.addEventListener('input',save);referralDetail.addEventListener('input',save);
   $('#wizard-back').addEventListener('click',()=>{if(step>0){step--;show(true);}});
-  $('#wizard-next').addEventListener('click',()=>{if(step===lastStep){save();location.href='/plans';}else{step++;show(true);}});
+  function seePlans(){save();if(window.AedrovaPreparation)window.AedrovaPreparation.plans();else location.href='/plans';}
+  $('#wizard-next').addEventListener('click',()=>{if(step===lastStep)seePlans();else{step++;show(true);}});
+  $('#wizard-skip').addEventListener('click',event=>{if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();seePlans();});
   form.addEventListener('submit',event=>{event.preventDefault();$('#wizard-next').click();});
   show();
 }
@@ -271,19 +300,23 @@ if ($('#workspace')) {
     const target = new URL(value);
     if (target.protocol !== 'https:' || target.hostname !== hostname || target.username || target.password)
       throw new Error('Billing returned an unexpected address.');
-    location.href = target.href;
+    return target.href;
   }
   $('#checkout').addEventListener('click', event => busy(event.currentTarget, async () => {
     if (!$('#confirm-team-checkout').checked) throw new Error('Review and confirm your team’s order summary first.');
-    const result = await api('/api/checkout', {workspace: selected, plan, request_id: checkoutKey()});
-    redirectStripe(result.url, 'checkout.stripe.com');
+    const prepare = async signal => {
+      const result = await api('/api/checkout', {workspace: selected, plan, request_id: checkoutKey()}, signal);
+      return redirectStripe(result.url, 'checkout.stripe.com');
+    };
+    if (window.AedrovaPreparation) await window.AedrovaPreparation.checkout(prepare);
+    else location.href = await prepare();
   }));
   $('#portal').addEventListener('click', event => busy(event.currentTarget, async () => {
-    const result = await api('/api/portal/' + encodeURIComponent(selected), {}); redirectStripe(result.url, 'billing.stripe.com');
+    const result = await api('/api/portal/' + encodeURIComponent(selected), {}); location.href = redirectStripe(result.url, 'billing.stripe.com');
   }));
   $('#topup').addEventListener('click', event => busy(event.currentTarget, async () => {
     const result = await api('/api/topup', {workspace: selected, plan: 'ai_credits', request_id: crypto.randomUUID()});
-    redirectStripe(result.url, 'checkout.stripe.com');
+    location.href = redirectStripe(result.url, 'checkout.stripe.com');
   }));
   $('#logout').addEventListener('click', event => busy(event.currentTarget, async () => { await api('/api/logout', {}); location.href = '/account'; }));
   load().catch(error => {
@@ -327,10 +360,19 @@ if(waitlistForm){
       const fields=new FormData(waitlistForm);
       const intro=storage.get('aedrova-intro',{});
       const source=['chatgpt','claude','gemini','perplexity','search','social','friend','other','prefer_not'].includes(intro?.referral)?intro.referral:'';
-      await api('/api/waitlist',{email:String(fields.get('email')).trim(),consent:fields.get('consent')==='on',referral_source:source,referral_detail:source&&source!=='prefer_not'?String(intro.referral_detail||'').slice(0,160):''});
+      await api('/api/waitlist',{email:String(fields.get('email')).trim(),consent:fields.get('consent')==='on',age_confirmed:fields.get('age_confirmed')==='on',referral_source:source,referral_detail:source&&source!=='prefer_not'?String(intro.referral_detail||'').slice(0,160):''});
       $('#waitlist-entry').hidden=true;$('#waitlist-success').hidden=false;$('#waitlist-success').focus();
       waitlistForm.reset();
     }catch(problem){error.textContent=problem.message;error.hidden=false;}
     finally{submit.disabled=false;submit.removeAttribute('aria-busy');}
   });
 }
+
+const unsubscribeForm=$('#unsubscribe-form');
+if(unsubscribeForm)unsubscribeForm.addEventListener('submit',async event=>{
+  event.preventDefault();const button=unsubscribeForm.querySelector('button');
+  if(button.disabled)return;button.disabled=true;
+  const result=$('#unsubscribe-result');
+  try{await api('/api/unsubscribe',{token:params.get('token')||''});result.textContent='You’re unsubscribed from launch updates. Required account notices are unchanged.';button.hidden=true;}
+  catch(error){result.textContent=error.message;button.disabled=false;}
+});

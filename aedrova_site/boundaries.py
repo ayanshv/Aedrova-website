@@ -4,7 +4,10 @@ import asyncio
 import json
 import math
 
+from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
+
+from aedrova_site import discovery
 
 
 def reject_constant(_value):
@@ -61,7 +64,12 @@ class BodyLimit:
         body = b"".join(chunks)
         chunks.clear()
         headers = dict(scope.get("headers", []))
-        if headers.get(b"content-type", b"").split(b";", 1)[0].strip() == b"application/json":
+        media_type = headers.get(b"content-type", b"").split(b";", 1)[0].strip().lower()
+        if (
+            media_type == b"application/json"
+            or (media_type.startswith(b"application/") and media_type.endswith(b"+json"))
+            or scope["path"].startswith("/gateway/")
+        ):
             try:
                 value = json.loads(body, parse_constant=reject_constant)
                 pending = [(value, 0)]
@@ -100,3 +108,44 @@ class BodyLimit:
             return await receive()
 
         await self.app(scope, buffered, send)
+
+
+class ResponseHeaders:
+    """Protect early rejects and unmatched routes as well as successful handlers."""
+
+    def __init__(self, app, config):
+        self.app, self.config = app, config
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        async def protected(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["Referrer-Policy"] = "no-referrer"
+                headers["X-Frame-Options"] = "DENY"
+                # Branded errors carry a hash-based policy for their embedded style.
+                headers.setdefault(
+                    "Content-Security-Policy",
+                    "default-src 'self'; script-src 'self'; style-src 'self'; "
+                    "img-src 'self' data:; font-src 'self'; media-src 'self'; "
+                    "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; "
+                    "form-action 'self'",
+                )
+                headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+                path = scope.get("path", "")
+                if not path.startswith("/static/") or message["status"] >= 400:
+                    headers["Cache-Control"] = "no-store"
+                if (
+                    message["status"] >= 400
+                    or not discovery.public_deployment(self.config)
+                    or path not in {*discovery.PUBLIC_PAGES, "/robots.txt", "/sitemap.xml"}
+                ):
+                    headers["X-Robots-Tag"] = "noindex"
+                if self.config.production:
+                    headers["Strict-Transport-Security"] = "max-age=31536000"
+            await send(message)
+
+        await self.app(scope, receive, protected)

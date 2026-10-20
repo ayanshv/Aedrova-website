@@ -119,6 +119,7 @@ def test_referral_is_optional_validated_encrypted_and_exported(public_client, tm
     payload = {
         "email": "referral@example.com",
         "consent": True,
+        "age_confirmed": True,
         "referral_source": "chatgpt",
         "referral_detail": "=danger()",
     }
@@ -149,7 +150,7 @@ def test_referral_is_optional_validated_encrypted_and_exported(public_client, tm
     assert (
         public_client.post(
             "/api/waitlist",
-            json={"email": "optional@example.com", "consent": True},
+            json={"email": "optional@example.com", "consent": True, "age_confirmed": True},
             headers=headers,
         ).status_code
         == 200

@@ -24,7 +24,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from aedrova_site import discovery
-from aedrova_site.boundaries import BodyLimit
+from aedrova_site.boundaries import BodyLimit, ResponseHeaders
+from aedrova_site.communications import unsubscribe
 from aedrova_site.config import Config
 from aedrova_site.error_pages import BrowserErrors
 from aedrova_site.gateway import authorize_run, inference
@@ -82,7 +83,8 @@ class MeetingJoinBody(BaseModel):
 
 class WaitlistBody(BaseModel):
     email: str = Field(min_length=3, max_length=254)
-    consent: bool = False
+    consent: bool = Field(default=False, strict=True)
+    age_confirmed: bool = Field(default=False, strict=True)
     referral_source: Literal[
         "",
         "chatgpt",
@@ -96,6 +98,10 @@ class WaitlistBody(BaseModel):
         "prefer_not",
     ] = ""
     referral_detail: str = Field(default="", max_length=160)
+
+
+class UnsubscribeBody(BaseModel):
+    token: str = Field(min_length=40, max_length=2048)
 
 
 class MeetingConsentBody(MeetingJoinBody):
@@ -182,7 +188,9 @@ def create_app(config=None):
     )
     identity.hierarchy_available = store.hierarchy_available
     asset_version = hashlib.sha256(
-        (ROOT / "static/site.css").read_bytes() + (ROOT / "static/site.js").read_bytes()
+        (ROOT / "static/site.css").read_bytes()
+        + (ROOT / "static/site.js").read_bytes()
+        + (ROOT / "static/preparation.js").read_bytes()
     ).hexdigest()[:12]
     database_events(store.engine)
     payments = Payments(config, store)
@@ -269,38 +277,14 @@ def create_app(config=None):
                 return JSONResponse({"error": "Request too large."}, status_code=413)
         except ValueError:
             return JSONResponse({"error": "Invalid content length."}, status_code=400)
-        response = await call_next(request)
-        response.headers.update(
-            {
-                "X-Content-Type-Options": "nosniff",
-                "Referrer-Policy": "no-referrer",
-                "X-Frame-Options": "DENY",
-                "Content-Security-Policy": (
-                    "default-src 'self'; script-src 'self'; style-src 'self'; "
-                    "img-src 'self' data:; font-src 'self'; "
-                    "media-src 'self'; "
-                    "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; "
-                    "form-action 'self'"
-                ),
-            }
-        )
-        if not request.url.path.startswith("/static"):
-            response.headers["Cache-Control"] = "no-store"
-        if not discovery.public_deployment(config) or request.url.path not in {
-            *discovery.PUBLIC_PAGES,
-            "/robots.txt",
-            "/sitemap.xml",
-        }:
-            response.headers["X-Robots-Tag"] = "noindex"
-        if config.production:
-            response.headers["Strict-Transport-Security"] = "max-age=31536000"
-        return response
+        return await call_next(request)
 
     app.add_middleware(BodyLimit)
     app.add_middleware(TrafficLimits, store=store)
     app.add_middleware(Admission, maximum=config.gateway_max_concurrency)
     app.add_middleware(RequestEvents)
     app.add_middleware(BrowserErrors)
+    app.add_middleware(ResponseHeaders, config=config)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request, _exc):
@@ -396,8 +380,14 @@ def create_app(config=None):
     @app.post("/api/waitlist")
     def join_waitlist(request: Request, body: WaitlistBody):
         email = body.email.strip().lower()
-        if not body.consent or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
-            raise HTTPException(422, "Enter a valid email and agree to receive launch updates.")
+        if (
+            not body.consent
+            or not body.age_confirmed
+            or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email)
+        ):
+            raise HTTPException(
+                422, "Enter a valid email, confirm eligibility and agree to receive launch updates."
+            )
         if request.headers.get("origin") != config.origin:
             raise HTTPException(403, "Join from the Aedrova website.")
         store.rate_limit(
@@ -414,6 +404,7 @@ def create_app(config=None):
                 "kind": "waitlist",
                 "email": email,
                 "consent": "launch-updates-v1",
+                "eligibility": "13-plus-and-guardian-if-required-v1",
                 "referral_source": body.referral_source,
                 "referral_detail": body.referral_detail.strip()
                 if body.referral_source not in {"", "prefer_not"}
@@ -421,6 +412,22 @@ def create_app(config=None):
             },
             lifetime=365 * 86400,
         )
+        return {"ok": True}
+
+    @app.get("/unsubscribe")
+    def unsubscribe_page(request: Request):
+        return page(request, "unsubscribe", "Email preferences")
+
+    @app.post("/api/unsubscribe")
+    def stop_launch_updates(request: Request, body: UnsubscribeBody):
+        if request.headers.get("origin") != config.origin:
+            raise HTTPException(403, "Use the Aedrova website.")
+        store.rate_limit(
+            "unsubscribe:" + (request.client.host if request.client else "unknown"),
+            limit=30,
+            seconds=60,
+        )
+        unsubscribe(store, body.token)
         return {"ok": True}
 
     @app.get("/onboarding")
@@ -498,6 +505,7 @@ def create_app(config=None):
     @app.get("/cookies")
     @app.get("/acceptable-use")
     @app.get("/security")
+    @app.get("/refunds")
     def trust(request: Request):
         kind = request.url.path.strip("/")
         return page(request, "trust", kind.replace("-", " ").title(), kind=kind)
@@ -928,8 +936,10 @@ def create_app(config=None):
             raise Denied("Invalid transcript page.")
         if latest:
             return identity.request(
-                "/rest/v1/meeting_transcript_segments?meeting_id=eq." + str(meeting)
-                + "&select=*&order=created_at.desc,id.desc&limit=20", token,
+                "/rest/v1/meeting_transcript_segments?meeting_id=eq."
+                + str(meeting)
+                + "&select=*&order=created_at.desc,id.desc&limit=20",
+                token,
             )
         return identity.request(
             "/rest/v1/meeting_transcript_segments?meeting_id=eq."

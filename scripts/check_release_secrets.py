@@ -1,11 +1,13 @@
 """Scan Git-tracked source for recognizable credentials; never print secret values."""
 
 import subprocess
+import sys
 from pathlib import Path
 
-from aedrova_site.credential_patterns import credential_rules
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from aedrova_site.credential_patterns import credential_rules  # noqa: E402
 
 
 def main():
