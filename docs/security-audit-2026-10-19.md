@@ -103,3 +103,16 @@ is actively switching away during automation. No Cloudflare code or route change
 A tested single-file bundle and exact owner steps are in deploy/search-discovery/README.md.
 The prior Google recrawl request succeeded; no indexing guarantee is implied. Hosted
 publication results are recorded separately after successful CI/deploy acceptance.
+
+## Hosted acceptance after PR #16
+
+PR #16 passed both verify checks and was merged as db2bbc8. The merge tree exactly
+matched the tested 33fc716 tree. Render staging deployed 33fc716 (Live) and production
+deployed db2bbc8 (Live); existing Free hosting and all feature flags were preserved.
+Real production/staging readiness, new refund page, branded 404, private 403, CSP,
+nosniff, no-store/noindex errors and crawl files passed. Production checkout and
+managed AI remained closed. No migration, new secret, payment or installer release.
+Evidence: ignored work/security-audit-2026-10-19/{production-http,staging-http}.json.
+The publication follow-up corrects policy update dates to October 19 without changing
+financial terms. Cloudflare activation, operator/business details, licensing evidence
+and independent/live acceptance gates remain open as documented.
