@@ -300,6 +300,26 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 
 .team-visual svg{width:20px;height:20px;fill:currentColor}.team-order h3{margin:0;font-size:24px;letter-spacing:-.025em}
 
+/* Buds belong to the work around them, with space reserved at each corner. */
+.bud-anchor{position:relative;isolation:isolate}
+.bud-anchor .bud-peek{z-index:1}
+.hero-bud-companion{left:5%;top:32%;transform:rotate(11deg)}
+.hero-bud-companion .site-bud{width:84px;height:84px;animation-delay:-3s}
+.workspace-bud{left:-24px;bottom:-30px;transform:rotate(-9deg)}
+.workspace-bud .site-bud{width:92px;height:92px;animation-delay:-1s}
+.thread-bud{right:-16px;top:-48px;transform:rotate(8deg)}
+.files-bud{left:-22px;bottom:-22px;transform:rotate(-10deg)}
+.project-bud{right:-18px;top:-48px;transform:rotate(10deg)}
+.meeting-bud{left:-22px;top:-48px;transform:rotate(-8deg)}
+.memory-bud{right:-16px;bottom:-24px;transform:rotate(8deg)}
+.thread-bud .site-bud,.files-bud .site-bud,.project-bud .site-bud,.meeting-bud .site-bud,.memory-bud .site-bud{width:78px;height:78px}
+.files-bud .site-bud,.memory-bud .site-bud{animation-delay:-3s}
+.project-bud .site-bud{animation-delay:-1.5s}
+@media(max-width:1000px){.hero-bud-companion{left:24px;top:26%}.hero-bud-companion .site-bud{width:66px;height:66px}.workspace-bud{left:0;bottom:-24px}.workspace-bud .site-bud{width:70px;height:70px}}
+@media(max-width:700px){.hero-bud-companion{display:none}.thread-bud,.project-bud,.meeting-bud{top:-32px;left:auto;right:8px}.files-bud{left:8px;bottom:-18px}.memory-bud{right:8px;bottom:-18px}.thread-bud .site-bud,.files-bud .site-bud,.project-bud .site-bud,.meeting-bud .site-bud,.memory-bud .site-bud{width:52px;height:52px}}
+
+.bud-anchor figcaption{padding-inline:80px;min-height:32px}
+@media(max-width:700px){.bud-anchor figcaption{padding-inline:70px}}
 /* A quiet, browsable trust area; no fabricated status badges or empty destinations. */
 footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap:48px;align-items:start}
 .footer-columns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
