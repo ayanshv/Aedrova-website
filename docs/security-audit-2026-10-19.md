@@ -87,3 +87,19 @@ possible vulnerabilities or endpoint issues have been eliminated.
 References:
 - https://render.com/docs/free
 - https://support.google.com/webmasters/answer/9012289
+
+## Approved follow-up publication
+
+Owner approved push/backend deployment and the exact-path robots route. Changes are
+pushed to codex/bud-connectors-https and PR #16 (https://github.com/ayanshv/Aedrova-website/pull/16)
+uses the required verify check; direct main push was correctly rejected by repository
+rules and no protection was bypassed. Desktop source e6a720a is pushed to its working
+branch, with launch plan and preview bounds. Final website merged-source suite: 571
+passed; route inventory now has 87 routes after refund/opt-out additions. The 20-item
+consumer checklist documents implementation and unresolved owner/legal/license gates.
+
+Cloudflare remains blocked: the embedded editor did not accept code input, and Safari
+is actively switching away during automation. No Cloudflare code or route changed.
+A tested single-file bundle and exact owner steps are in deploy/search-discovery/README.md.
+The prior Google recrawl request succeeded; no indexing guarantee is implied. Hosted
+publication results are recorded separately after successful CI/deploy acceptance.

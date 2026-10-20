@@ -50,3 +50,14 @@ def test_mobile_choices_keyboard_and_public_images(ui):  # noqa: F811
         assert page.locator("input:not([type=hidden])").evaluate_all(
             "els=>els.every(e=>e.labels.length||e.getAttribute('aria-label'))"
         ), path
+
+
+def test_connector_confirmation_honors_essential_storage_choice(ui):  # noqa: F811
+    page, _, _, _ = ui
+    page.goto("https://aedrova.test/plans")
+    page.get_by_role("button", name="Essential only", exact=True).click()
+    page.set_content('<button class="theme-toggle">Change appearance</button>')
+    page.add_script_tag(url="https://aedrova.test/static/bud-connected.js")
+    page.locator(".theme-toggle").click()
+    assert page.locator("html").get_attribute("data-theme") == "dark"
+    assert page.evaluate("localStorage.getItem('aedrova-theme')") is None

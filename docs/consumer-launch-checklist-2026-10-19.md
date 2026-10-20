@@ -87,7 +87,7 @@ separate defense layers. No general security guarantee is claimed.
 
 Full audit details: security-audit-2026-10-19.md. New tests: checklist_security,
 checklist_browser; prior full suite 568 passed before final browser/contrast checks.
-Final test/deployment evidence will be recorded after publication. New public opt-out
+Final merged-source suite: 571 passed, including three browser checks; Ruff, credential scan and embedded PostgreSQL checks passed. Publication is proceeding through required PR #16 checks. Deployment remains unverified until recorded below. New public opt-out
 and refund routes are included in the route inventory; opt-out is noindex/no-store.
 Prepared exact-path robots Worker is independent of the sleeping Render origin.
 
