@@ -1,0 +1,7 @@
+{
+  "name": "aedrova-buds-stripe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headless read-only Stripe OAuth connector for Aedrova Buds",
+  "dependencies": {}
+}

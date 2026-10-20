@@ -175,3 +175,45 @@ separate acceptance gate and was not exercised by this initial connection test.
 
 Official OAuth reference:
 https://developers.notion.com/guides/get-started/authorization
+
+## October 10 sign-in-first update
+
+Native OAuth can now start without a resource ID. After consent, authorized
+repository/project/page names are offered for selection. Only the selection
+creates a grant, after the existing complete read verification. Figma still
+requires a file link after consent. TikTok remains automatic for its signed-in
+account. No broader permissions are requested. The advanced token option is
+collapsed by default. Unsupported login providers are identified honestly.
+
+Discovery uses fixed GitHub/Supabase/Notion API hosts and bounded names/IDs,
+not resource contents. Temporary tokens and session context remain encrypted
+in the existing ten-minute OAuth state. Selection validates the same account,
+workspace membership, Bud version, allowed choice and single-use state before
+verifying access; success or failure removes temporary credentials. Desktop
+status returns names/IDs only, never tokens. No schema migration is needed.
+
+Local HTTP/security and native UI tests cover the new flow. Fresh real consent,
+provider discovery and selection reads remain separate acceptance checks.
+Existing installations and private app publication restrictions still apply.
+Stripe/Instagram/Vercel/Search are not newly OAuth-enabled by this change.
+
+Deployment d37628c completed on the existing isolated Render connector service
+(dep-db4uqnlckfvc738ba3ig). HTTPS readiness returned 200; the selection endpoint
+rejects unauthenticated access with 403; unrelated plans remain unavailable (404).
+The waitlist website was not redeployed. No credential or provider-scope changes.
+398 service/website tests passed. Fresh customer consent remains untested.
+
+## Remaining account flows — October 10
+
+Stripe Apps, Instagram Login and Vercel integration OAuth now have server adapters.
+Stripe and Instagram bind the verified returned account automatically; Vercel lists
+named projects with installation team scoping. Search has a separate authenticated
+Enable web search flow backed by an owner-funded Brave key and durable daily request
+caps (100 global, 10/workspace default). No fake Search OAuth. Tokens stay encrypted;
+managed Search grants store a pointer, not a copy of the shared key. Read verification
+is still required before Connected. Partial/missing registrations remain unavailable.
+
+See docs/account-connector-setup.md for exact registration and acceptance steps.
+Prior statement that these adapters are unsupported is superseded for code support,
+not account readiness. Stripe passkey/2FA, Meta developer registration, Vercel app
+registration/terms and Brave subscription/key remain real setup gates.

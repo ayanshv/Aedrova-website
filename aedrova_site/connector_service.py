@@ -5,7 +5,9 @@ import re
 from fastapi.responses import JSONResponse
 
 from aedrova_site.app import create_app
+from aedrova_site.boundaries import ResponseHeaders
 from aedrova_site.config import Config
+from aedrova_site.traffic_limits import TrafficLimits
 
 GET_PATHS = {
     "/health",
@@ -26,7 +28,9 @@ POST_PATHS = {
     "/api/dots/tools",
     "/api/buds/connections",
     "/api/buds/connections/disconnect",
+    "/api/buds/connections/search",
     "/api/buds/oauth/start",
+    "/api/buds/oauth/select",
 }
 
 
@@ -38,7 +42,7 @@ def allowed(method, path):
             or bool(
                 re.fullmatch(
                     r"/(?:buds|dots)/authorize/[A-Za-z0-9_-]{40,100}|"
-                    r"/buds/oauth/(?:github|supabase|figma|notion|tiktok)/callback",
+                    r"/buds/oauth/(?:github|supabase|figma|notion|tiktok|stripe|instagram|vercel)/callback",
                     path,
                 )
             )
@@ -100,4 +104,10 @@ def create_connector_app(config=None):
         )
         return response
 
+    # Keep admission outside this service's early root/404 responses, too.
+    app.user_middleware = [
+        m for m in app.user_middleware if m.cls not in {TrafficLimits, ResponseHeaders}
+    ]
+    app.add_middleware(TrafficLimits, store=app.state.store)
+    app.add_middleware(ResponseHeaders, config=config)
     return app

@@ -1,3 +1,7 @@
+> Deferred from the first Beta release on October 10, 2026. Pulse API routes
+> and projection code were removed in Final-Beta Phase 1. Historical notes below
+> are not current functionality. Bud evidence storage and meeting heartbeats remain.
+
 # Pulse service
 
 `aedrova_site/pulse.py` is installed in the existing FastAPI service, using its existing

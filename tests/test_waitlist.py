@@ -31,7 +31,7 @@ def test_waitlist_replaces_entry_points_and_blocks_signup(client):
 
 
 def test_saved_email_encrypted_and_duplicate_private(client):
-    payload = {"email": "  PERSON@example.com ", "consent": True}
+    payload = {"email": "  PERSON@example.com ", "consent": True, "age_confirmed": True}
     headers = {"origin": "http://127.0.0.1:8090"}
     for _ in range(2):
         assert client.post("/api/waitlist", json=payload, headers=headers).json() == {"ok": True}
@@ -47,10 +47,10 @@ def test_saved_email_encrypted_and_duplicate_private(client):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"email": "bad-email", "consent": True},
+        {"email": "bad-email", "consent": True, "age_confirmed": True},
         {"email": "person@example.com", "consent": False},
         {"email": "person@example.com"},
-        {"email": "a" * 260, "consent": True},
+        {"email": "a" * 260, "consent": True, "age_confirmed": True},
     ],
 )
 def test_invalid_signups_rejected(client, payload):
@@ -63,7 +63,7 @@ def test_invalid_signups_rejected(client, payload):
 
 
 def test_foreign_origin_and_abuse_rejected(client):
-    payload = {"email": "person@example.com", "consent": True}
+    payload = {"email": "person@example.com", "consent": True, "age_confirmed": True}
     assert (
         client.post(
             "/api/waitlist", json=payload, headers={"origin": "https://other.example"}
@@ -98,7 +98,7 @@ def test_operator_export_is_private_and_excludes_auth_sessions(client, tmp_path)
     store.session("signed-in-user", {"access_token": "private-auth-token"})
     client.post(
         "/api/waitlist",
-        json={"email": "person@example.com", "consent": True},
+        json={"email": "person@example.com", "consent": True, "age_confirmed": True},
         headers={"origin": "http://127.0.0.1:8090"},
     )
     path = tmp_path / "contacts.csv"

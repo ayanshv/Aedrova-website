@@ -11,3 +11,4 @@
 !config/plans.example.json
 !config/models.beta.json
 !config/models.openai.json
+!config/models.anthropic.json

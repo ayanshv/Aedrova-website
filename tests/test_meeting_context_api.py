@@ -70,3 +70,34 @@ def test_enabled_consent_forwards_user_token_without_server_speaker_claim(tmp_pa
     assert calls[0].kwargs["data"] == {"p_meeting": meeting, "p_transcription": True, "p_ai": False}
     assert calls[1].args[0] == "/rest/v1/rpc/meeting_consent_snapshot"
     app.state.store.engine.dispose()
+
+
+def test_caption_latest_query_is_bounded_and_uses_caller_rls_token(tmp_path):
+    app = create_app(config(tmp_path, enabled=True))
+    app.state.identity.request = MagicMock(return_value=[])
+    meeting = str(uuid4())
+    with TestClient(app) as client:
+        response = client.get(f"/api/meetings/transcript/{meeting}?latest=true",
+                              headers={"authorization": "Bearer user-session-fixture"})
+        assert response.status_code == 200
+        args = app.state.identity.request.call_args
+        assert args.args[1] == "user-session-fixture"
+        assert f"meeting_id=eq.{meeting}" in args.args[0]
+        assert "order=created_at.desc,id.desc&limit=20" in args.args[0]
+    app.state.store.engine.dispose()
+
+
+def test_caption_route_disabled_without_context_and_rejects_missing_auth(tmp_path):
+    app = create_app(config(tmp_path, enabled=True))
+    app.state.identity.request = MagicMock()
+    with TestClient(app) as client:
+        assert client.get(f"/api/meetings/transcript/{uuid4()}?latest=true").status_code == 403
+    app.state.identity.request.assert_not_called()
+    app.state.store.engine.dispose()
+    app = create_app(config(tmp_path, enabled=False))
+    app.state.identity.request = MagicMock()
+    with TestClient(app) as client:
+        assert client.get(f"/api/meetings/transcript/{uuid4()}?latest=true",
+                          headers={"authorization": "Bearer fixture"}).status_code == 403
+    app.state.identity.request.assert_not_called()
+    app.state.store.engine.dispose()

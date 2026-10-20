@@ -19,6 +19,7 @@ class Config:
     origin: str = "http://127.0.0.1:8090"
     database: str = "sqlite:///work/site.sqlite3"
     production: bool = False
+    deployment_environment: str = "unspecified"
     waitlist_only: bool = False
     supabase_database: bool = False
     db_pool_size: int = 5
@@ -48,9 +49,21 @@ class Config:
     notion_bud_client_secret: str = field(default="", repr=False)
     supabase_bud_client_id: str = ""
     supabase_bud_client_secret: str = field(default="", repr=False)
+    stripe_bud_client_id: str = ""
+    stripe_bud_client_secret: str = field(default="", repr=False)
+    stripe_bud_authorize_url: str = "https://marketplace.stripe.com/oauth/v2/authorize"
+    instagram_bud_client_id: str = ""
+    instagram_bud_client_secret: str = field(default="", repr=False)
+    vercel_bud_client_id: str = ""
+    vercel_bud_client_secret: str = field(default="", repr=False)
+    vercel_bud_slug: str = ""
+    search_bud_key: str = field(default="", repr=False)
+    search_bud_daily_limit: int = 100
+    search_bud_workspace_daily_limit: int = 10
     meetings_enabled: bool = False
     meeting_context_enabled: bool = False
     speech_enabled: bool = False
+    chat_speech_enabled: bool = False
     speech_rate_microusd_per_minute: int = 6000
     speech_key: str = field(default="", repr=False)
     livekit_url: str = ""
@@ -131,6 +144,33 @@ class Config:
                 raise ValueError(
                     "Configure the server encryption key in the deployment secret store."
                 )
+        if self.deployment_environment not in {
+            "unspecified",
+            "development",
+            "staging",
+            "production",
+        }:
+            raise ValueError("Choose development, staging or production environment.")
+        if self.deployment_environment == "staging":
+            # A staging label alone must never permit writes to the existing production project.
+            if not self.production or not self.supabase_database:
+                raise ValueError("Staging requires HTTPS and a separate Supabase database.")
+            if urlparse(self.supabase_url).hostname == "cpelagtufyocepnqcqqd.supabase.co":
+                raise ValueError("Staging must not use the production Supabase project.")
+            if parsed.hostname in {
+                "aedrova.com",
+                "www.aedrova.com",
+                "aedrova-connectors.onrender.com",
+            }:
+                raise ValueError("Staging requires its own service origin.")
+            if self.checkout_enabled or self.release_ready or self.development_ai:
+                raise ValueError(
+                    "Staging cannot enable public checkout, downloads or development bypass."
+                )
+            if self.stripe_key.startswith("sk_live_") or self.stripe_bud_client_secret.startswith(
+                "sk_live_"
+            ):
+                raise ValueError("Staging must use Stripe test credentials only.")
         if self.supabase_database:
             try:
                 database = make_url(self.database)
@@ -139,9 +179,13 @@ class Config:
                 raise ValueError(
                     "Configure a valid private Supabase database connection."
                 ) from None
+            project_host = urlparse(self.supabase_url).hostname or ""
+            if not re.fullmatch(r"[a-z0-9]{20}\.supabase\.co", project_host):
+                raise ValueError("Use a valid hosted Supabase project URL.")
+            project_ref = project_host.split(".")[0]
             if (
                 database.drivername != "postgresql+psycopg"
-                or database.username != "aedrova_website.cpelagtufyocepnqcqqd"
+                or database.username != "aedrova_website." + project_ref
                 or not database.password
                 or not (database.host or "").endswith(".pooler.supabase.com")
                 or database_port != 5432
@@ -157,6 +201,7 @@ class Config:
             self.checkout_enabled
             or self.gateway_enabled
             or self.meetings_enabled
+            or self.chat_speech_enabled
             or self.free_enabled
         ):
             raise ValueError(
@@ -166,17 +211,35 @@ class Config:
             raise ValueError("Dots require a persistent server encryption key.")
         if bool(self.github_dot_client_id) != bool(self.github_dot_client_secret):
             raise ValueError("Configure both GitHub Dot OAuth credentials server-side.")
-        for provider in ("figma", "notion", "supabase", "tiktok"):
+        for provider in ("figma", "notion", "supabase", "tiktok", "stripe", "instagram", "vercel"):
             if bool(getattr(self, provider + "_bud_client_id")) != bool(
                 getattr(self, provider + "_bud_client_secret")
             ):
                 raise ValueError(
                     "Configure both " + provider + " Bud OAuth credentials server-side."
                 )
+        if self.vercel_bud_slug and not re.fullmatch(
+            r"[a-z0-9][a-z0-9-]{0,100}", self.vercel_bud_slug
+        ):
+            raise ValueError("Configure a valid Vercel integration slug.")
+        stripe_url = urlparse(self.stripe_bud_authorize_url)
+        if (
+            stripe_url.scheme != "https"
+            or stripe_url.netloc != "marketplace.stripe.com"
+            or stripe_url.path != "/oauth/v2/authorize"
+            or stripe_url.fragment
+        ):
+            raise ValueError("Use the Stripe Marketplace OAuth install link.")
+        if self.search_bud_daily_limit < 1 or self.search_bud_workspace_daily_limit < 1:
+            raise ValueError("Managed Search requires positive daily request limits.")
         if self.meeting_context_enabled and not self.meetings_enabled:
             raise ValueError("Meeting context requires the enabled meeting service.")
         if self.speech_rate_microusd_per_minute <= 0:
             raise ValueError("Configure a positive speech cost estimate.")
+        if self.chat_speech_enabled and (not self.supabase_database or not self.speech_key):
+            raise ValueError(
+                "Chat dictation needs restricted Supabase and a server-only speech key."
+            )
         if self.speech_enabled and (
             not self.meeting_context_enabled or not self.supabase_database or not self.speech_key
         ):
@@ -224,8 +287,10 @@ class Config:
         usage_policy = policies(self.usage_limits)
         if min(self.company_budget_microusd, self.free_pool_microusd) <= 0:
             raise ValueError("Company and Free pool budgets must be positive.")
-        if self.free_enabled and not self.gateway_enabled:
-            raise ValueError("Free activation requires the configured managed gateway.")
+        if self.free_enabled and not (
+            self.gateway_enabled or self.speech_enabled or self.chat_speech_enabled
+        ):
+            raise ValueError("Free activation requires a configured AI or speech service.")
         for name, plan in self.plans.items():
             if name not in {"monthly", "annual"} or not plan.get("price_id", "").startswith(
                 "price_"

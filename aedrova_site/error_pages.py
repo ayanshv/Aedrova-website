@@ -7,7 +7,7 @@ from html import escape
 from http import HTTPStatus
 from pathlib import Path
 
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, JSONResponse
 
 from aedrova_site.observability import emit
 
@@ -243,7 +243,25 @@ class BrowserErrors:
             and not scope.get("path", "").startswith(("/api/", "/gateway/", "/static/", "/stripe/"))
         )
         if not browser:
-            return await self.app(scope, receive, send)
+            # Keep JSON/API errors bounded and private even for unexpected failures.
+            sent = False
+
+            async def machine_response(message):
+                nonlocal sent
+                if message["type"] == "http.response.start":
+                    sent = True
+                await send(message)
+
+            try:
+                return await self.app(scope, receive, machine_response)
+            except Exception as exc:
+                if sent:
+                    raise
+                emit("service_failure", category=type(exc).__name__)
+                return await JSONResponse(
+                    {"error": "The service could not complete this request. Retry shortly."},
+                    status_code=500,
+                )(scope, receive, send)
         started = False
         replaced = False
 

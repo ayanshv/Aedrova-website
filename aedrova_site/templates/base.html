@@ -19,6 +19,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/static/checkout-icon.png?v=2">
   <link rel="icon" type="image/svg+xml" sizes="any" href="/static/favicon.svg?v=2">
   <link rel="stylesheet" href="/static/site.css?v={{ asset_version }}">
+  {% if request.url.path in ["/onboarding", "/account"] %}<script src="/static/preparation.js?v={{ asset_version }}" defer></script>{% endif %}
   <script src="/static/site.js?v={{ asset_version }}" defer></script>
 <script src="/static/buds-motion.js" defer></script>
 </head>
@@ -36,18 +37,23 @@
 <div id="mobile-menu" class="mobile-menu" hidden>
   <nav aria-label="Mobile navigation"><a href="/#how-it-works">How it works</a><a href="/#features">The workspace</a><a href="/#ai-teammates">Buds</a><a href="/#meetings">Meetings</a><a href="/onboarding">Plans</a>{% if not waitlist_only %}<a href="/account">Sign in</a>{% endif %}<a href="/download">Mac download</a><a class="button" href="{{ "/waitlist" if waitlist_only else "/onboarding" }}">{{ "Join waitlist today" if waitlist_only else "Get started" }} ↗</a><button class="theme-toggle" aria-label="Change color theme">Change appearance ◐</button></nav>
 </div>
-<main id="main">{% if stripe_test_mode %}<aside class="sandbox-badge" role="status">Stripe sandbox · Test payments only</aside>{% endif %}{% if request.url.path != '/' %}<div class="page-buds" aria-hidden="true"><span><span class="site-bud look-builder"></span></span><span><span class="site-bud look-marketing"></span></span><span><span class="site-bud look-research"></span></span></div>{% endif %}{% block main %}{% endblock %}</main>
+<main id="main" tabindex="-1">{% if stripe_test_mode %}<aside class="sandbox-badge" role="status">Stripe sandbox · Test payments only</aside>{% endif %}{% if request.url.path != '/' %}<div class="page-buds" aria-hidden="true"><span><span class="site-bud look-builder"></span></span><span><span class="site-bud look-marketing"></span></span><span><span class="site-bud look-research"></span></span></div>{% endif %}{% block main %}{% endblock %}</main>
 <footer class="trust-footer bud-corner-section">
 <span class="bud-peek footer-bud" aria-hidden="true"><span class="site-bud look-product"></span></span>
 <div class="footer-brand"><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team, plus AI.</p></div>
 <nav class="footer-columns" aria-label="Footer navigation">
 <div><h2>Product</h2><a href="/#features">The workspace</a><a href="/#ai-teammates">Meet your Buds</a><a href="/onboarding">Plans for your team</a><a href="{{ '/waitlist' if waitlist_only else '/download' }}">{{ 'Join the waitlist' if waitlist_only else 'Downloads' }}</a></div>
 <div><h2>Resources</h2><a href="/product">What is Aedrova?</a><a href="/support">Help & troubleshooting</a><a href="/data-controls">Data & AI controls</a><a href="/enterprise">Enterprise inquiries</a></div>
-<div><h2>Trust</h2><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/acceptable-use">Acceptable use</a><a href="/subprocessors">Service providers</a><a href="/cookies">Cookies & storage</a></div>
+<div><h2>Trust</h2><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/refunds">Refund policy</a><a href="/acceptable-use">Acceptable use</a><a href="/subprocessors">Service providers</a><a href="/cookies">Cookies & storage</a><button class="text-link storage-settings" type="button" data-storage-settings>Storage choices</button></div>
 <div><h2>Support</h2><a href="/support">Contact us</a><a href="/security">Security reporting</a><a href="/data-controls#requests">Privacy requests</a><a href="/security#availability">Beta availability</a></div>
 </nav>
 <div class="footer-bottom"><span>© 2026 Aedrova. All rights reserved.</span><a href="mailto:contact@aedrova.com">contact@aedrova.com</a></div>
 </footer>
+{% if request.url.path in ["/onboarding", "/account"] %}{% include "preparation.html" %}{% endif %}
+<aside id="storage-notice" class="storage-notice" aria-labelledby="storage-title" hidden>
+<div><h2 id="storage-title">Your browser. Your choice.</h2><p>Essential storage supports sign-in and remembers this choice. Allow preferences to remember your appearance and introduction answers on this device. No advertising or analytics cookies. <a href="/cookies">Details</a></p></div>
+<div class="storage-actions"><button type="button" class="button outline" data-storage-choice="essential">Essential only</button><button type="button" class="button outline" data-storage-choice="preferences">Allow preferences</button></div>
+</aside>
 <div class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

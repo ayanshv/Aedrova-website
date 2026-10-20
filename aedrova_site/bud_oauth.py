@@ -16,12 +16,28 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from aedrova_site.bud_discovery import PICKERS, resources
 from aedrova_site.bud_providers import validate_resource
 from aedrova_site.connection_confirmation import TEMPLATES, confirmation
 from aedrova_site.store import Denied
 
 # All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
 PROVIDERS = {
+    "stripe": (
+        "https://marketplace.stripe.com/oauth/v2/authorize",
+        "https://api.stripe.com/v1/oauth/token",
+        "",
+    ),
+    "instagram": (
+        "https://www.instagram.com/oauth/authorize",
+        "https://api.instagram.com/oauth/access_token",
+        "instagram_business_basic",
+    ),
+    "vercel": (
+        "https://vercel.com/integrations/",
+        "https://api.vercel.com/v2/oauth/access_token",
+        "",
+    ),
     "tiktok": (
         "https://www.tiktok.com/v2/auth/authorize/",
         "https://open.tiktokapis.com/v2/oauth/token/",
@@ -64,6 +80,7 @@ class BudOAuth:
         self.connections = connections
         self.dots, self.store = connections.dots, connections.store
         self.config = self.dots.config
+        self.transport = transport
         self.client = httpx.Client(
             timeout=httpx.Timeout(12, connect=5),
             trust_env=False,
@@ -86,11 +103,23 @@ class BudOAuth:
         )
 
     def setup_hint(self, provider):
-        if provider in {"supabase", "tiktok"} and not self.config.origin.startswith("https://"):
+        if provider == "search":
+            return (
+                "Aedrova’s owner must configure managed web search before it is available. "
+                "No separate customer login is needed."
+            )
+        if provider == "vercel" and not self.config.vercel_bud_slug:
+            return "The Aedrova owner must register its Vercel integration first."
+        if provider in {
+            "supabase",
+            "tiktok",
+            "stripe",
+            "instagram",
+            "vercel",
+        } and not self.config.origin.startswith("https://"):
             return (
                 provider.title() + " requires an HTTPS callback. Aedrova’s owner must configure "
-                "the HTTPS connection service before account sign-in is available. "
-                "A scoped access token can be used below."
+                "the HTTPS connection service before account sign-in is available."
             )
         if (
             provider not in PROVIDERS
@@ -99,7 +128,7 @@ class BudOAuth:
         ):
             return (
                 "The Aedrova owner must configure this provider’s OAuth app first. "
-                "You can use a scoped access token meanwhile."
+                "Your Bud can be saved while account sign-in is set up."
             )
         return ""
 
@@ -114,8 +143,12 @@ class BudOAuth:
         hint = self.setup_hint(provider)
         if hint:
             raise Denied(hint)
+        if provider == "tiktok" and not resource.strip():
+            resource = "me"
         resource = (
-            "me"
+            ""
+            if not resource.strip()
+            else "me"
             if provider == "tiktok" and resource.strip() == "me"
             else validate_resource(provider, resource)
         )
@@ -193,11 +226,28 @@ class BudOAuth:
             response_type="code",
             state=state,
         )
+        if provider == "vercel":
+            return (
+                "https://vercel.com/integrations/"
+                + self.config.vercel_bud_slug
+                + "/new?"
+                + urlencode({"state": state}),
+                payload,
+            )
+        if provider == "stripe":
+            # Preserve provider-issued external-test parameters; never accept a client URL.
+            from urllib.parse import parse_qsl, urlsplit, urlunsplit
+
+            parts = urlsplit(self.config.stripe_bud_authorize_url)
+            params = {**dict(parse_qsl(parts.query)), **params}
+            target = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+        if provider == "instagram":
+            params.update(enable_fb_login="0", force_authentication="1")
         if provider == "tiktok":
             params["client_key"] = params.pop("client_id")
         if scope:
             params["scope"] = scope
-        if provider != "notion":
+        if provider not in {"notion", "stripe", "instagram", "vercel"}:
             params.update(
                 code_challenge=base64.urlsafe_b64encode(
                     hashlib.sha256(payload["verifier"].encode()).digest()
@@ -211,6 +261,10 @@ class BudOAuth:
         return target + "?" + urlencode(params), payload
 
     def token(self, provider, *, code=None, verifier=None, refresh=None):
+        if provider in {"stripe", "instagram", "vercel"}:
+            from aedrova_site.bud_account_oauth import exchange
+
+            return exchange(self, provider, code=code, refresh=refresh)
         client_id, client_secret = self.credentials(provider)
         if not client_id or not client_secret:
             raise Denied("Needs authorization")
@@ -219,7 +273,7 @@ class BudOAuth:
             body["refresh_token"] = refresh
         else:
             body.update(code=code, redirect_uri=self.redirect(provider))
-            if provider != "notion":
+            if provider not in {"notion", "stripe", "instagram", "vercel"}:
                 body["code_verifier"] = verifier
         headers = {"Accept": "application/json"}
         kwargs = {"auth": (client_id, client_secret)}
@@ -238,6 +292,8 @@ class BudOAuth:
             with self.client.stream(
                 "POST", PROVIDERS[provider][1], headers=headers, **kwargs
             ) as response:
+                if response.status_code == 429:
+                    raise Denied("Authorization provider rate limit reached. Try again later.")
                 if response.status_code in {400, 401, 403}:
                     raise Denied("Needs authorization")
                 response.raise_for_status()
@@ -274,7 +330,7 @@ class BudOAuth:
                         "to configure read-only scopes."
                     )
             if provider == "tiktok":
-                scopes = set(str(scope or "").split(","))
+                scopes = set(str(scope or "").replace(",", " ").split())
                 if not {"user.info.basic", "video.list"} <= scopes:
                     raise Denied("Authorize profile and public video access to connect TikTok.")
                 validate_resource(provider, str(result.get("open_id", "")))
@@ -309,6 +365,22 @@ class BudOAuth:
                 raise Denied("Missing authorization code. Connect your tool again.")
             token = self.token(provider, code=code, verifier=payload["verifier"])
             resource = payload["resource"]
+            if provider in {"stripe", "instagram"}:
+                if resource and resource != token["actor"]:
+                    raise Denied("The provider authorized a different account.")
+                resource = token["actor"]
+            if not resource and provider != "tiktok":
+                payload["token"] = token
+                payload["choices"] = resources(
+                    provider,
+                    token["access"],
+                    self.transport,
+                    **({"team": token.get("team", "")} if provider == "vercel" else {}),
+                )
+                payload.pop("proof", None)
+                payload.pop("verifier", None)
+                status = "choose_resource"
+                return {"status": status}
             if provider == "tiktok":
                 actor = token["actor"]
                 if resource != "me" and resource != actor:
@@ -329,7 +401,8 @@ class BudOAuth:
             return result
         finally:
             # Remove desktop session, browser proof and verifier once callback is consumed.
-            payload = {k: payload[k] for k in ("dot", "user", "provider", "resource")}
+            if status != "choose_resource":
+                payload = {k: payload[k] for k in ("dot", "user", "provider", "resource")}
             with self.store.tx() as db:
                 db.execute(
                     text("UPDATE bud_oauth SET status=:s,connection_id=:c,payload=:p WHERE id=:i"),
@@ -347,6 +420,12 @@ class BudOAuth:
         if user != payload["user"] or dot["version"] != payload["dot"]["version"]:
             raise Denied("This authorization is no longer available to your account.")
         status = row["status"]
+        if status == "choose_resource":
+            return {
+                "status": status,
+                "resources": payload["choices"],
+                "requires_link": payload["provider"] not in PICKERS,
+            }
         if status == "connected" and not any(
             grant["id"] == row["connection_id"]
             and grant["dot_version"] == dot["version"]
@@ -359,14 +438,60 @@ class BudOAuth:
             "connection": row["connection_id"] if status == "connected" else "",
         }
 
+    def select(self, session, state, resource):
+        row, payload = self.state(state)
+        self.status(session, state)  # Checks membership, account and Bud version.
+        if row["status"] != "choose_resource":
+            raise Denied("Connect your account again before selecting a resource.")
+        resource = validate_resource(payload["provider"], resource)
+        if payload["provider"] in PICKERS and resource not in {c["id"] for c in payload["choices"]}:
+            raise Denied("Choose a resource from your authorized account.")
+        self.state(state, transition=("choose_resource", "processing"))
+        status, connection_id = "failed", ""
+        try:
+            self.fresh(payload)
+            token = payload["token"]
+            result = self.connections.connect(
+                session,
+                payload["dot"]["workspace_id"],
+                payload["dot"]["id"],
+                payload["provider"],
+                resource,
+                token["access"],
+                payload["hours"],
+                oauth=token,
+                expected_version=payload["dot"]["version"],
+            )
+            status, connection_id = "connected", result["id"]
+            return result
+        finally:
+            payload["resource"] = resource
+            payload = {k: payload[k] for k in ("dot", "user", "provider", "resource")}
+            with self.store.tx() as db:
+                db.execute(
+                    text("UPDATE bud_oauth SET status=:s,connection_id=:c,payload=:p WHERE id=:i"),
+                    dict(
+                        s=status,
+                        c=connection_id,
+                        i=state_key(state),
+                        p=self.store.cipher.encrypt(json.dumps(payload).encode()).decode(),
+                    ),
+                )
+
 
 class OAuthBody(BaseModel):
     model_config = {"extra": "forbid"}
     workspace: UUID
     dot: UUID
     provider: str = Field(max_length=40)
-    resource: str = Field(min_length=1, max_length=200)
+    resource: str = Field(default="", max_length=200)
     hours: int = Field(default=24, ge=1, le=2160, strict=True)
+
+
+class ResourceBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    state: str = Field(min_length=40, max_length=100)
+    resource: str = Field(min_length=1, max_length=200)
 
 
 def install(app, connections, auth):
@@ -386,6 +511,10 @@ def install(app, connections, auth):
     @app.get("/api/buds/oauth/status")
     def status(request: Request, state: str):
         return oauth.status(auth(request), state)
+
+    @app.post("/api/buds/oauth/select")
+    def select(request: Request, body: ResourceBody):
+        return oauth.select(auth(request, change=True), body.state, body.resource)
 
     @app.get("/buds/authorize/{state}")
     def authorize(request: Request, state: str):
@@ -423,8 +552,24 @@ def install(app, connections, auth):
     def callback(request: Request, provider: str, state: str = "", code: str = "", error: str = ""):
         oauth.dots.enabled()
         cookie = "aedrova_bud_" + state_key(state)[:16]
-        oauth.callback(provider, state, request.cookies.get(cookie, ""), code, denied=bool(error))
+        try:
+            result = oauth.callback(
+                provider, state, request.cookies.get(cookie, ""), code, denied=bool(error)
+            )
+        except Denied:
+            row, payload = oauth.state(state)
+            if not error or row["status"] != "failed" or payload["provider"] != provider:
+                raise
+            response = TEMPLATES.TemplateResponse(
+                request=request,
+                name="bud-account-error.html",
+                context={"cancelled": True},
+            )
+            response.delete_cookie(cookie, path="/buds/oauth/" + provider)
+            return response
         _, payload = oauth.state(state)
-        response = confirmation(request, provider, payload["dot"])
+        response = confirmation(
+            request, provider, payload["dot"], selecting=result.get("status") == "choose_resource"
+        )
         response.delete_cookie(cookie, path="/buds/oauth/" + provider)
         return response

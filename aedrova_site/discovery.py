@@ -8,6 +8,10 @@ DESCRIPTION = (
     "configurable AI teammates called Buds, and coding agents that build from shared context."
 )
 PUBLIC_PAGES = {
+    "/refunds": (
+        "Aedrova refund policy",
+        "Cancellation, refund requests and preserved consumer rights.",
+    ),
     "/": ("Aedrova | The workspace for your team and tools", DESCRIPTION),
     "/product": ("What is Aedrova? AI workspace, Buds and team building", DESCRIPTION),
     "/plans": (
@@ -82,6 +86,9 @@ PUBLIC_PAGES = {
 PRIVATE_PATHS = (
     "/api/",
     "/dots/",
+    "/buds/",
+    "/gateway/",
+    "/unsubscribe",
     "/auth/",
     "/account",
     "/welcome",

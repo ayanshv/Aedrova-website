@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<section class="account-panel login-panel" aria-labelledby="unsubscribe-title">
+<span class="eyebrow">YOUR CHOICE</span><h1 id="unsubscribe-title">Stop launch updates.</h1>
+<p>This only stops optional Aedrova launch emails. It does not delete your account or cancel a subscription.</p>
+{% if request.query_params.get('token') %}
+<form id="unsubscribe-form"><button class="button" type="submit">Unsubscribe</button><p id="unsubscribe-result" role="status" aria-live="polite"></p></form>
+{% else %}<p>Use the unsubscribe link in your email, or email us from your registered address.</p><a class="button" href="mailto:contact@aedrova.com?subject=Unsubscribe">Contact support ↗</a>{% endif %}
+</section>
+{% endblock %}

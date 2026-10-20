@@ -61,3 +61,37 @@ def test_optional_bud_credentials_are_loaded_without_replacing_existing_config(
     assert str(root / ".env.dots") in command
     assert str(root / ".env.meeting-server") in command
     assert environment["AEDROVA_CHECKOUT_ENABLED"] == "false"
+
+
+@pytest.mark.parametrize(
+    "openai,model_file", [(False, "models.anthropic.json"), (True, "models.beta.json")]
+)
+def test_anthropic_opt_in_keeps_public_launch_closed(tmp_path, monkeypatch, openai, model_file):
+    root, desktop = tmp_path / "site", tmp_path / "desktop"
+    root.mkdir()
+    desktop.mkdir()
+    for path in [
+        root / ".env.meeting-server",
+        root / ".env.openai",
+        root / ".env.anthropic",
+        desktop / ".env.meetings",
+    ]:
+        path.write_text("")
+    monkeypatch.setattr("scripts.run_local_meetings.ROOT", root)
+    command, environment = launch_configuration(desktop, openai=openai, anthropic=True)
+    assert str(root / ".env.anthropic") in command
+    assert environment["AEDROVA_MODELS_FILE"] == str(root / "config" / model_file)
+    assert environment["AEDROVA_GATEWAY_ENABLED"] == "true"
+    for flag in ("PRODUCTION", "CHECKOUT_ENABLED", "RELEASE_READY", "LEGAL_READY"):
+        assert environment["AEDROVA_" + flag] == "false"
+
+
+def test_missing_anthropic_credentials_cannot_activate(tmp_path, monkeypatch):
+    root, desktop = tmp_path / "site", tmp_path / "desktop"
+    root.mkdir()
+    desktop.mkdir()
+    (root / ".env.meeting-server").write_text("")
+    (desktop / ".env.meetings").write_text("")
+    monkeypatch.setattr("scripts.run_local_meetings.ROOT", root)
+    with pytest.raises(ValueError, match="setup_anthropic"):
+        launch_configuration(desktop, anthropic=True)

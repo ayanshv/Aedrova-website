@@ -66,6 +66,11 @@ def test_oauth_static_and_native_authenticated_routes_are_preserved():
     assert allowed("GET", "/static/bud-connected.css")
     assert allowed("POST", "/api/buds/oauth/start")
     assert allowed("POST", "/api/dots/tools")
+    assert allowed("POST", "/api/buds/connections/search")
+    assert not allowed("GET", "/api/buds/connections/search")
+    for provider in ("stripe", "instagram", "vercel"):
+        assert allowed("GET", "/buds/oauth/" + provider + "/callback")
+        assert not allowed("POST", "/buds/oauth/" + provider + "/callback")
     assert not allowed("POST", "/static/site.css")
     assert not allowed("GET", "/buds/oauth/unknown/callback")
 
@@ -84,6 +89,9 @@ def test_http_boundary_blocks_product_routes_without_calling_them(monkeypatch):
         calls.append(path)
         return {"downstream": path}
 
+    from types import SimpleNamespace
+
+    app.state.store = SimpleNamespace(rate_limit=lambda *args, **kwargs: None)
     monkeypatch.setattr(connector_service, "create_app", lambda config: app)
     with TestClient(connector_service.create_connector_app(config())) as client:
         assert client.get("/").json()["service"] == "Aedrova Bud connections"

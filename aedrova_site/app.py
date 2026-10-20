@@ -18,12 +18,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from aedrova_site import discovery
-from aedrova_site.boundaries import BodyLimit
+from aedrova_site.boundaries import BodyLimit, ResponseHeaders
+from aedrova_site.communications import unsubscribe
 from aedrova_site.config import Config
 from aedrova_site.error_pages import BrowserErrors
 from aedrova_site.gateway import authorize_run, inference
@@ -38,10 +40,15 @@ from aedrova_site.observability import (
 )
 from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.services import Identity, Payments, random_token
-from aedrova_site.speech import SpeechService
+from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
+from aedrova_site.traffic_limits import TrafficLimits
 
 ROOT = Path(__file__).parent
+
+
+class BaseModel(PydanticBaseModel):
+    model_config = {"extra": "forbid", "str_max_length": 65536}
 
 
 class WorkspaceBody(BaseModel):
@@ -76,7 +83,8 @@ class MeetingJoinBody(BaseModel):
 
 class WaitlistBody(BaseModel):
     email: str = Field(min_length=3, max_length=254)
-    consent: bool = False
+    consent: bool = Field(default=False, strict=True)
+    age_confirmed: bool = Field(default=False, strict=True)
     referral_source: Literal[
         "",
         "chatgpt",
@@ -90,6 +98,10 @@ class WaitlistBody(BaseModel):
         "prefer_not",
     ] = ""
     referral_detail: str = Field(default="", max_length=160)
+
+
+class UnsubscribeBody(BaseModel):
+    token: str = Field(min_length=40, max_length=2048)
 
 
 class MeetingConsentBody(MeetingJoinBody):
@@ -114,16 +126,36 @@ class MeetingSpeechBody(MeetingJoinBody):
     audio: str = Field(min_length=1, max_length=427000)
 
 
-class MeetingReviewBody(BaseModel):
+class DictationBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    channel: UUID
+    identifier: UUID
+    audio: str = Field(min_length=1, max_length=1280100)
+
+
+class VerifyUploadBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    identifier: UUID
+    parent: UUID | None = None
+
+
+class MeetingTranscriptEdit(BaseModel):
     model_config = {"extra": "forbid"}
     identifier: UUID
     version: int = Field(ge=0, strict=True)
     body: str = Field(min_length=1, max_length=2000)
+
+
+class MeetingReviewBody(MeetingTranscriptEdit):
     decision: bool = Field(default=False, strict=True)
 
 
 class MeetingWithdrawBody(MeetingJoinBody):
     delete: bool = Field(default=False, strict=True)
+
+
+class MeetingConfirmBody(MeetingJoinBody):
+    segments: list[MeetingTranscriptEdit] = Field(min_length=1, max_length=10000)
 
 
 class InquiryBody(BaseModel):
@@ -156,13 +188,16 @@ def create_app(config=None):
     )
     identity.hierarchy_available = store.hierarchy_available
     asset_version = hashlib.sha256(
-        (ROOT / "static/site.css").read_bytes() + (ROOT / "static/site.js").read_bytes()
+        (ROOT / "static/site.css").read_bytes()
+        + (ROOT / "static/site.js").read_bytes()
+        + (ROOT / "static/preparation.js").read_bytes()
     ).hexdigest()[:12]
     database_events(store.engine)
     payments = Payments(config, store)
     templates = Jinja2Templates(directory=ROOT / "templates")
     leases = MeetingLeases(store, require_external=config.production)
     speech = SpeechService(config, store)
+    dictation = DictationService(config, store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -183,6 +218,7 @@ def create_app(config=None):
             for provider in _app.state.dots.providers.values():
                 await asyncio.to_thread(provider.close)
             await asyncio.to_thread(speech.close)
+            await asyncio.to_thread(dictation.close)
             await asyncio.to_thread(store.engine.dispose)
 
     app = FastAPI(
@@ -190,6 +226,40 @@ def create_app(config=None):
     )
     app.state.meeting_leases = leases
     app.state.speech = speech
+    app.state.dictation = dictation
+
+    from aedrova_site.uploads import UploadVerifier
+
+    uploads = UploadVerifier(identity, store)
+    app.state.uploads = uploads
+
+    @app.post("/api/files/verify")
+    def verify_upload(request: Request, body: VerifyUploadBody):
+        return uploads.verify(auth(request, change=True), body.identifier, body.parent)
+
+    @app.get("/api/chat/speech/capabilities")
+    def dictation_capabilities(request: Request):
+        identity.user(auth(request))
+        return {"enabled": config.chat_speech_enabled, "max_seconds": 30}
+
+    @app.post("/api/chat/speech")
+    def chat_dictation(request: Request, body: DictationBody):
+        if not config.chat_speech_enabled:
+            raise Denied("Chat dictation is being prepared. You can still type your message.")
+        token = auth(request, change=True)
+        user = identity.user(token)
+        channels = identity.request(
+            "/rest/v1/channels?id=eq." + str(body.channel) + "&select=workspace_id", token
+        )
+        if len(channels) != 1:
+            raise Denied("Channel access changed.")
+        workspace = channels[0]["workspace_id"]
+        identity.require(token, workspace)
+        context = identity.billing_context(token, workspace)
+        return dictation.transcribe_draft(
+            user["id"], body, workspace=workspace, billing_workspace=context["billing_workspace"]
+        )
+
     app.state.config, app.state.store, app.state.identity, app.state.payments = (
         config,
         store,
@@ -207,37 +277,14 @@ def create_app(config=None):
                 return JSONResponse({"error": "Request too large."}, status_code=413)
         except ValueError:
             return JSONResponse({"error": "Invalid content length."}, status_code=400)
-        response = await call_next(request)
-        response.headers.update(
-            {
-                "X-Content-Type-Options": "nosniff",
-                "Referrer-Policy": "no-referrer",
-                "X-Frame-Options": "DENY",
-                "Content-Security-Policy": (
-                    "default-src 'self'; script-src 'self'; style-src 'self'; "
-                    "img-src 'self' data:; font-src 'self'; "
-                    "media-src 'self'; "
-                    "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; "
-                    "form-action 'self'"
-                ),
-            }
-        )
-        if not request.url.path.startswith("/static"):
-            response.headers["Cache-Control"] = "no-store"
-        if not discovery.public_deployment(config) or request.url.path not in {
-            *discovery.PUBLIC_PAGES,
-            "/robots.txt",
-            "/sitemap.xml",
-        }:
-            response.headers["X-Robots-Tag"] = "noindex"
-        if config.production:
-            response.headers["Strict-Transport-Security"] = "max-age=31536000"
-        return response
+        return await call_next(request)
 
     app.add_middleware(BodyLimit)
+    app.add_middleware(TrafficLimits, store=store)
     app.add_middleware(Admission, maximum=config.gateway_max_concurrency)
     app.add_middleware(RequestEvents)
     app.add_middleware(BrowserErrors)
+    app.add_middleware(ResponseHeaders, config=config)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request, _exc):
@@ -291,9 +338,6 @@ def create_app(config=None):
     from aedrova_site.dots import install as install_dots
 
     install_dots(app, config, store, identity, auth)
-    from aedrova_site.pulse import install as install_pulse
-
-    install_pulse(app, app.state.dots, auth)
 
     def page(request, name, title, **context):
         return templates.TemplateResponse(
@@ -336,8 +380,14 @@ def create_app(config=None):
     @app.post("/api/waitlist")
     def join_waitlist(request: Request, body: WaitlistBody):
         email = body.email.strip().lower()
-        if not body.consent or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
-            raise HTTPException(422, "Enter a valid email and agree to receive launch updates.")
+        if (
+            not body.consent
+            or not body.age_confirmed
+            or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email)
+        ):
+            raise HTTPException(
+                422, "Enter a valid email, confirm eligibility and agree to receive launch updates."
+            )
         if request.headers.get("origin") != config.origin:
             raise HTTPException(403, "Join from the Aedrova website.")
         store.rate_limit(
@@ -354,6 +404,7 @@ def create_app(config=None):
                 "kind": "waitlist",
                 "email": email,
                 "consent": "launch-updates-v1",
+                "eligibility": "13-plus-and-guardian-if-required-v1",
                 "referral_source": body.referral_source,
                 "referral_detail": body.referral_detail.strip()
                 if body.referral_source not in {"", "prefer_not"}
@@ -361,6 +412,22 @@ def create_app(config=None):
             },
             lifetime=365 * 86400,
         )
+        return {"ok": True}
+
+    @app.get("/unsubscribe")
+    def unsubscribe_page(request: Request):
+        return page(request, "unsubscribe", "Email preferences")
+
+    @app.post("/api/unsubscribe")
+    def stop_launch_updates(request: Request, body: UnsubscribeBody):
+        if request.headers.get("origin") != config.origin:
+            raise HTTPException(403, "Use the Aedrova website.")
+        store.rate_limit(
+            "unsubscribe:" + (request.client.host if request.client else "unknown"),
+            limit=30,
+            seconds=60,
+        )
+        unsubscribe(store, body.token)
         return {"ok": True}
 
     @app.get("/onboarding")
@@ -438,6 +505,7 @@ def create_app(config=None):
     @app.get("/cookies")
     @app.get("/acceptable-use")
     @app.get("/security")
+    @app.get("/refunds")
     def trust(request: Request):
         kind = request.url.path.strip("/")
         return page(request, "trust", kind.replace("-", " ").title(), kind=kind)
@@ -502,6 +570,7 @@ def create_app(config=None):
             + urlencode(
                 {
                     "provider": "google",
+                    "scopes": "openid email profile",
                     "redirect_to": config.origin + "/auth/callback",
                     "code_challenge": challenge,
                     "code_challenge_method": "s256",
@@ -861,10 +930,17 @@ def create_app(config=None):
         )
 
     @app.get("/api/meetings/transcript/{meeting}")
-    def meeting_transcript(request: Request, meeting: UUID, page: int = 0):
+    def meeting_transcript(request: Request, meeting: UUID, page: int = 0, latest: bool = False):
         token = meeting_context_token(request)
         if not 0 <= page <= 199:
             raise Denied("Invalid transcript page.")
+        if latest:
+            return identity.request(
+                "/rest/v1/meeting_transcript_segments?meeting_id=eq."
+                + str(meeting)
+                + "&select=*&order=created_at.desc,id.desc&limit=20",
+                token,
+            )
         return identity.request(
             "/rest/v1/meeting_transcript_segments?meeting_id=eq."
             + str(meeting)
@@ -898,6 +974,33 @@ def create_app(config=None):
             },
         )
         return {"version": version}
+
+    @app.get("/api/meetings/wrapup/{meeting}")
+    def meeting_wrapup(request: Request, meeting: UUID):
+        token = meeting_context_token(request)
+        return identity.request(
+            "/rest/v1/rpc/meeting_wrapup_status",
+            token,
+            method="POST",
+            data={"p_meeting": str(meeting)},
+        )
+
+    @app.post("/api/meetings/transcript/confirm")
+    def meeting_confirm(request: Request, body: MeetingConfirmBody):
+        token = meeting_context_token(request)
+        count = identity.request(
+            "/rest/v1/rpc/confirm_meeting_transcript",
+            token,
+            method="POST",
+            data={
+                "p_meeting": str(body.meeting),
+                "p_segments": [
+                    {"identifier": str(row.identifier), "version": row.version, "body": row.body}
+                    for row in body.segments
+                ],
+            },
+        )
+        return {"confirmed": count}
 
     @app.post("/api/meetings/consent")
     def meeting_consent(request: Request, body: MeetingConsentBody):

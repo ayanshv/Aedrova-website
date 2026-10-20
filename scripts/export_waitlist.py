@@ -9,11 +9,12 @@ from pathlib import Path
 
 from sqlalchemy import text
 
+from aedrova_site.communications import suppressed, unsubscribe_url
 from aedrova_site.config import Config
 from aedrova_site.store import Store
 
 
-def export(store, destination):
+def export(store, destination, origin="https://aedrova.com"):
     # Exclusive create prevents overwriting another list; output is owner-readable only.
     with store.tx(write=False) as db:
         rows = (
@@ -29,16 +30,23 @@ def export(store, destination):
         payload = json.loads(store.cipher.decrypt(encrypted.encode()))
         if payload.get("kind") == "waitlist":
             email = payload["email"]
+            if suppressed(store, email):
+                continue
+            opt_out = unsubscribe_url(store, email, origin)
             if email.startswith(("=", "+", "-", "@")):
                 email = "'" + email  # Prevent spreadsheet formula execution on CSV open.
             detail = str(payload.get("referral_detail", ""))
             if detail.startswith(("=", "+", "-", "@")):
                 detail = "'" + detail
-            contacts.append((email, payload["consent"], payload.get("referral_source", ""), detail))
+            contacts.append(
+                (email, payload["consent"], payload.get("referral_source", ""), detail, opt_out)
+            )
     descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", newline="") as output:
         writer = csv.writer(output)
-        writer.writerow(("email", "consent", "referral_source", "referral_detail"))
+        writer.writerow(
+            ("email", "consent", "referral_source", "referral_detail", "unsubscribe_url")
+        )
         writer.writerows(sorted(contacts))
     return len(contacts)
 
@@ -52,7 +60,7 @@ def main():
         raise SystemExit("Configure the persistent server encryption key before exporting.")
     store = Store(config.database, config.encryption_key)
     try:
-        count = export(store, args.destination)
+        count = export(store, args.destination, config.origin)
         print(f"Exported {count} waitlist contacts. Keep the CSV private; no emails were sent.")
     finally:
         store.engine.dispose()

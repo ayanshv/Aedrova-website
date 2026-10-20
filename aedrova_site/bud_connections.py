@@ -113,7 +113,13 @@ class BudConnections:
             raise Denied("Choose an access lifetime from 1 hour to 90 days.")
         # A successful real API read is mandatory; no optimistic 'Connected' state.
         for tool in CATALOG[provider][4]:
-            self.read(provider, credential, resource, tool, oauth=bool(oauth))
+            self.read(
+                provider,
+                credential,
+                resource,
+                tool,
+                oauth=oauth if provider in {"vercel", "search"} else bool(oauth),
+            )
         fresh, fresh_user = self.dots.dot(session, workspace, dot_id)
         if fresh["version"] != dot["version"] or fresh_user != user:
             raise Denied("Bud settings changed during authorization. Try again.")
@@ -159,10 +165,45 @@ class BudConnections:
         self.dots.audit(dot, user, "connector_authorized:" + provider)
         return {"connected": True, "id": connection_id}
 
+    def managed_search(self, session, workspace, dot_id, topic, hours):
+        dot, user = self.dots.dot(session, workspace, dot_id)
+        key = self.dots.config.search_bud_key
+        if not key:
+            raise Denied("Aedrova Search needs owner setup before it is available.")
+        return self.connect(
+            session,
+            workspace,
+            dot_id,
+            "search",
+            topic,
+            key,
+            hours,
+            oauth={"kind": "managed_search", "workspace": workspace, "user": user},
+            expected_version=dot["version"],
+        )
+
     def read(self, provider, access, resource, tool, *, oauth=False):
+        if (
+            provider == "search"
+            and isinstance(oauth, dict)
+            and oauth.get("kind") == "managed_search"
+        ):
+            self.store.rate_limit(
+                "managed-search-global",
+                limit=self.dots.config.search_bud_daily_limit,
+                seconds=86400,
+            )
+            self.store.rate_limit(
+                "managed-search-workspace:" + oauth["workspace"],
+                limit=self.dots.config.search_bud_workspace_daily_limit,
+                seconds=86400,
+            )
+            return self.providers[provider].execute(access, resource, tool)
         if provider == "github" or not oauth:
             return self.providers[provider].execute(access, resource, tool)
-        return self.providers[provider].execute(access, resource, tool, oauth=True)
+        return self.providers[provider].execute(
+            access, resource, tool, oauth=oauth if provider == "vercel" else True
+        )
 
     def access(self, grant, *, force=False):
         """Serialize token rotation without ever recreating a disconnected grant."""
@@ -170,8 +211,12 @@ class BudConnections:
         if not secret.startswith("{"):
             return grant, secret, False
         envelope = json.loads(secret)
+        if envelope.get("kind") == "managed_search":
+            if force or not self.dots.config.search_bud_key:
+                raise Denied("Aedrova Search is unavailable. Try again later.")
+            return grant, self.dots.config.search_bud_key, envelope
         if not force and envelope["token_expires"] > int(time.time()) + 60:
-            return grant, envelope["access"], True
+            return grant, envelope["access"], envelope if grant["provider"] == "vercel" else True
         # Row locks serialize refresh across server workers; SQLite uses BEGIN IMMEDIATE.
         with self.store.tx() as db:
             suffix = " FOR UPDATE" if self.store.engine.dialect.name == "postgresql" else ""
@@ -189,12 +234,19 @@ class BudConnections:
             ):
                 if current and current["expires"] > int(time.time()):
                     latest = json.loads(self.store.cipher.decrypt(current["secret"].encode()))
-                    return dict(current), latest["access"], True
+                    return (
+                        dict(current),
+                        latest["access"],
+                        latest if grant["provider"] == "vercel" else True,
+                    )
                 raise Denied("Needs authorization")
             if not envelope["refresh"]:
                 raise Denied("Needs authorization")
             refreshed = self.oauth.token(grant["provider"], refresh=envelope["refresh"])
-            if grant["provider"] == "tiktok" and refreshed.get("actor") != grant["resource"]:
+            if (
+                grant["provider"] in {"tiktok", "stripe", "instagram"}
+                and refreshed.get("actor") != grant["resource"]
+            ):
                 raise Denied("Needs authorization")
             encoded = self.store.cipher.encrypt(json.dumps(refreshed).encode()).decode()
             result = db.execute(
@@ -261,7 +313,7 @@ class BudConnections:
                 )
             self.dots.audit(dot, user, "connector_failed:" + grant["provider"] + ":" + tool)
             raise
-        if oauth:
+        if oauth and grant["provider"] != "search":
             envelope = json.loads(self.store.cipher.decrypt(grant["secret"].encode()))
             serialized = json.dumps(evidence)
             if any(envelope.get(k) and envelope[k] in serialized for k in ("access", "refresh")):
@@ -316,6 +368,14 @@ class DisconnectBody(BaseModel):
     connection: UUID
 
 
+class SearchBody(BaseModel):
+    model_config = {"extra": "forbid"}
+    workspace: UUID
+    dot: UUID
+    topic: str = Field(min_length=3, max_length=200)
+    hours: int = Field(default=24, ge=1, le=2160, strict=True)
+
+
 def install(app, dots, auth):
     service = BudConnections(dots)
     dots.connections = service
@@ -335,6 +395,9 @@ def install(app, dots, auth):
                     "oauth_available": service.oauth.available(key),
                     "oauth_supported": key in PROVIDERS,
                     "oauth_setup_hint": service.oauth.setup_hint(key),
+                    "managed_available": key == "search"
+                    and bool(dots.config.search_bud_key)
+                    and dots.config.dots_enabled,
                 }
                 for key in CATALOG
             ]
@@ -357,6 +420,16 @@ def install(app, dots, auth):
             body.resource,
             body.credential.get_secret_value(),
             body.hours,
+        )
+
+    @app.post("/api/buds/connections/search")
+    def managed_search(request: Request, body: SearchBody):
+        session = auth(request, change=True)
+        dots.store.rate_limit(
+            "bud-search-connect:" + hashlib.sha256(session.encode()).hexdigest(), limit=10
+        )
+        return service.managed_search(
+            session, str(body.workspace), str(body.dot), body.topic, body.hours
         )
 
     @app.post("/api/buds/connections/disconnect")

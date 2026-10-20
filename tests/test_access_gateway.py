@@ -171,6 +171,57 @@ def test_unbounded_or_invalid_requests_rejected_before_reservation(client, body)
     assert client.app.state.store.balance("space-a")["reserved"] == 0
 
 
+@pytest.mark.parametrize(
+    "option", [{"inference_geo": "us"}, {"speed": "fast"}, {"inference_geo": None}]
+)
+def test_claude_cannot_request_unpriced_premium_modes(client, monkeypatch, option):
+    access = begin(client, "claude_code")
+    requests = upstream(monkeypatch, b"")
+    response = client.post(
+        "/gateway/claude_code/v1/messages",
+        json={"messages": [{"role": "user", "content": "hello"}], **option},
+        headers={"x-api-key": access["token"]},
+    )
+    assert response.status_code == 403
+    assert not requests
+    balance = client.app.state.store.balance("space-a")
+    assert balance["reserved"] == balance["spent"] == 0
+
+
+def test_configured_sonnet_cache_usage_matches_verified_standard_rates():
+    from pathlib import Path
+
+    for filename in ("models.beta.json", "models.anthropic.json"):
+        model = json.loads((Path(__file__).parents[1] / "config" / filename).read_text())[
+            "claude_code"
+        ]
+        assert (
+            cost(
+                {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 1_000_000}, model
+            )
+            == 100_000
+        )
+        assert (
+            cost(
+                {"input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 1_000_000},
+                model,
+            )
+            == 2_500_000
+        )
+        assert (
+            cost(
+                {
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_creation_input_tokens": 1_000_000,
+                    "cache_creation": {"ephemeral_1h_input_tokens": 1_000_000},
+                },
+                model,
+            )
+            == 4_000_000
+        )
+
+
 def upstream(monkeypatch, data, *, status=200, fail=False):
     requests = []
 
@@ -298,6 +349,8 @@ def test_cost_accounts_for_provider_specific_caches():
 
 
 def test_oauth_pkce_one_use_and_error_redirect(client, monkeypatch):
+    from urllib.parse import parse_qs, urlsplit
+
     response = client.get("/auth/google", follow_redirects=False)
     assert (
         response.status_code == 303 and "code_challenge_method=s256" in response.headers["location"]
@@ -306,6 +359,8 @@ def test_oauth_pkce_one_use_and_error_redirect(client, monkeypatch):
         "HttpOnly" in response.headers["set-cookie"]
         and "SameSite=lax" in response.headers["set-cookie"]
     )
+    query = parse_qs(urlsplit(response.headers["location"]).query)
+    assert query["scopes"] == ["openid email profile"]
     monkeypatch.setattr(
         client.app.state.identity, "request", lambda *a, **kw: {"access_token": "access-a"}
     )

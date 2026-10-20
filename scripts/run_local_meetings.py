@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def launch_configuration(desktop, *, openai=False):
+def launch_configuration(desktop, *, openai=False, anthropic=False):
     files = [desktop / ".env.meetings", ROOT / ".env.meeting-server"]
     if not all(path.is_file() for path in files):
         raise ValueError("The existing private local meeting configuration files are required.")
@@ -18,6 +18,10 @@ def launch_configuration(desktop, *, openai=False):
         files.append(ROOT / ".env.openai")
         if not files[-1].is_file():
             raise ValueError("Run scripts/setup_openai.py before enabling local OpenAI.")
+    if anthropic:
+        files.append(ROOT / ".env.anthropic")
+        if not files[-1].is_file():
+            raise ValueError("Run scripts/setup_anthropic.py before enabling local Anthropic.")
     command = ["uv", "run"]
     for path in files:
         command.extend(["--env-file", str(path)])
@@ -51,19 +55,29 @@ def launch_configuration(desktop, *, openai=False):
             "AEDROVA_STRIPE_TEST_MODE": "false",
         }
     )
-    if openai:
+    if openai or anthropic:
         environment["AEDROVA_GATEWAY_ENABLED"] = "true"
         environment["AEDROVA_DEVELOPMENT_AI"] = "true"
-        environment["AEDROVA_MODELS_FILE"] = str(ROOT / "config/models.openai.json")
+        model_file = (
+            "models.beta.json"
+            if openai and anthropic
+            else "models.openai.json"
+            if openai
+            else "models.anthropic.json"
+        )
+        environment["AEDROVA_MODELS_FILE"] = str(ROOT / "config" / model_file)
     return command, environment
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--with-openai", action="store_true")
+    parser.add_argument("--with-anthropic", action="store_true")
     args = parser.parse_args()
     # Adjacent desktop checkout is the established local development layout.
-    command, environment = launch_configuration(ROOT.parent / "Aedrova", openai=args.with_openai)
+    command, environment = launch_configuration(
+        ROOT.parent / "Aedrova", openai=args.with_openai, anthropic=args.with_anthropic
+    )
     print("Local meeting service on port 8090. Keep this terminal open; Ctrl+C stops it.")
     try:
         result = subprocess.run(command, env=environment, cwd=ROOT, check=False)

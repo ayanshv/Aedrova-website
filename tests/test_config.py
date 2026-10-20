@@ -92,3 +92,45 @@ def test_supabase_pool_leaves_capacity_for_the_desktop():
         Config(
             supabase_database=True, database=SUPABASE_URL, db_pool_size=3, db_max_overflow=1
         ).validate()
+
+
+def staging_config(**changes):
+    from cryptography.fernet import Fernet
+
+    values = dict(
+        deployment_environment="staging",
+        production=True,
+        origin="https://staging.aedrova.example",
+        supabase_database=True,
+        supabase_url="https://abcdefghijklmnopqrst.supabase.co",
+        database=SUPABASE_URL.replace("cpelagtufyocepnqcqqd", "abcdefghijklmnopqrst"),
+        db_pool_size=1,
+        db_max_overflow=0,
+        encryption_key=Fernet.generate_key().decode(),
+    )
+    return Config(**(values | changes))
+
+
+def test_separate_staging_project_uses_its_own_restricted_role():
+    staging_config().validate()
+    with pytest.raises(ValueError, match="restricted"):
+        staging_config(database=SUPABASE_URL).validate()
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"supabase_url": "https://cpelagtufyocepnqcqqd.supabase.co"},
+        {"origin": "https://aedrova.com"},
+        {"origin": "https://aedrova-connectors.onrender.com"},
+        {"stripe_key": "sk_live_fixture"},
+        {"stripe_bud_client_id": "app", "stripe_bud_client_secret": "sk_live_fixture"},
+        {"checkout_enabled": True},
+        {"release_ready": True},
+        {"production": False},
+        {"supabase_database": False},
+    ],
+)
+def test_staging_rejects_production_data_origins_money_and_bypass(changes):
+    with pytest.raises(ValueError):
+        staging_config(**changes).validate()

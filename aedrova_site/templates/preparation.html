@@ -1,0 +1,11 @@
+<dialog id="preparation" class="preparation" aria-labelledby="preparation-title" aria-describedby="preparation-copy">
+  <div class="preparation-art" aria-hidden="true"><span class="site-bud look-builder"></span><span class="preparation-spark">✦</span></div>
+  <span class="eyebrow">A LITTLE MOMENT FOR YOUR TEAM</span>
+  <h2 id="preparation-title" tabindex="-1">Bringing your setup together.</h2>
+  <p id="preparation-copy">Your next step is almost ready.</p>
+  <ol class="preparation-steps" aria-label="Preparation progress">
+    {% for _ in range(3) %}<li data-state="pending"><span class="preparation-indicator" aria-hidden="true"></span><span class="preparation-label"></span></li>{% endfor %}
+  </ol>
+  <p id="preparation-status" class="preparation-status" role="status" aria-live="polite" aria-atomic="true"></p>
+  <button id="preparation-continue" class="button blue" type="button">Continue to plans <span aria-hidden="true">→</span></button>
+</dialog>
