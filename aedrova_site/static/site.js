@@ -4,13 +4,14 @@ const $ = (selector) => document.querySelector(selector);
 const memory = new Map();
 let preferenceChoice = null;
 try{preferenceChoice=JSON.parse(localStorage.getItem('aedrova-storage-choice'));}catch{}
+function preferencesAllowed(){try{return JSON.parse(localStorage.getItem('aedrova-storage-choice'))==='preferences';}catch{return false;}}
 const storage = {
   get(key,fallback=null){
     if(memory.has(key))return memory.get(key);
-    if(preferenceChoice==='preferences')try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{}
+    if(preferencesAllowed())try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{}
     return fallback;
   },
-  set(key,value){memory.set(key,value);if(preferenceChoice==='preferences')try{localStorage.setItem(key,JSON.stringify(value));}catch{}}
+  set(key,value){memory.set(key,value);if(preferencesAllowed())try{localStorage.setItem(key,JSON.stringify(value));}catch{}}
 };
 const storageNotice=document.querySelector('#storage-notice');
 function showStorageChoices(){if(storageNotice)storageNotice.hidden=false;}
