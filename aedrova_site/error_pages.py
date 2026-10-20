@@ -33,9 +33,10 @@ justify-content:space-between;
 align-items:center}
 a{color:inherit;
 text-decoration:none}
-header a{font-size:22px;
+header a{display:flex;align-items:center;gap:9px;font-size:22px;
 font-weight:650;
 letter-spacing:-.7px}
+header img{width:30px;height:30px;object-fit:contain}
 header span{color:var(--muted);
 font-size:13px}
 main{min-height:70vh;
@@ -129,6 +130,14 @@ def atlas_url():
     )
 
 
+@lru_cache(maxsize=1)
+def logo_url():
+    return (
+        "data:image/png;base64,"
+        + base64.b64encode((ROOT / "static" / "brand.png").read_bytes()).decode()
+    )
+
+
 @lru_cache(maxsize=64)
 def error_html(status):
     status = int(status)
@@ -178,7 +187,8 @@ def error_html(status):
 </head>
 <body>
 <header>
-<a href="/" aria-label="Aedrova home">✦ Aedrova</a>
+<a href="/" aria-label="Aedrova home">
+<img src="{logo_url()}" alt="" width="30" height="30">Aedrova</a>
 <span>Your team, plus AI.</span>
 </header>
 <main>
@@ -195,7 +205,7 @@ def error_html(status):
 <a class="primary" href="/">{action}</a>
 <a class="secondary" href="mailto:contact@aedrova.com">Contact support ↗</a>
 </div>
-<p class="note">No need to change your account or reconnect your tools.</p>
+<p class="note">Your workspace stays private. Contact us if you need a hand.</p>
 </main>
 <footer>
 <span>Aedrova · Your team. Your tools. Together.</span>
@@ -269,7 +279,16 @@ class BrowserErrors:
             nonlocal started, replaced
             if message["type"] == "http.response.start":
                 started = True
-                if message["status"] >= 400:
+                # Only our explicit recovery templates may retain their actionable copy.
+                # A response marker is set by server code, never by request headers.
+                response_headers = message.get("headers", [])
+                recovery = (b"x-aedrova-branded-error", b"1") in response_headers
+                message["headers"] = [
+                    (key, value)
+                    for key, value in response_headers
+                    if key.lower() != b"x-aedrova-branded-error"
+                ]
+                if message["status"] >= 400 and not recovery:
                     replaced = True
                     retained = {
                         k.decode(): v.decode()
