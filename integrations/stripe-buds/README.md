@@ -23,3 +23,15 @@ with external testing.” The owner must complete Stripe business verification.
 Never grant payment/payout writes or enable Aedrova checkout as part of this setup.
 See ../../docs/account-connector-setup.md for credential/environment handoff.
 Manifest reference: https://docs.stripe.com/stripe-apps/reference/app-manifest
+
+## October 20 update
+
+The owner approved selecting v0.1.0 for external testing. Stripe now displays the
+external test version and Test OAuth install links; it remains unpublished and has
+zero tested accounts. The older business-verification blocker text above describes
+October 10 and must not be used as the current external-testing status.
+
+v0.1.1 is prepared locally with the additional Aedrova Beta Staging HTTPS callback.
+It preserves both read permissions and the original callback. Upload and moving
+matching test developer credentials into staging await the explicit approval request;
+preparing/committing the manifest is not evidence the version is uploaded or active.
