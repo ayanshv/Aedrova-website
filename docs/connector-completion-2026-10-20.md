@@ -63,9 +63,9 @@ file discovery; login-only must not be advertised for this connector's entire fl
    The actual provider-issued external test URL/client ID are already saved there.
    Never send this file/key in chat. This blocks Render activation/token exchange;
    no partial ID-only Render configuration was saved because config requires both.
-2. Meta email code is now accepted. Complete the new CAPTCHA in the retained
-   Facebook tab; any subsequent identity review is still required. This blocks
-   developer admin/review access. No ID submitted or human check bypassed.
+2. Meta email and owner CAPTCHA completed. Developer app access restored and
+   live roles page verified. No further identity action is needed now; public app
+   review remains required (Unpublished).
 3. Sign in to the open Instagram login as professional tester @aedrova_ai and TikTok
    login as sandbox-approved @aedrova. If an attempt limit appears, stop. No credentials
    in chat. Fresh authorization links may be needed after their ten-minute lifetime.
@@ -145,3 +145,22 @@ Native staging test session cleaned and signed out locally. Current start-only
 follow-up report is companion app work/connector-completion-oct20/social-followup.json.
 Prior live read acceptance remains the earlier tool evidence and records above;
 this new follow-up does not add social reader/renewal/public-review acceptance.
+
+## Fresh Instagram acceptance after owner confirmation
+
+Meta developer access is restored; live roles page confirms @aedrova_ai Instagram
+Tester and Unpublished app status. The owner completed Instagram in IAB, not the
+Safari session with the reminder. Old callback was not replayed after generic403.
+A fresh staging state in the correct signed-in IAB session reached consent explicitly
+naming aedrova_ai and previously connected Aedrova Buds-IG. Renewed unchanged basic
+read access with staging callback/24h local grant. Branded Connected callback, actual
+profile and posts tools all passed. Locally disconnected only the synthetic audit
+Bud grant; subsequent profile read was denied. Provider-wide revocation was not
+performed (provider_revoked=false). Local native test session signed out; pending
+URL files cleaned. No broader scope, posting, messaging, production change or payment.
+
+Private fresh evidence is companion app work/connector-completion-oct20/
+instagram-acceptance-oct20.json and instagram-connected-oct20.png. This supersedes
+the fresh-login blocker above for Instagram. General public review, real renewal/
+provider-wide revocation and all-nine certification remain open. TikTok not retried
+after its limit; Brave account setup and Stripe test developer key remain pending.
