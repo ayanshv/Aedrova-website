@@ -448,6 +448,9 @@ def create_app(config=None):
             "plans",
             "Your team, plus AI",
             allowances=allowances,
+            billing_interval=(
+                "annual" if request.query_params.get("billing") == "annual" else "monthly"
+            ),
             usage_policy=store.usage_policy,
             plan_policy=PLAN_POLICY,
         )

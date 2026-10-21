@@ -377,3 +377,13 @@ if(unsubscribeForm)unsubscribeForm.addEventListener('submit',async event=>{
   try{await api('/api/unsubscribe',{token:params.get('token')||''});result.textContent='You’re unsubscribed from launch updates. Required account notices are unchanged.';button.hidden=true;}
   catch(error){result.textContent=error.message;button.disabled=false;}
 });
+
+// Pricing choice is ephemeral and does not require preference storage.
+const pricing=document.querySelector('[data-pricing]');
+if(pricing){document.querySelectorAll('[data-billing-choice]').forEach(choice=>choice.addEventListener('click',event=>{
+  if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
+  pricing.querySelectorAll('[data-price-interval]').forEach(price=>{price.hidden=price.dataset.priceInterval!==choice.dataset.billingChoice;});
+  document.querySelectorAll('[data-billing-choice]').forEach(link=>link.setAttribute('aria-current',String(link===choice)));
+  history.replaceState(null,'',choice.href);
+}));}
