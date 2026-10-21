@@ -84,10 +84,16 @@ def test_external_media_cannot_expand_script_or_connection_policy(client):
 
 def test_plan_links_keep_approved_prices_and_billing_choice(client):
     response = client.get("/plans")
-    assert "$200" in response.text and "$10" in response.text
+    for price in ("$15", "$120", "$25", "$250"):
+        assert price in response.text
     targets = {attrs.get("href") for tag, attrs in Document(response.text).nodes if tag == "a"}
-    assert "/account?plan=annual" in targets
-    assert "/account?plan=monthly" in targets
+    assert "/plans?billing=monthly" in targets
+    assert "/plans?billing=annual" in targets
+    assert "/waitlist" in targets
+    assert not any(
+        target and target.startswith("/account?plan=") and target != "/account?plan=free"
+        for target in targets
+    )
     assert "/enterprise" in targets
     assert "charged each year until cancelled" in response.text
     assert "charged each month until cancelled" in response.text
