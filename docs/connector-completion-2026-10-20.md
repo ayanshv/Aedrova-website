@@ -63,8 +63,9 @@ file discovery; login-only must not be advertised for this connector's entire fl
    The actual provider-issued external test URL/client ID are already saved there.
    Never send this file/key in chat. This blocks Render activation/token exchange;
    no partial ID-only Render configuration was saved because config requires both.
-2. In the open Meta/Facebook checkpoint, select an email you control, click Next,
-   and enter its confirmation code privately. This blocks Instagram admin/review access.
+2. Meta email code is now accepted. Complete the new CAPTCHA in the retained
+   Facebook tab; any subsequent identity review is still required. This blocks
+   developer admin/review access. No ID submitted or human check bypassed.
 3. Sign in to the open Instagram login as professional tester @aedrova_ai and TikTok
    login as sandbox-approved @aedrova. If an attempt limit appears, stop. No credentials
    in chat. Fresh authorization links may be needed after their ten-minute lifetime.
@@ -119,3 +120,28 @@ live-batch.json, vercel-connected.png, stripe-staging-version.png; private provi
 settings remain ignored and mode 0600. All successful grants in this batch were
 locally disconnected. Public review, live renewal and provider-wide revocation
 remain launch gates.
+
+## Later approved social follow-up (same date)
+
+Owner authorized completion of the three account handoffs. Meta email confirmation
+completed using only its requested official verification email; new CAPTCHA remains.
+IAB Instagram/TikTok fresh staging starts reached login. Safari Instagram is blocked
+by a daily usage reminder on a professional-account conversion URL; active handle
+not verified, no conversion or usage-limit changes made. Owner must dismiss that
+reminder and select professional @aedrova_ai before fresh staging acceptance.
+
+TikTok existing Safari session asked for email verification; selecting Email returned
+Maximum number of attempts reached. Try again later before a code could be entered.
+Stopped immediately, no retries/resends or limit workaround. No account handle was
+shown in that challenge, so do not claim @aedrova grant acceptance.
+
+Brave registration is prepared with owner name and brand Google email, password
+empty. Browser safety requires owner to create/submit the password personally. No
+terms accepted, account created, plan selected, payment made or key copied. Owner
+should complete registration/login/email confirmation and leave the dashboard open;
+any payment remains their own action. No API key in chat.
+
+Native staging test session cleaned and signed out locally. Current start-only
+follow-up report is companion app work/connector-completion-oct20/social-followup.json.
+Prior live read acceptance remains the earlier tool evidence and records above;
+this new follow-up does not add social reader/renewal/public-review acceptance.
