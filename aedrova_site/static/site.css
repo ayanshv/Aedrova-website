@@ -388,3 +388,20 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .billing-switch a:focus-visible{outline:2px solid #007aff;outline-offset:3px}
 [data-price-interval][hidden]{display:none!important}
 .team-visual>span{flex-shrink:0}
+
+/* A genuine, fixed-duration introductory offer; ordinary prices stay legible. */
+.early-access-offer{max-width:690px;margin:0 auto 30px;text-align:center;padding:22px 24px;border:1px solid var(--edge);border-radius:20px;background:var(--surface)}
+.early-access-offer[hidden]{display:none}
+.offer-label{font-size:11px;font-weight:650;letter-spacing:.12em;color:var(--muted)}
+.early-access-offer>p{margin:10px 0;font-size:20px;line-height:1.45}
+.offer-countdown{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--muted)}
+.offer-countdown output{font-size:18px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text);letter-spacing:.02em}
+.early-access-offer .offer-detail{font-size:13px;line-height:1.6;color:var(--muted);margin:12px auto 0;max-width:570px}
+.early-access-active .regular-price{font-size:26px;color:var(--muted);letter-spacing:-.02em}
+.early-access-active .regular-price small{font-size:13px}
+.offer-price{display:block;width:100%;line-height:1.15}
+.plan .offer-price small{display:block;font-size:13px;letter-spacing:normal;color:var(--muted);margin-top:6px}
+[data-offer-price][hidden],[data-offer-note][hidden],[data-regular-note][hidden]{display:none!important}
+@media(max-width:650px){.early-access-offer{padding:20px 16px}.early-access-active .regular-price{font-size:26px}}
+
+.early-access-active .regular-amount{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:currentColor}

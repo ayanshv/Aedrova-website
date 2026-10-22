@@ -10,7 +10,8 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, event, inspect, text
 
-from aedrova_site import budgets
+from aedrova_site import budgets, promotion
+from aedrova_site.policy import PLAN_POLICY
 from aedrova_site.store_errors import BudgetDenied
 
 SCHEMA = [
@@ -104,6 +105,7 @@ class Store:
         company_budget=100_000_000,
         free_pool=25_000_000,
         free_enabled=False,
+        early_access_enabled=False,
         hierarchy_enabled=False,
         alert_thresholds="75,90",
     ):
@@ -116,6 +118,7 @@ class Store:
             raise ValueError("Usage alert thresholds must be percentages from 1 to 100.")
         self.hierarchy_enabled = hierarchy_enabled
         self.free_enabled = free_enabled
+        self.early_access_enabled = early_access_enabled
         self.development_ai = development_ai
         if url.startswith("sqlite:///"):
             path = Path(url.removeprefix("sqlite:///"))
@@ -461,6 +464,57 @@ class Store:
             "alerts": alerts,
         }
 
+    def grant_early_access(self, user, workspace, plan="annual"):
+        """After owner/admin authorization: a bounded gift, never a Stripe subscription."""
+        if plan not in {"monthly", "annual"}:
+            raise Denied("Unknown early-access plan.")
+        if not self.early_access_enabled or not promotion.status()["active"]:
+            return False
+        with self.tx() as db:
+            budgets.lock(db)
+            db.execute(
+                text("""INSERT INTO billing(workspace,customer,plan,status,period_start,
+                period_end,allowance,concurrency,budget_owner)
+                VALUES(:w,:c,:p,'active',:start,:end,:amount,:concurrency,:owner)
+                ON CONFLICT(workspace) DO NOTHING"""),
+                {
+                    "w": workspace,
+                    "c": "free:early-access:" + workspace,
+                    "p": plan,
+                    "start": promotion.STARTS_AT,
+                    "end": promotion.ENDS_AT,
+                    "amount": self.usage_policy[plan]["budget"],
+                    "concurrency": PLAN_POLICY[plan]["concurrency"],
+                    "owner": user,
+                },
+            )
+            row = self.billing_lock(db, workspace)
+            if promotion.is_grant(row):
+                # Replays do not extend expiry, switch tier or replenish usage.
+                return row["budget_owner"] == user
+            if (
+                row["subscription"]
+                or row["plan"] != "free"
+                or row["status"] != "active"
+                or row["budget_owner"] != user
+            ):
+                return False
+            db.execute(
+                text("""UPDATE billing SET customer=:c,plan=:p,period_start=:start,
+                period_end=:end,allowance=:amount,concurrency=:concurrency
+                WHERE workspace=:w"""),
+                {
+                    "w": workspace,
+                    "c": "free:early-access:" + workspace,
+                    "p": plan,
+                    "start": promotion.STARTS_AT,
+                    "end": promotion.ENDS_AT,
+                    "amount": self.usage_policy[plan]["budget"],
+                    "concurrency": PLAN_POLICY[plan]["concurrency"],
+                },
+            )
+        return True
+
     def activate_free(self, user, workspace):
         """Called only after fresh owner/admin authorization and the explicit launch gate."""
         start, end = budgets.month()
@@ -480,10 +534,9 @@ class Store:
                     "amount": self.usage_policy["free"]["budget"],
                 },
             )
-            row = self.billing_lock(db, workspace)
+            row = self.refresh_free(db, self.billing_lock(db, workspace))
             if row["plan"] != "free" or row["budget_owner"] != user:
                 raise Denied("This workspace already has another plan or funding owner.")
-            self.refresh_free(db, row)
         return self.balance(workspace)
 
     def refresh_free(self, db, row):
@@ -492,12 +545,20 @@ class Store:
             and row["budget_owner"]
             and row["plan"] in self.usage_policy
             and row["plan"] != "free"
-            and (row["status"] == "inactive" or row["period_end"] <= int(time.time()))
+            and (
+                row["status"] == "inactive"
+                or row["period_end"] <= int(time.time())
+                or (
+                    promotion.is_grant(row)
+                    and (not self.early_access_enabled or not promotion.status()["active"])
+                )
+            )
         ):
             start, end = budgets.month()
             db.execute(
                 text("""UPDATE billing SET plan='free',status='active',period_start=:start,
-                period_end=:end,spent=0,reserved=0,allowance=:amount WHERE workspace=:w"""),
+                period_end=:end,spent=0,reserved=0,concurrency=1,allowance=:amount
+                WHERE workspace=:w"""),
                 {
                     "start": start,
                     "end": end,
@@ -602,7 +663,7 @@ class Store:
                     *remaining[:1],
                     remaining[1] + max(0, wallet["balance"] - wallet["reserved"]),
                 )
-                if row["plan"] == "free":
+                if row["plan"] == "free" or promotion.is_grant(row):
                     row["available"] = min(row["available"], *remaining[2:])
                 row["monthly_budget"] = self.usage_policy[row["plan"]]["budget"]
                 row["monthly_spent"] = budgets.totals(db, "workspace:" + workspace, period)["used"]
@@ -640,10 +701,14 @@ class Store:
                         )
             row["reset_at"] = reset
             row["has_billing"] = row["customer"].startswith("cus_")
+            row["early_access"] = promotion.is_grant(row)
+            row["early_access_ends_at"] = promotion.ENDS_AT if row["early_access"] else 0
             return {
                 k: row[k]
                 for k in (
                     "has_billing",
+                    "early_access",
+                    "early_access_ends_at",
                     "five_hour_budget",
                     "five_hour_spent",
                     "usage_alerts",
@@ -768,6 +833,12 @@ class Store:
     def usable_allowance(self, row, user):
         if row["period_end"] <= int(time.time()):
             return False
+        if promotion.is_grant(row):
+            return bool(
+                self.early_access_enabled
+                and promotion.status()["active"]
+                and row["period_end"] == promotion.ENDS_AT
+            )
         if row["status"] in {"active", "trialing"}:
             return True
         return bool(

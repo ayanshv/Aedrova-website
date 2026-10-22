@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import text
 
+from aedrova_site import promotion
 from aedrova_site.policy import USAGE_POLICY
 from aedrova_site.store_errors import BudgetDenied
 
@@ -57,7 +58,7 @@ def scopes(store, row):
     if row["plan"] in store.usage_policy:
         policy = store.usage_policy[row["plan"]]
         result.append(("workspace:" + row["workspace"], policy["budget"], policy["requests"]))
-        if row["plan"] == "free":
+        if row["plan"] == "free" or promotion.is_grant(row):
             result += [
                 ("free-pool", store.free_pool, None),
                 ("owner:" + row["budget_owner"], policy["budget"], policy["requests"]),
