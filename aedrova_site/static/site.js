@@ -168,7 +168,7 @@ if(form){
 }
 const inquiry=$('#enterprise-form');if(inquiry)inquiry.addEventListener('submit',event=>{event.preventDefault();busy(inquiry.querySelector('button[type=submit]'),async()=>{const body=Object.fromEntries(new FormData(inquiry));await api('/api/inquiries',body);inquiry.hidden=true;$('#inquiry-success').hidden=false;$('#inquiry-success').tabIndex=-1;$('#inquiry-success').focus();});});
 if ($('#workspace')) {
-  let selected = '', spaces = [], checkoutReady = false, testMode = false;
+  let selected = '', spaces = [], checkoutReady = false, testMode = false, earlyAccessActive = false;
   let balanceRevision = 0;
   const select = $('#workspace'), status = $('#account-status'), planSelect = $('#billing-plan');
   let plan = storage.get('aedrova-plan', 'monthly');
@@ -219,8 +219,8 @@ if ($('#workspace')) {
     const child = !!entry?.parent_id;
     $('#move-subspace-panel').hidden = !child || entry?.billing_role !== 'owner' || entry?.role !== 'owner';
     $('#confirm-space-move').checked = false;
-    $('#billing-controls').hidden = !canManage || child;
-    $('#checkout').hidden = !canManage || child;
+    $('#billing-controls').hidden = !canManage || child || earlyAccessActive;
+    $('#checkout').hidden = !canManage || child || earlyAccessActive;
     $('#activate-free').hidden = !canManage || child;
     $('#portal').hidden = !canManage;
     $('#order-workspace').textContent = entry?.name || 'Your workspace';
@@ -248,7 +248,7 @@ if ($('#workspace')) {
       if (data.usage_alerts?.length && canManage) { const alert = document.createElement('p'); alert.textContent = 'Your team has used ' + Math.max(...data.usage_alerts) + '% of its monthly AI capacity.'; $('#balance').append(alert); }
       $('#balance').hidden = false;
       $('#topup').disabled = !canManage || data.plan === 'free';
-      status.textContent = testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
+      status.textContent = data.early_access ? 'Your team has limited early access until ' + new Date(data.early_access_ends_at * 1000).toLocaleString() + '. No payment or subscription was created. Plan usage limits apply.' : testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
         'Your team’s ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. One subscription covers your team. ' + (child ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the Mac app.');
     } else {
       status.textContent = !canManage ? 'Your workspace owner or admin manages the subscription.' :
@@ -258,7 +258,9 @@ if ($('#workspace')) {
   }
   async function load(preferredWorkspace = '') {
     const session = await api('/api/session');
-    csrf = session.csrf; checkoutReady = session.checkout_enabled; testMode = session.stripe_test_mode;
+    earlyAccessActive=!!session.early_access_active;
+    csrf = session.csrf; checkoutReady = session.checkout_enabled && !earlyAccessActive; testMode = session.stripe_test_mode;
+    if(session.early_access_active)$('#activate-free').textContent='Start free early access · no card';
     $('#topup').dataset.enabled = String(session.topup_enabled);
     $('#topup').hidden = !session.topup_enabled;
     $('#subspace-creation').hidden = !session.space_hierarchy_enabled;
@@ -387,3 +389,38 @@ if(pricing){document.querySelectorAll('[data-billing-choice]').forEach(choice=>c
   document.querySelectorAll('[data-billing-choice]').forEach(link=>link.setAttribute('aria-current',String(link===choice)));
   history.replaceState(null,'',choice.href);
 }));}
+
+// Server-calculated remaining time, advanced by a monotonic clock. No localStorage
+// countdown and no dependency on the visitor's editable device date.
+const earlyOffer=document.querySelector('[data-early-access]');
+if(earlyOffer&&!earlyOffer.hidden){
+  let initialRemaining=Number(earlyOffer.dataset.remaining);
+  let receivedAt=performance.now();
+  let offerInterval,offerSync;
+  function updateOffer(){
+    const remaining=Math.max(0,Math.floor(initialRemaining-(performance.now()-receivedAt)/1000));
+    const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
+    earlyOffer.querySelector('[data-offer-countdown]').textContent=`${days}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m ${String(seconds).padStart(2,'0')}s`;
+    if(remaining===0){
+      clearInterval(offerInterval);
+      clearInterval(offerSync);
+      earlyOffer.hidden=true;
+      pricing?.classList.remove('early-access-active');
+      document.querySelectorAll('[data-offer-price],[data-offer-note]').forEach(el=>{el.hidden=true;});
+      document.querySelectorAll('[data-regular-note]').forEach(el=>{el.hidden=false;});
+    }
+  }
+  async function syncOffer(){
+    if(earlyOffer.hidden||document.hidden)return;
+    try{
+      const response=await fetch('/api/early-access',{cache:'no-store',credentials:'omit'});
+      if(!response.ok)return;
+      const current=await response.json();
+      if(current.ends_at!==Number(earlyOffer.dataset.endsAt)||!Number.isFinite(current.remaining_seconds))return;
+      initialRemaining=Math.max(0,current.remaining_seconds);receivedAt=performance.now();updateOffer();
+    }catch{/* Server entitlement checks remain authoritative when offline. */}
+  }
+  updateOffer();
+  if(initialRemaining>0){offerInterval=setInterval(updateOffer,1000);offerSync=setInterval(syncOffer,60000);}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncOffer();});
+}

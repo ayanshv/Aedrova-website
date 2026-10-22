@@ -220,6 +220,8 @@ def test_webhook_tampering_rejected_before_stripe_request(tmp_path, monkeypatch)
 
 
 def test_checkout_rejects_price_mismatch_before_creating_session(store, monkeypatch):
+    # Normal paid checkout is tested outside the shared free introductory window.
+    monkeypatch.setattr("aedrova_site.promotion.status", lambda: {"active": False})
     payments = Payments(
         Config(
             checkout_enabled=True,
@@ -398,6 +400,8 @@ def test_duplicate_parallel_credit_events_cannot_grant_twice(store):
 
 
 def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(store, monkeypatch):
+    # Normal paid checkout is tested outside the shared free introductory window.
+    monkeypatch.setattr("aedrova_site.promotion.status", lambda: {"active": False})
     store.customer("space-new", "cus_new")
     config = Config(
         checkout_enabled=True,

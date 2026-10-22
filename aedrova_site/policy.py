@@ -1,4 +1,4 @@
-"""Owner-requested prices. All amounts are estimated provider cost, in micro-USD."""
+"""Approved retail catalogs and bounded internal provider-cost usage policies."""
 
 PLAN_POLICY = {
     "monthly": {
@@ -55,3 +55,9 @@ USAGE_POLICY = {
 }
 
 PLAN_NAMES = {"free": "Free", "monthly": "Pro", "annual": "Team"}
+
+# Approved public catalog; legacy Stripe SKUs above stay unchanged until migration.
+PUBLIC_PLAN_PRICES = {
+    "pro": {"monthly": 15, "annual": 120},
+    "team": {"monthly": 25, "annual": 250},
+}

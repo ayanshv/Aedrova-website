@@ -18,6 +18,7 @@ PUBLIC = {
     "/waitlist",
     "/onboarding",
     "/plans",
+    "/api/early-access",  # Public fixed promotion clock; no workspace/account information.
     "/account",
     "/welcome",
     "/download",

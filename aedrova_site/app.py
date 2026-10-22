@@ -23,7 +23,7 @@ from pydantic import Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from aedrova_site import discovery
+from aedrova_site import discovery, promotion
 from aedrova_site.boundaries import BodyLimit, ResponseHeaders
 from aedrova_site.communications import unsubscribe
 from aedrova_site.config import Config
@@ -38,7 +38,7 @@ from aedrova_site.observability import (
     database_events,
     emit,
 )
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
@@ -177,6 +177,7 @@ def create_app(config=None):
             company_budget=config.company_budget_microusd,
             free_pool=config.free_pool_microusd,
             free_enabled=config.free_enabled,
+            early_access_enabled=config.early_access_enabled,
             hierarchy_enabled=config.space_hierarchy_enabled,
             alert_thresholds=config.budget_alert_thresholds,
             pool_size=config.db_pool_size,
@@ -350,8 +351,11 @@ def create_app(config=None):
                 "checkout_enabled": config.checkout_enabled,
                 "waitlist_only": config.waitlist_only,
                 "plan_policy": PLAN_POLICY,
+                "public_prices": PUBLIC_PLAN_PRICES,
                 "usage_policy": store.usage_policy,
                 "free_enabled": config.free_enabled,
+                "promotion": promotion.status(),
+                "early_access_enabled": config.early_access_enabled,
                 "asset_version": asset_version,
                 **context,
             },
@@ -433,6 +437,15 @@ def create_app(config=None):
     @app.get("/onboarding")
     def onboarding(request: Request):
         return page(request, "onboarding", "Make room for your next idea")
+
+    @app.get("/api/early-access")
+    def early_access_offer(request: Request):
+        store.rate_limit(
+            "promotion:" + (request.client.host if request.client else "unknown"),
+            limit=120,
+            seconds=60,
+        )
+        return JSONResponse(promotion.status(), headers={"Cache-Control": "no-store"})
 
     @app.get("/plans")
     def plans(request: Request):
@@ -646,6 +659,8 @@ def create_app(config=None):
             "topup_enabled": bool(config.checkout_enabled and config.topup_price_id),
             "stripe_test_mode": config.stripe_test_mode,
             "space_hierarchy_enabled": config.space_hierarchy_enabled,
+            "early_access_active": config.early_access_enabled and promotion.status()["active"],
+            "early_access_ends_at": promotion.ENDS_AT,
         }
 
     @app.post("/api/logout")
@@ -686,6 +701,8 @@ def create_app(config=None):
                 "p_provider": "codex",
             },
         )
+        if config.early_access_enabled:
+            store.grant_early_access(user["id"], workspace)
         return {"id": workspace}
 
     @app.post("/api/subspaces/{workspace}/move")
@@ -732,6 +749,9 @@ def create_app(config=None):
         workspace = context["billing_workspace"]
         user = identity.require(token, workspace, billing=True)
         store.rate_limit("free:" + user["id"], limit=5)
+        if config.early_access_enabled and promotion.status()["active"]:
+            store.grant_early_access(user["id"], workspace)
+            return store.balance(workspace)
         return store.activate_free(user["id"], workspace)
 
     @app.post("/api/checkout")

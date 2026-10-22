@@ -9,6 +9,7 @@ import httpx
 import stripe
 from sqlalchemy import text
 
+from aedrova_site import promotion
 from aedrova_site.store import Denied
 
 
@@ -129,6 +130,10 @@ class Payments:
 
     def checkout(self, workspace, plan, request_id, *, owner="", workspace_name="", owner_email=""):
         config = self.config
+        if promotion.status()["active"] and (
+            config.early_access_enabled or (config.checkout_enabled and not config.stripe_test_mode)
+        ):
+            raise Denied("Limited early access is free. No paid subscription was created.")
         if owner:
             with self.store.tx() as db:
                 if self.store.billing_root(db, workspace, owner) != workspace:
