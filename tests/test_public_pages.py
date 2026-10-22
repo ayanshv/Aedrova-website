@@ -241,7 +241,11 @@ def test_support_and_policy_links_are_public_and_consistent(client):
         assert response.status_code == 200
         assert 'tel:+14086345254' in response.text
         assert 'contact@aedrova.com' in response.text
-        assert 'October 19, 2026' in response.text
+        assert 'October 21, 2026' in response.text
+        assert 'Business name: Aedrova.' in response.text
+        assert 'do not represent it as a registered corporation' in response.text
+        assert 'Aedrova, Inc.' not in response.text
+        assert '[to be confirmed]' not in response.text
     privacy = client.get('/privacy').text
     assert 'may not revoke permission at the provider' in privacy
     assert 'do not promise zero retention' in privacy
