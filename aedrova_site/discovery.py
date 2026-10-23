@@ -93,7 +93,10 @@ PRIVATE_PATHS = (
     "/account",
     "/welcome",
     "/onboarding",
-    "/download",
+    # Let crawlers see /download's waitlist redirect (or its noindex landing page).
+    # Blocking the landing URL hides both signals and can leave a bare URL indexed.
+    # Actual downloads remain protected by /api/ and the server release gate.
+    "/download/",
     "/health",
     "/docs",
     "/redoc",
