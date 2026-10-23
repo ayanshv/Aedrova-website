@@ -62,6 +62,8 @@ def test_public_crawl_rules_allow_discovery_not_private_routes(public_client):
         "ChatGPT-User",
         "Claude-User",
         "Google-Extended",
+        "GPTBot",
+        "ClaudeBot",
     ]:
         assert parser.can_fetch(agent, "https://aedrova.com/product")
         for path in [
@@ -72,8 +74,6 @@ def test_public_crawl_rules_allow_discovery_not_private_routes(public_client):
             "/onboarding",
         ]:
             assert not parser.can_fetch(agent, "https://aedrova.com" + path)
-    for agent in ["GPTBot", "ClaudeBot"]:
-        assert not parser.can_fetch(agent, "https://aedrova.com/product")
     assert parser.site_maps() == ["https://aedrova.com/sitemap.xml"]
     root = ElementTree.fromstring(public_client.get("/sitemap.xml").text)
     urls = [element.text for element in root.findall("{*}url/{*}loc")]
@@ -175,3 +175,18 @@ def test_referral_is_optional_validated_encrypted_and_exported(public_client, tm
         assert label in page
     assert 'id="wizard-next"' in page
     assert public_client.get("/account", follow_redirects=False).headers["location"] == "/waitlist"
+
+
+@pytest.mark.parametrize("path", ["/faq", "/about", "/research/crawlability"])
+def test_public_reference_pages_are_readable_without_javascript(public_client, path):
+    response = public_client.get(path)
+    assert response.status_code == 200
+    assert "<article" in response.text and "<h1>" in response.text
+    assert 'datetime="2026-10-22"' in response.text
+    assert f'href="https://aedrova.com{path}"' in response.text
+    assert "index, follow" in response.text
+    data = json.loads("".join(Schema(response.text).parts))
+    assert data["author"]["name"] == "Aedrova team"
+    assert data["url"] == "https://aedrova.com" + path
+    assert "<loc>https://aedrova.com" + path + "</loc>" in public_client.get("/sitemap.xml").text
+    assert f'href="{path}"' in public_client.get("/").text

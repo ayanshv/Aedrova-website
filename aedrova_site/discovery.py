@@ -8,6 +8,18 @@ DESCRIPTION = (
     "configurable AI teammates called Buds, and coding agents that build from shared context."
 )
 PUBLIC_PAGES = {
+    "/faq": (
+        "Aedrova FAQ — Buds, building, access and pricing",
+        "Answers about workspaces, AI teammates, connectors, privacy and Beta availability.",
+    ),
+    "/about": (
+        "About Aedrova",
+        "Who publishes Aedrova product information, how to contact us, and how we maintain it.",
+    ),
+    "/research/crawlability": (
+        "Aedrova crawlability study — October 22, 2026",
+        "A reproducible audit of public page availability, crawler access and indexing signals.",
+    ),
     "/refunds": (
         "Aedrova refund policy",
         "Cancellation, refund requests and preserved consumer rights.",
@@ -145,6 +157,21 @@ def metadata(config, path, fallback):
                 },
             ],
         }
+    if indexable and path in {"/faq", "/about", "/research/crawlability"}:
+        graph = {
+            "@context": "https://schema.org",
+            "@type": "Article" if path == "/research/crawlability" else "WebPage",
+            "headline": title,
+            "name": title,
+            "url": CANONICAL + path,
+            "datePublished": "2026-10-22",
+            "author": {
+                "@type": "Organization",
+                "name": "Aedrova team",
+                "url": CANONICAL + "/about",
+            },
+            "publisher": {"@type": "Organization", "name": "Aedrova", "url": CANONICAL},
+        }
     return {
         "title": title,
         "description": description,
@@ -166,17 +193,13 @@ def robots(config):
         "Claude-SearchBot",
         "Claude-User",
         "Google-Extended",
+        "GPTBot",
+        "ClaudeBot",
     ):
         groups.append(
             "User-agent: " + agent + "\n" + "\n".join("Disallow: " + p for p in PRIVATE_PATHS)
         )
-    groups.extend(
-        [
-            "User-agent: GPTBot\nDisallow: /",
-            "User-agent: ClaudeBot\nDisallow: /",
-            "Sitemap: " + CANONICAL + "/sitemap.xml",
-        ]
-    )
+    groups.append("Sitemap: " + CANONICAL + "/sitemap.xml")
     return "\n\n".join(groups) + "\n"
 
 

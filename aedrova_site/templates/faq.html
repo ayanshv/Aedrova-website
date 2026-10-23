@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block main %}<article class="legal policy-document">
+<span class="eyebrow">ANSWERS FROM AEDROVA</span><h1>Aedrova: common questions</h1>
+<p>By <a href="/about">Aedrova team</a> · Published <time datetime="2026-10-22">October 22, 2026</time></p>
+<h2>What does Aedrova do?</h2><p>Aedrova brings team conversations, configurable AI teammates called Buds, and supported coding-agent workflows into a shared workspace. Read the <a href="/product">product guide</a>.</p>
+<h2>Who is it for?</h2><p>Founders, small software teams and independent builders coordinating product decisions and implementation.</p>
+<h2>Can I use or download Aedrova now?</h2><p>{% if waitlist_only %}Public downloads and checkout are not open. The <a href="/waitlist">waitlist</a> collects launch interest; joining does not activate software or AI access.{% else %}Access depends on current invitations, enabled services and release readiness. Check <a href="/download">downloads</a> and <a href="/security#availability">Beta availability</a>.{% endif %}</p>
+<h2>Does a plan cover my teammates?</h2><p>The intended paid model is per workspace, with no separate member charge. The <a href="/plans">plans page</a> lists current prices, offer dates and capacity descriptions. The shared early-access deadline does not restart for each signup.</p>
+<h2>What are the Bud roles?</h2><p>Builder, Designer, Marketing, Finance, Research and Product. You can configure their names, appearance and working preferences. Their actual capabilities depend on supported features and permissions.</p>
+<h2>Can every connector be used by everyone?</h2><p>No. Provider approval, account type, selected resources, scopes and actual integration readiness determine availability. A listed integration is not proof of public provider approval. See <a href="/support">connector troubleshooting</a>.</p>
+<h2>Do Buds have unrestricted account access?</h2><p>No. Access is limited by the supported authorization and the requesting user's permissions. Private channels and workspaces retain their access controls. Read <a href="/data-controls">Data & AI controls</a>.</p>
+<h2>Do AI changes publish automatically?</h2><p>Supported agents can plan and work in a separate build copy under the selected configuration. Applying changes to the original project and publishing retain their approval requirements. Review and test generated work.</p>
+<h2>Are meetings always transcribed?</h2><p>No. Hosted transcription depends on infrastructure, configuration, permissions and acceptance checks. Do not assume every meeting is recorded or every transcript is shared with AI.</p>
+<h2>Can Marketing Bud generate images or video?</h2><p>That capability is planned and is not presented as a released customer feature.</p>
+<h2>Is all processing local?</h2><p>No. Enabled hosted features and providers may process authorized prompts, files or audio. See <a href="/privacy">Privacy</a> and <a href="/subprocessors">service providers</a>.</p>
+<h2>How can I get help or request deletion?</h2><p>Contact <a href="mailto:contact@aedrova.com">contact@aedrova.com</a>, visit <a href="/support">Support</a>, or follow the <a href="/data-controls#requests">data-request process</a>.</p>
+</article>{% endblock %}

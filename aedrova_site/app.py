@@ -369,6 +369,18 @@ def create_app(config=None):
     def product(request: Request):
         return page(request, "product", "What is Aedrova?")
 
+    @app.get("/faq")
+    def public_faq(request: Request):
+        return page(request, "faq", "Aedrova FAQ")
+
+    @app.get("/about")
+    def public_about(request: Request):
+        return page(request, "about", "About Aedrova")
+
+    @app.get("/research/crawlability")
+    def public_crawlability(request: Request):
+        return page(request, "crawlability", "Aedrova crawlability study")
+
     @app.get("/robots.txt")
     def crawl_rules():
         return Response(discovery.robots(config), media_type="text/plain")
