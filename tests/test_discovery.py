@@ -98,6 +98,21 @@ def test_schema_is_factual_and_canonical_has_no_session_query(public_client):
     assert public_client.get("/api/session").status_code in {401, 403}
 
 
+def test_download_landing_can_be_recrawled_without_unlocking_release(public_client):
+    parser = RobotFileParser()
+    parser.parse(public_client.get("/robots.txt").text.splitlines())
+    for agent in ["Googlebot", "OAI-SearchBot", "Claude-SearchBot"]:
+        assert parser.can_fetch(agent, "https://aedrova.com/download")
+        assert not parser.can_fetch(agent, "https://aedrova.com/download/private.dmg")
+        assert not parser.can_fetch(agent, "https://aedrova.com/api/download")
+    response = public_client.get("/download", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/waitlist"
+    assert response.headers["x-robots-tag"] == "noindex"
+    assert public_client.get("/api/download").status_code != 200
+    assert "<loc>https://aedrova.com/download</loc>" not in public_client.get("/sitemap.xml").text
+
+
 def test_staging_and_preview_do_not_advertise_indexing(tmp_path):
     config = Config(
         origin="https://preview.example", database=f"sqlite:///{tmp_path / 'preview.db'}"

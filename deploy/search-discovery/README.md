@@ -1,29 +1,40 @@
-# Stable public robots policy
+# Stable public crawler files
 
-This exact-path Worker avoids a sleeping Render Free service returning its own
-Disallow-all robots policy. It uses the same public policy as discovery.py.
+The existing free Cloudflare Worker `aedrovaerrorfallback` serves only public
+robots policy and the canonical sitemap, independently of a sleeping/unavailable
+Render origin. No credentials, database access, API routing or paid binding.
+Other URLs and methods pass through unchanged. This is not the separate branded
+502 outage fallback in `deploy/error-fallback`.
 
-Regenerate: `uv run python -m scripts.export_search_discovery` then
-`uv run python -m scripts.bundle_search_discovery`.
-Tests: `node --test deploy/search-discovery/worker.test.mjs`.
+Regenerate after changing discovery metadata:
 
-The existing Cloudflare account has a starter Worker named `aedrovaerrorfallback`.
-It currently has no domain routes and is not an active outage safeguard. The
-embedded editor did not accept automation edits; no Worker deployment/route was
-completed in this task. Do not mistake a populated local file for a live Worker.
+```
+uv run python -m scripts.export_search_discovery
+uv run python -m scripts.bundle_search_discovery
+node --test deploy/search-discovery/worker.test.mjs
+```
 
-Owner handoff if the editor remains blocked:
-1. Cloudflare → Workers & Pages → aedrovaerrorfallback → Edit code.
-2. Replace worker.js with the contents of worker-bundled.js from this folder.
-   Click Deploy on the existing free plan; do not upgrade.
-3. Domains & Routes → Add → Route: zone aedrova.com, pattern
-   `aedrova.com/robots.txt`. Add `www.aedrova.com/robots.txt` as well. Do not use a
-   wildcard whole-site route, custom domain or new DNS record. Preserve existing
-   routes/settings. These routes serve only public crawler policy, never APIs.
-4. Verify both HTTPS robots URLs return the full policy and public pages remain
-   allowed, with GPTBot/ClaudeBot restrictions preserved. Then request Google robots
-   recrawl and retry /product live inspection when Google's cache refreshes.
+Tests compare both edge exports with Python metadata. CI runs these checks.
+Deploy regenerated `worker-bundled.js` to the Worker whenever public pages or
+crawler policy change; website deployment alone does not update the Worker.
 
-This Worker does NOT activate the separate branded 502 outage fallback. That
-feature remains independently documented in deploy/error-fallback. Keep these
-purposes separate until both are reviewed/tested together.
+The only intended routes (zone `aedrova.com`) are:
+
+- `aedrova.com/robots.txt`
+- `www.aedrova.com/robots.txt`
+- `aedrova.com/sitemap.xml`
+- `www.aedrova.com/sitemap.xml`
+
+Use fail-open/origin fallback because this Worker serves public static metadata,
+not security checks. No whole-site wildcard, custom domain, DNS change or upgrade.
+Normal HTTP/HTTPS and www/non-www canonical redirects remain valid.
+
+The public `/download` landing URL is crawlable so Google can see its current
+waitlist redirect, or its existing noindex response outside waitlist mode. It is
+not included in the sitemap. `/download/` descendants and `/api/` remain blocked;
+authentication, private files and release gates are unchanged. robots.txt is not
+an authorization mechanism.
+
+October 22 deployment and Search Console acceptance are recorded separately in
+`docs/search-console-2026-10-22.md`. Google processing is asynchronous; an accepted
+submission or live fetch does not establish indexing or a ranking guarantee.

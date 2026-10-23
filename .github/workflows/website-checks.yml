@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Public crawler fallback and metadata parity
+        run: node --test deploy/search-discovery/worker.test.mjs
       - name: Private PostgreSQL schema and access checks
         run: |
           npm install --prefix work/pglite --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.8
