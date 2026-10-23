@@ -45,6 +45,33 @@ same ignored folder. Publication, route acceptance and final Google state follow
 
 ## Remaining status
 
-Work in progress. Do not mark every Search Console issue cleared until Google has
+Technical fixes deployed. Do not mark every Search Console issue cleared until Google has
 recrawled/reprocessed it. Google alone determines actual indexing; repeated
 submissions do not accelerate the priority queue. No owner action currently needed.
+
+## Hosted acceptance
+
+PR #23 passed both required verify checks and merged as c1a3ad2f.
+Cloudflare Worker d987d7f5 and all four exact fail-open routes are active.
+All four HTTPS crawl URLs return HTTP 200, correct MIME/cache headers, no redirects,
+and byte-identical tested policy/sitemap. Google fetched the main new 1,856-byte
+robots policy on October 22. Recrawl requests for the three older host/scheme
+variants were acknowledged. Sitemap resubmission was accepted; its previous
+October 20 fetch-error status remains pending Google's next processing.
+All five individual indexing requests (product, plans, support, terms, data-controls)
+were accepted. Robots-warning validation shows Started October 22, not Passed.
+Canonical redirects, waitlist redirect, private session denial and blocked actual
+installer download were rechecked live. Homepage background pedestrians video is
+correctly excluded from video search because the homepage is not a watch page;
+this does not block ordinary page indexing. No false watch-page claim added.
+No owner action now; Google recrawl/indexing/validation remain external processing.
+
+## Preferred Source follow-up
+
+Owner additionally requested a Google Preferred Source badge. Official guide:
+https://developers.google.com/search/docs/appearance/preferred-sources
+Google source selector https://www.google.com/preferences/source?q=aedrova.com
+returned No results on October 22. No working badge can be represented as active
+until Google offers this domain. Prepared an ordinary no-script, no-tracking link
+in ignored work/search-console-oct22/preferred-source-ready.html for later use.
+Do not imply Google endorsement or silently add a third-party script/SDK.
