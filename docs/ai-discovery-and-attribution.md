@@ -15,7 +15,8 @@ No Phase 6, live billing, desktop onboarding, auth access or connector permissio
   Brand organization metadata does not invent the still-missing legal operator name.
   No fake ratings, purchasable offers or unreleased download URL in schema.
 - /robots.txt allows public search/retrieval, explicitly distinguishes OAI-SearchBot
-  and Claude-SearchBot from GPTBot/ClaudeBot training (the latter two are blocked).
+  and Claude-SearchBot. On October 22, the owner also authorized GPTBot/ClaudeBot
+  access to public pages; the same private-route restrictions remain for every crawler.
   Google-Extended is allowed for public marketing content because it covers Gemini
   grounding AND training; it is not a search-only token. Googlebot/Bing public crawling
   remains allowed. Private/API/auth/onboarding/download/health routes are excluded.

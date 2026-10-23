@@ -11,7 +11,7 @@ for (const host of ['aedrova.com', 'www.aedrova.com']) {
       if (method === 'HEAD') assert.equal(text, '');
       else {
         assert.match(text, /Sitemap: https:\/\/aedrova.com\/sitemap.xml/);
-        assert.match(text, /User-agent: GPTBot\nDisallow: \//);
+        assert.match(text, /User-agent: GPTBot\nDisallow: \/api\//);
         assert.ok(!text.includes('Disallow: /product'));
       }
     });

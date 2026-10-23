@@ -13,6 +13,9 @@ from aedrova_site.config import Config
 PUBLIC = {
     "/",
     "/product",
+    "/faq",
+    "/about",
+    "/research/crawlability",
     "/robots.txt",
     "/sitemap.xml",
     "/waitlist",
