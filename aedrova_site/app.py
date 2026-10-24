@@ -740,7 +740,15 @@ def create_app(config=None):
     def balance(request: Request, workspace: str):
         context = identity.billing_context(auth(request), workspace)
         try:
-            return {**store.balance(context["billing_workspace"]), **context}
+            return {
+                **store.balance(context["billing_workspace"]),
+                **context,
+                "coding_providers": [
+                    {"provider": provider, "model": model["id"]}
+                    for provider, model in config.models.items()
+                    if config.gateway_enabled
+                ],
+            }
         except Denied:
             return {
                 "plan": "",
