@@ -189,8 +189,8 @@ if ($('#workspace')) {
   $('#activate-free').addEventListener('click', () => busy($('#activate-free'), async () => { await api('/api/free/' + encodeURIComponent(select.value), {}); await balance(); }));
   renderPlan();
   planSelect.addEventListener('change', renderPlan);
-  function checkoutKey() {
-    const key = 'aedrova-checkout-' + selected + '-' + plan;
+  function checkoutKey(kind = plan) {
+    const key = 'aedrova-checkout-' + selected + '-' + kind;
     let value = storage.get(key);
     if (!value || value.expires < Date.now()) {
       value = {id: crypto.randomUUID(), expires: Date.now() + 29 * 60 * 1000};
@@ -318,7 +318,7 @@ if ($('#workspace')) {
     const result = await api('/api/portal/' + encodeURIComponent(selected), {}); location.href = redirectStripe(result.url, 'billing.stripe.com');
   }));
   $('#topup').addEventListener('click', event => busy(event.currentTarget, async () => {
-    const result = await api('/api/topup', {workspace: selected, plan: 'ai_credits', request_id: crypto.randomUUID()});
+    const result = await api('/api/topup', {workspace: selected, plan: 'ai_credits', request_id: checkoutKey('ai_credits')});
     location.href = redirectStripe(result.url, 'checkout.stripe.com');
   }));
   $('#logout').addEventListener('click', event => busy(event.currentTarget, async () => { await api('/api/logout', {}); location.href = '/account'; }));

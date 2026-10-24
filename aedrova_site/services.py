@@ -225,7 +225,7 @@ class Payments:
                     text("INSERT INTO checkout VALUES(:id,:w,:p,NULL,:expires)"),
                     {"id": identifier, "w": workspace, "p": plan, "expires": checkout_expiry},
                 )
-        session = stripe.checkout.Session.create(
+        parameters = dict(
             mode="subscription",
             branding_settings=self.checkout_branding(),
             customer=row["customer"],
@@ -252,6 +252,11 @@ class Payments:
             idempotency_key="aedrova-checkout-" + identifier,
             api_key=config.stripe_key,
         )
+        # Freeze every Stripe argument before the network request. An uncertain
+        # response must be retried with the same key AND identical parameters.
+        api_key = parameters.pop("api_key")
+        parameters = self.store.checkout_parameters(identifier, parameters)
+        session = stripe.checkout.Session.create(**parameters, api_key=api_key)
         with self.store.tx() as db:
             db.execute(
                 text("UPDATE checkout SET url=:url,expires=:expires WHERE id=:id"),
@@ -286,19 +291,26 @@ class Payments:
             if prior:
                 if prior["url"] and prior["expires"] > int(time.time()):
                     return prior["url"]
-                raise Denied("This AI credit checkout is already pending or expired.")
-            if db.execute(
-                text("SELECT id FROM checkout WHERE workspace=:w AND expires>:now"),
-                {"w": workspace, "now": int(time.time())},
-            ).first():
+                if prior["expires"] <= int(time.time()):
+                    raise Denied("This AI credit checkout expired. Start a new checkout.")
+                # Same pending transaction may retry Stripe with its original key.
+            if (
+                not prior
+                and db.execute(
+                    text("SELECT id FROM checkout WHERE workspace=:w AND expires>:now"),
+                    {"w": workspace, "now": int(time.time())},
+                ).first()
+            ):
                 raise Denied(
                     "A checkout is already open for this workspace. No additional purchase started."
                 )
-            db.execute(
-                text("INSERT INTO checkout VALUES(:id,:w,'ai_credits',NULL,:expires)"),
-                {"id": identifier, "w": workspace, "expires": int(time.time()) + 1800},
-            )
-        session = stripe.checkout.Session.create(
+            checkout_expiry = prior["expires"] if prior else int(time.time()) + 1800
+            if not prior:
+                db.execute(
+                    text("INSERT INTO checkout VALUES(:id,:w,'ai_credits',NULL,:expires)"),
+                    {"id": identifier, "w": workspace, "expires": checkout_expiry},
+                )
+        parameters = dict(
             mode="payment",
             branding_settings=self.checkout_branding(),
             customer=customer,
@@ -306,12 +318,17 @@ class Payments:
             metadata={"workspace": workspace, "kind": "ai_credits"},
             success_url=self.config.origin + "/account?credits=pending",
             cancel_url=self.config.origin + "/account?cancelled=1",
-            expires_at=int(time.time()) + 1800,
+            expires_at=checkout_expiry,
             allow_promotion_codes=False,
             idempotency_key="aedrova-credit-"
             + hashlib.sha256((workspace + request_id).encode()).hexdigest(),
             api_key=self.config.stripe_key,
         )
+        # Freeze every Stripe argument before the network request. An uncertain
+        # response must be retried with the same key AND identical parameters.
+        api_key = parameters.pop("api_key")
+        parameters = self.store.checkout_parameters(identifier, parameters)
+        session = stripe.checkout.Session.create(**parameters, api_key=api_key)
         with self.store.tx() as db:
             db.execute(
                 text("UPDATE checkout SET url=:url,expires=:expires WHERE id=:id"),

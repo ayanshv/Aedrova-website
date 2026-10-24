@@ -1239,3 +1239,28 @@ class Store:
                 text("UPDATE runs SET state='expired' WHERE state='active' AND expires<=:now"),
                 {"now": now},
             )
+
+    def checkout_parameters(self, checkout_id, parameters):
+        """Atomic, encrypted Stripe argument snapshot shared by all server workers.
+
+        No Stripe secret is stored. Checkout reservations prevent retrying after
+        expiration, even after Stripe's idempotency retention window has elapsed.
+        """
+        identifier = digest("stripe-checkout-parameters:" + checkout_id)
+        if "api_key" in parameters:
+            raise ValueError("Do not persist Stripe credentials")
+        payload = self.cipher.encrypt(json.dumps(parameters).encode()).decode()
+        with self.tx() as db:
+            db.execute(
+                text(
+                    "INSERT INTO sessions VALUES(:id,:payload,:expires) ON CONFLICT(id) DO NOTHING"
+                ),
+                {"id": identifier, "payload": payload, "expires": int(time.time()) + 86400},
+            )
+            row = db.execute(
+                text("SELECT payload FROM sessions WHERE id=:id"), {"id": identifier}
+            ).first()
+            try:
+                return json.loads(self.cipher.decrypt(row[0].encode()))
+            except Exception as exc:
+                raise Denied("Checkout retry could not be verified. Contact support.") from exc
