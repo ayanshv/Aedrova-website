@@ -442,3 +442,104 @@ def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(sto
         "coverage": "entire_team",
     }
     assert store.balance("space-new")["status"] == "pending"
+
+
+@pytest.mark.parametrize("credit", [False, True])
+def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
+    store, monkeypatch, credit
+):
+    import stripe
+
+    monkeypatch.setattr("aedrova_site.promotion.status", lambda: {"active": False})
+    config = Config(
+        checkout_enabled=True,
+        topup_price_id="price_credits",
+        plans={"monthly": {**PLAN_POLICY["monthly"], "price_id": "price_monthly"}},
+    )
+    store.customer("retry-new", "cus_retry")
+    payments = Payments(config, store)
+    monkeypatch.setattr(
+        "stripe.Price.retrieve",
+        lambda *a, **kw: {
+            "active": True,
+            "unit_amount": 1000,
+            "currency": "usd",
+            "recurring": None if credit else {"interval": "month", "interval_count": 1},
+        },
+    )
+    calls, stripe_objects = [], {}
+
+    def create(**kw):
+        calls.append(kw)
+        key = kw["idempotency_key"]
+        # Simulate Stripe creating the session, then losing the HTTP response.
+        stripe_objects.setdefault(
+            key, {"url": "https://checkout.stripe.com/retry", "expires_at": kw["expires_at"]}
+        )
+        if len(calls) == 1:
+            raise stripe.APIConnectionError("Synthetic response loss")
+        return stripe_objects[key]
+
+    monkeypatch.setattr("stripe.checkout.Session.create", create)
+
+    def checkout(name):
+        if credit:
+            return payments.topup("space-a", "retry-transaction-001")
+        return payments.checkout(
+            "retry-new", "monthly", "retry-transaction-001", workspace_name=name
+        )
+
+    with pytest.raises(stripe.APIConnectionError):
+        checkout("Original team name")
+    clock = time.time()
+    monkeypatch.setattr("time.time", lambda: clock + 5)
+    assert checkout("Renamed team") == "https://checkout.stripe.com/retry"
+    assert calls[0] == calls[1]  # Expiry, text, metadata and Stripe key all identical.
+    assert len(stripe_objects) == 1
+    assert checkout("Again") == "https://checkout.stripe.com/retry"
+    assert len(calls) == 2
+    with store.tx(write=False) as db:
+        encrypted = db.execute(text("SELECT payload FROM sessions")).first()[0]
+        assert "Original team name" not in encrypted
+        assert config.stripe_key not in encrypted if config.stripe_key else True
+
+
+def test_checkout_parameter_snapshot_is_atomic_across_workers(store):
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        results = list(
+            pool.map(
+                lambda n: store.checkout_parameters(
+                    "same-checkout", {"idempotency_key": "same-stripe-key", "expires_at": n}
+                ),
+                range(6),
+            )
+        )
+    assert all(result == results[0] for result in results)
+
+
+def test_checkout_parameter_snapshot_rejects_secret(store):
+    with pytest.raises(ValueError, match="credentials"):
+        store.checkout_parameters("transaction", {"api_key": "never-persist"})
+
+
+def test_real_stripe_sdk_sends_idempotency_header_without_network(monkeypatch):
+    import stripe
+
+    captured = []
+
+    class OfflineClient(stripe.HTTPClient):
+        name = "offline-checkout-test"
+
+        def request(self, method, url, headers, post_data=None, **kwargs):
+            captured.append((method, url, headers, post_data))
+            return json.dumps({"id": "cs_test_offline", "object": "checkout.session"}), 200, {}
+
+    monkeypatch.setattr(stripe, "default_http_client", OfflineClient())
+    stripe.checkout.Session.create(
+        mode="payment",
+        idempotency_key="aedrova-offline-transaction",
+        api_key="sk_test_offline_not_a_real_key",
+    )
+    assert len(captured) == 1
+    assert captured[0][0].lower() == "post"
+    assert captured[0][2]["Idempotency-Key"] == "aedrova-offline-transaction"
