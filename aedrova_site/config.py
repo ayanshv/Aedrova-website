@@ -227,7 +227,9 @@ class Config:
         if (
             stripe_url.scheme != "https"
             or stripe_url.netloc != "marketplace.stripe.com"
-            or stripe_url.path != "/oauth/v2/authorize"
+            or not re.fullmatch(
+                r"/oauth/v2/(?:chnlink_[A-Za-z0-9]{1,100}/)?authorize", stripe_url.path
+            )
             or stripe_url.fragment
         ):
             raise ValueError("Use the Stripe Marketplace OAuth install link.")

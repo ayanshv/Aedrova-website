@@ -55,6 +55,7 @@ USAGE_POLICY = {
 }
 
 PLAN_NAMES = {"free": "Free", "monthly": "Pro", "annual": "Team"}
+BUD_LIMITS = {"free": 1, "pro": 5, "team": 15}
 
 # Approved public catalog; legacy Stripe SKUs above stay unchanged until migration.
 PUBLIC_PLAN_PRICES = {

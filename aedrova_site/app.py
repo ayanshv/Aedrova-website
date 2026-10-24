@@ -38,7 +38,7 @@ from aedrova_site.observability import (
     database_events,
     emit,
 )
-from aedrova_site.policy import PLAN_POLICY, PUBLIC_PLAN_PRICES
+from aedrova_site.policy import BUD_LIMITS, PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
@@ -352,6 +352,7 @@ def create_app(config=None):
                 "waitlist_only": config.waitlist_only,
                 "plan_policy": PLAN_POLICY,
                 "public_prices": PUBLIC_PLAN_PRICES,
+                "bud_limits": BUD_LIMITS,
                 "usage_policy": store.usage_policy,
                 "free_enabled": config.free_enabled,
                 "promotion": promotion.status(),

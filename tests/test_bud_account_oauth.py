@@ -12,6 +12,7 @@ from test_bud_oauth import started, system  # noqa: F401
 from test_dots import system as dot_system  # noqa: F401
 
 from aedrova_site.bud_providers import ReadProvider
+from aedrova_site.config import Config
 from aedrova_site.store import Denied, RateLimited
 
 
@@ -401,3 +402,27 @@ def test_vercel_single_authorized_project_connects_without_second_picker(system,
         assert reader.execute.call_args.kwargs["oauth"]["team"] == "team_123abc"
         with pytest.raises(Denied):
             oauth.callback("vercel", state, payload["proof"], "code")
+
+
+@pytest.mark.parametrize("path", ["/oauth/v2/authorize", "/oauth/v2/chnlink_abc123/authorize"])
+def test_stripe_configuration_accepts_provider_issued_test_install_links(path):
+    config = Config(
+        stripe_bud_authorize_url="https://marketplace.stripe.com" + path + "?client_id=ca_test"
+    )
+    config.validate()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://marketplace.stripe.com.evil.example/oauth/v2/authorize",
+        "https://marketplace.stripe.com/oauth/v2/chnlink_../authorize",
+        "https://marketplace.stripe.com/oauth/v2/chnlink_x/authorize/extra",
+        "https://marketplace.stripe.com/oauth/v2/chnlink_x%2Fother/authorize",
+        "http://marketplace.stripe.com/oauth/v2/authorize",
+        "https://marketplace.stripe.com/oauth/v2/authorize#ignored",
+    ],
+)
+def test_stripe_test_install_link_keeps_strict_destination_validation(url):
+    with pytest.raises(ValueError, match="Marketplace OAuth"):
+        Config(stripe_bud_authorize_url=url).validate()

@@ -236,21 +236,30 @@ def test_meeting_links_and_plan_disclosures_preserve_release_gate(client):
 
 
 def test_support_and_policy_links_are_public_and_consistent(client):
-    for path in ('/privacy', '/terms', '/support'):
+    for path in ("/privacy", "/terms", "/support"):
         response = client.get(path)
         assert response.status_code == 200
-        assert 'tel:+14086345254' in response.text
-        assert 'contact@aedrova.com' in response.text
-        assert 'October 21, 2026' in response.text
-        assert 'Business name: Aedrova.' in response.text
-        assert 'do not represent it as a registered corporation' in response.text
-        assert 'Aedrova, Inc.' not in response.text
-        assert '[to be confirmed]' not in response.text
-    privacy = client.get('/privacy').text
-    assert 'may not revoke permission at the provider' in privacy
-    assert 'do not promise zero retention' in privacy
-    terms = client.get('/terms').text
-    assert 'One active build is supported per workspace' not in terms
-    assert 'two simultaneous workflows' in terms
-    assert 'Statutory cancellation and refund rights are not waived' in terms
-    assert 'href="/support"' in client.get('/').text
+        assert "tel:+14086345254" in response.text
+        assert "contact@aedrova.com" in response.text
+        assert "October 21, 2026" in response.text
+        assert "Business name: Aedrova." in response.text
+        assert "do not represent it as a registered corporation" in response.text
+        assert "Aedrova, Inc." not in response.text
+        assert "[to be confirmed]" not in response.text
+    privacy = client.get("/privacy").text
+    assert "may not revoke permission at the provider" in privacy
+    assert "do not promise zero retention" in privacy
+    terms = client.get("/terms").text
+    assert "One active build is supported per workspace" not in terms
+    assert "two simultaneous workflows" in terms
+    assert "Statutory cancellation and refund rights are not waived" in terms
+    assert 'href="/support"' in client.get("/").text
+
+
+@pytest.mark.parametrize("billing", ["monthly", "annual"])
+def test_plans_show_approved_workspace_bud_limits(client, billing):
+    html = client.get("/plans", params={"billing": billing}).text
+    assert "1 Bud per workspace" in html
+    assert "Up to 5 Buds per workspace" in html
+    assert "Up to 15 Buds per workspace" in html
+    assert "Custom Bud capacity for your workspace" in html
