@@ -626,3 +626,45 @@ def test_count_failure_never_starts_generation(client, monkeypatch, mode):
     assert "private diagnostic" not in response.text
     balance = client.app.state.store.balance("space-a")
     assert balance["reserved"] == balance["spent"] == 0
+
+
+@pytest.mark.parametrize("provider", ["codex", "claude_code"])
+def test_tool_schema_type_property_is_data_not_a_media_tag(client, monkeypatch, provider):
+    access = begin(client, provider)
+    tool = {
+        "name": "lookup",
+        "description": "Synthetic typed record",
+        "input_schema": {"type": "object", "properties": {"type": {"type": ["string", "null"]}}},
+    }
+    body = {"messages": [{"role": "user", "content": "Hello"}], "tools": [tool]}
+    path = "/gateway/claude_code/v1/messages"
+    if provider == "codex":
+        tool = {"type": "function", "name": "lookup", "parameters": tool["input_schema"]}
+        body = {"input": "Hello", "tools": [tool]}
+        path = "/gateway/codex/v1/responses"
+    calls = upstream(
+        monkeypatch, b'{"status":"completed","usage":{"input_tokens":100,"output_tokens":1}}'
+    )
+    response = client.post(path, json=body, headers={"Authorization": "Bearer " + access["token"]})
+    assert response.status_code == 200
+    assert len(calls) == 1
+    forwarded = json.loads(calls[0][1]["content"])
+    assert forwarded["tools"] == [tool]
+
+
+@pytest.mark.parametrize("provider", ["codex", "claude_code"])
+@pytest.mark.parametrize("invalid_type", [{}, []])
+def test_malformed_top_level_tool_type_fails_before_provider(
+    client, monkeypatch, provider, invalid_type
+):
+    access = begin(client, provider)
+    calls = upstream(monkeypatch, b"")
+    path = (
+        "/gateway/codex/v1/responses" if provider == "codex" else "/gateway/claude_code/v1/messages"
+    )
+    response = client.post(
+        path,
+        json={"tools": [{"type": invalid_type}]},
+        headers={"Authorization": "Bearer " + access["token"]},
+    )
+    assert response.status_code == 403 and not calls

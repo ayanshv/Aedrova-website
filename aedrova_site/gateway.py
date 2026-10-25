@@ -161,7 +161,9 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     except (ValueError, RecursionError) as exc:
         raise Denied("Invalid model request.") from exc
     if not isinstance(body.get("tools", []), list) or any(
-        not isinstance(tool, dict) for tool in body.get("tools", [])
+        not isinstance(tool, dict)
+        or (tool.get("type") is not None and not isinstance(tool.get("type"), str))
+        for tool in body.get("tools", [])
     ):
         raise Denied("Invalid tool definitions.")
 
@@ -176,7 +178,13 @@ async def inference(request: Request, provider, config, store, identity, *, comp
             if depth > 100 or visited > 100000:
                 raise Denied("Model request exceeds its nesting or item limit.")
             if isinstance(value, dict):
-                if value.get("type") in {"input_image", "input_file", "image", "document"}:
+                kind = value.get("type")
+                if isinstance(kind, str) and kind in {
+                    "input_image",
+                    "input_file",
+                    "image",
+                    "document",
+                }:
                     return True
                 stack.extend((item, depth + 1) for item in value.values())
             elif isinstance(value, list):
