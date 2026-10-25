@@ -14,7 +14,7 @@ from uuid import UUID
 import httpx
 from fastapi import Request
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from sqlalchemy import text
 
 from aedrova_site.store import Denied
@@ -558,14 +558,20 @@ class DotService:
             self.providers["github"].revoke(token)
             raise
 
-    def execute(self, token, workspace, calls, *, refresh=False):
+    def execute(self, token, workspace, calls, *, refresh=False, run_token=None):
         if len(calls) > 3 or not calls:
             raise Denied("Select between one and three tools.")
         results = []
         for call in calls:
             if "." in call["tool"] and hasattr(self, "connections"):
                 results.append(
-                    self.connections.execute(token, workspace, call["dot"], call["tool"])
+                    self.connections.execute(
+                        token,
+                        workspace,
+                        call["dot"],
+                        call["tool"],
+                        **({"run_token": run_token} if run_token else {}),
+                    )
                 )
                 continue
             dot, user = self.dot(token, workspace, call["dot"])
@@ -723,6 +729,7 @@ class ToolsBody(BaseModel):
     model_config = {"extra": "forbid"}
     workspace: UUID
     calls: list[ToolCall] = Field(min_length=1, max_length=3)
+    run_token: SecretStr | None = Field(default=None, max_length=200)
 
 
 def install(app, config, store, identity, auth):
@@ -785,6 +792,7 @@ def install(app, config, store, identity, auth):
                 auth(request, change=True),
                 str(body.workspace),
                 [{"dot": str(c.dot), "tool": c.tool} for c in body.calls],
+                **({"run_token": body.run_token.get_secret_value()} if body.run_token else {}),
             )
         }
 

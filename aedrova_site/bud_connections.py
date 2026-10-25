@@ -23,6 +23,9 @@ SCHEMA = """CREATE TABLE IF NOT EXISTS bud_connections (
 class BudConnections:
     def __init__(self, dots, *, transport=None):
         self.dots, self.store = dots, dots.store
+        from aedrova_site.research import Research
+
+        self.research = Research(dots.config, self.store, dots.identity, transport=transport)
         self.providers = {
             key: ReadProvider(key, transport=transport) for key in CATALOG if key != "github"
         }
@@ -49,6 +52,7 @@ class BudConnections:
             )
 
     def close(self):
+        self.research.client.close()
         if hasattr(self, "oauth"):
             self.oauth.close()
         for key, provider in self.providers.items():
@@ -112,7 +116,14 @@ class BudConnections:
         if not 1 <= hours <= 2160:
             raise Denied("Choose an access lifetime from 1 hour to 90 days.")
         # A successful real API read is mandatory; no optimistic 'Connected' state.
-        for tool in CATALOG[provider][4]:
+        for tool in (
+            ()
+            if provider == "search"
+            and isinstance(oauth, dict)
+            and oauth.get("kind") == "openai_search"
+            and self.research.available
+            else CATALOG[provider][4]
+        ):
             self.read(
                 provider,
                 credential,
@@ -167,7 +178,11 @@ class BudConnections:
 
     def managed_search(self, session, workspace, dot_id, topic, hours):
         dot, user = self.dots.dot(session, workspace, dot_id)
-        key = self.dots.config.search_bud_key
+        key = (
+            "server-managed-research"
+            if self.research.available
+            else self.dots.config.search_bud_key
+        )
         if not key:
             raise Denied("Aedrova Search needs owner setup before it is available.")
         return self.connect(
@@ -178,7 +193,11 @@ class BudConnections:
             topic,
             key,
             hours,
-            oauth={"kind": "managed_search", "workspace": workspace, "user": user},
+            oauth={
+                "kind": "openai_search" if self.research.available else "managed_search",
+                "workspace": workspace,
+                "user": user,
+            },
             expected_version=dot["version"],
         )
 
@@ -186,7 +205,7 @@ class BudConnections:
         if (
             provider == "search"
             and isinstance(oauth, dict)
-            and oauth.get("kind") == "managed_search"
+            and oauth.get("kind") in {"managed_search", "openai_search"}
         ):
             self.store.rate_limit(
                 "managed-search-global",
@@ -198,6 +217,16 @@ class BudConnections:
                 limit=self.dots.config.search_bud_workspace_daily_limit,
                 seconds=86400,
             )
+            if oauth["kind"] == "openai_search":
+                if tool != "search":
+                    raise Denied("This Bud cannot use the selected tool.")
+                return self.research.search(
+                    oauth["session"],
+                    oauth["workspace"],
+                    oauth["user"],
+                    resource,
+                    run_token=oauth.get("run_token"),
+                )
             return self.providers[provider].execute(access, resource, tool)
         if provider == "github" or not oauth:
             return self.providers[provider].execute(access, resource, tool)
@@ -211,6 +240,10 @@ class BudConnections:
         if not secret.startswith("{"):
             return grant, secret, False
         envelope = json.loads(secret)
+        if envelope.get("kind") == "openai_search":
+            if force or not self.research.available:
+                raise Denied("Aedrova live research is unavailable. Try again later.")
+            return grant, "server-managed-research", envelope
         if envelope.get("kind") == "managed_search":
             if force or not self.dots.config.search_bud_key:
                 raise Denied("Aedrova Search is unavailable. Try again later.")
@@ -274,7 +307,7 @@ class BudConnections:
         # API tokens cannot generally be revoked by the consumer. Be explicit about that.
         return {"disconnected": True, "provider_revoked": False}
 
-    def execute(self, session, workspace, dot_id, composite):
+    def execute(self, session, workspace, dot_id, composite, *, run_token=None):
         dot, user = self.dots.dot(session, workspace, dot_id)
         connection_id, _, tool = composite.partition(".")
         try:
@@ -290,6 +323,8 @@ class BudConnections:
             raise Denied("Needs authorization")
         try:
             grant, secret, oauth = self.access(grant)
+            if isinstance(oauth, dict) and oauth.get("kind") == "openai_search":
+                oauth = {**oauth, "session": session, "run_token": run_token}
             try:
                 evidence = self.read(
                     grant["provider"], secret, grant["resource"], tool, oauth=oauth
@@ -396,7 +431,7 @@ def install(app, dots, auth):
                     "oauth_supported": key in PROVIDERS,
                     "oauth_setup_hint": service.oauth.setup_hint(key),
                     "managed_available": key == "search"
-                    and bool(dots.config.search_bud_key)
+                    and (service.research.available or bool(dots.config.search_bud_key))
                     and dots.config.dots_enabled,
                 }
                 for key in CATALOG

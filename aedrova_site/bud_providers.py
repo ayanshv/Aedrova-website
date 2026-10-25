@@ -68,7 +68,7 @@ CATALOG = {
     "search": (
         "Web search",
         "Research",
-        "Brave Search results for your saved research topic",
+        "Live web research with sources for your saved topic",
         "research topic",
         {"search": "Web search"},
     ),

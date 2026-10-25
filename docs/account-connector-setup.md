@@ -19,7 +19,7 @@ Do not put secrets in chat, Git, screenshots or the desktop app.
 - Instagram: sign in/approve with a professional Business/Creator account; account
   selected automatically. Personal accounts are not supported by this API.
 - Vercel: install/approve the integration, then pick an authorized project by name.
-- Search: Enable web search, enter a topic. Aedrova owns the Brave subscription;
+- Search: Enable web search, enter a topic. Aedrova uses its existing OpenAI service;
   customers do not copy keys or create another account. Disabled until funded.
 
 ## Required-now provider setup (owner gates)
@@ -78,17 +78,35 @@ Reference: https://vercel.com/docs/integrations/create-integration/vercel-api-in
 
 ### Managed Search
 
-1. Choose/fund a Brave Search API plan at https://api-dashboard.search.brave.com/.
-   Any purchase or new agreement needs owner action; no purchase has been made.
-2. Save AEDROVA_SEARCH_BUD_KEY server-side only. Default caps: 100 requests/day across
-   the entire service, 10 requests/day per workspace, shared across users/Buds.
-   Verification reads count. Caps use UTC calendar days and the durable limits table.
-   Requests above caps never reach Brave. These are request caps, not a monetary budget;
-   set the provider billing cap too and verify pricing before enabling.
-3. Deploy and test Enable web search. Verify server key rotation, caps, disconnect
-   and membership isolation. Existing advanced personal-token search stays available.
+1. Existing `AEDROVA_OPENAI_KEY` plus enabled included AI (`AEDROVA_GATEWAY_ENABLED`)
+   enables OpenAI Responses live search. No separate Search account, key, card or
+   Brave subscription is needed. Waitlist mode remains closed. Connecting a topic
+   saves an authorized capability without incurring inference; it does not claim
+   that an actual search has already succeeded. Actual reads require a usable plan.
+2. Default caps remain 100 requests/day service-wide and 10/day per originating
+   workspace, shared across users/Buds, on UTC calendar days. AI reservations also
+   enforce company, Free-pool, funding-owner, billing workspace and rolling limits.
+   Borrowed agent runs must match the authenticated user/workspace/billing root.
+3. Pinned `gpt-5.4-mini-2026-03-17`, low reasoning, one hosted web-search call and
+   2048 total output tokens per request. Reserve 128000 input tokens plus output
+   ceiling and $0.01 tool fee before sending. Settle reported usage at $0.75/$4.50
+   per million input/output tokens plus tool fee; no cached-input discount assumed.
+   Missing/uncertain usage or transport outcomes conservatively charge reservation;
+   explicit HTTP rejections settle zero. No automatic retries. Provider request
+   receives the ledger reservation as Idempotency-Key; completed reads are not cached.
+4. Only saved topic is sent, with `store:false`; no workspace files/history in the
+   search request. Responses are bounded, require completed search and HTTPS source
+   annotations, and are untrusted evidence. Desktop appends actual source links after
+   permission recheck, never fabricated references. Source-backed final synthesis
+   remains separately metered through the existing agent run.
+5. Old explicit Brave-token grants remain legacy compatibility; the managed path
+   prefers OpenAI. No new Brave activation is required. Disconnect disables local
+   tool access; no claim of globally revoking the shared OpenAI operator credential.
 
-Reference: https://api-dashboard.search.brave.com/documentation/guides/authentication
+Official references, verified October 25, 2026:
+https://developers.openai.com/api/docs/guides/tools-web-search
+https://developers.openai.com/api/docs/models/gpt-5.4-mini
+https://developers.openai.com/api/docs/pricing
 
 ## Verification / release gates
 
