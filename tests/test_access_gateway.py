@@ -156,7 +156,6 @@ def test_inference_rechecks_revocation_and_provider_binding(client):
         {"input": [{"type": "input_image", "image_url": "https://example.invalid"}]},
         {"previous_response_id": "resp_external"},
         {"background": True},
-        {"input": "x" * 200_000},
         {"max_output_tokens": "invalid"},
     ],
 )
@@ -546,3 +545,84 @@ def test_malformed_provider_metadata_fails_without_exposing_diagnostics(client, 
     )
     assert "interrupted" in result.text
     assert client.app.state.store.balance("space-a")["reserved"] == 0
+
+
+@pytest.mark.parametrize("provider", ["codex", "claude_code"])
+@pytest.mark.parametrize(
+    "count,allowed", [(1000, True), (500000, False), (True, False), (-1, False), (None, False)]
+)
+def test_large_harness_uses_provider_count_before_reservation(
+    client, monkeypatch, provider, count, allowed
+):
+    access = begin(client, provider)
+    calls = []
+
+    class Stream:
+        status_code = 200
+
+        def __init__(self, counting):
+            self.counting = counting
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def aiter_bytes(self):
+            yield json.dumps(
+                {"input_tokens": count}
+                if self.counting
+                else {"usage": {"input_tokens": 1000, "output_tokens": 1}}
+            ).encode()
+
+    class Provider:
+        def __init__(self, **kwargs):
+            assert kwargs["follow_redirects"] is False
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        def stream(self, method, url, **kwargs):
+            calls.append((url, json.loads(kwargs["content"])))
+            return Stream(url.endswith(("input_tokens", "count_tokens")))
+
+    monkeypatch.setattr("aedrova_site.gateway.httpx.AsyncClient", Provider)
+    body = (
+        {"input": "x" * 200000}
+        if provider == "codex"
+        else {"messages": [{"role": "user", "content": "x" * 200000}]}
+    )
+    path = (
+        "/gateway/codex/v1/responses" if provider == "codex" else "/gateway/claude_code/v1/messages"
+    )
+    response = client.post(path, json=body, headers={"Authorization": "Bearer " + access["token"]})
+    assert response.status_code == (200 if allowed else 403), response.text
+    assert len(calls) == (2 if allowed else 1)
+    assert calls[0][1]["model"] == MODELS[provider]["id"]
+    assert "max_tokens" not in calls[0][1] and "max_output_tokens" not in calls[0][1]
+    assert client.app.state.store.balance("space-a")["reserved"] == 0
+    if not allowed:
+        assert client.app.state.store.balance("space-a")["spent"] == 0
+
+
+@pytest.mark.parametrize("mode", ["rejected", "connection", "oversized", "json"])
+def test_count_failure_never_starts_generation(client, monkeypatch, mode):
+    access = begin(client)
+    data = b"x" * 4097 if mode == "oversized" else b"not-json"
+    calls = upstream(
+        monkeypatch, data, status=429 if mode == "rejected" else 200, fail=mode == "connection"
+    )
+    response = client.post(
+        "/gateway/codex/v1/responses",
+        json={"input": "x" * 200000},
+        headers={"Authorization": "Bearer " + access["token"]},
+    )
+    assert response.status_code == 403
+    assert len(calls) == 1 and calls[0][0].endswith("/input_tokens")
+    assert "private diagnostic" not in response.text
+    balance = client.app.state.store.balance("space-a")
+    assert balance["reserved"] == balance["spent"] == 0

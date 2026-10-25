@@ -114,6 +114,40 @@ async def authorize_run(request: Request, provider, config, store, identity):
     return run
 
 
+async def counted_input(body, provider, headers):
+    """Count large CLI harnesses at the fixed provider endpoint; fail closed."""
+    if provider == "codex":
+        url = "https://api.openai.com/v1/responses/input_tokens"
+        fields = {"model", "input", "instructions", "tools", "text", "tool_choice"}
+    else:
+        url = "https://api.anthropic.com/v1/messages/count_tokens"
+        fields = {"model", "messages", "system", "tools", "thinking", "tool_choice"}
+    payload = json.dumps({k: v for k, v in body.items() if k in fields}).encode()
+    try:
+        async with (
+            asyncio.timeout(12),
+            httpx.AsyncClient(
+                timeout=httpx.Timeout(10, connect=5), follow_redirects=False
+            ) as client,
+        ):
+            async with client.stream("POST", url, headers=headers, content=payload) as response:
+                if response.status_code != 200:
+                    raise ValueError("Token count rejected")
+                data = bytearray()
+                async for chunk in response.aiter_bytes():
+                    data.extend(chunk)
+                    if len(data) > 4096:
+                        raise ValueError("Token count too large")
+        result = json.loads(data)
+        count = result.get("input_tokens") if isinstance(result, dict) else None
+        if type(count) is not int or not 0 <= count <= 8 * 1024 * 1024:
+            raise ValueError("Invalid token count")
+        # Allow for the provider's counting estimate and protocol differences.
+        return math.ceil(count * 1.1) + 1024
+    except (httpx.HTTPError, TimeoutError, ValueError) as exc:
+        raise Denied("Could not verify this model request's size. Retry in a moment.") from exc
+
+
 async def inference(request: Request, provider, config, store, identity, *, compact=False):
     run = await authorize_run(request, provider, config, store, identity)
     limits = await asyncio.to_thread(store.run_limits, run)
@@ -212,15 +246,19 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     else:
         body[output_key] = output
     encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
-    if len(encoded) + 8192 > min(model.get("max_input_tokens", 200_000), limits["input_tokens"]):
+    input_bound = len(encoded) + 8192
+    context_limit = min(model.get("max_input_tokens", 200_000), limits["input_tokens"])
+    if input_bound > context_limit:
+        input_bound = await counted_input(body, provider, headers)
+    if input_bound > context_limit:
         raise Denied(
             "This request exceeds the beta model context limit. "
             "Narrow the build or start a fresh run."
         )
-    # One byte per token is a conservative input bound, plus protocol/tool overhead.
+    # Small requests use the conservative byte bound; large harnesses use verified counts.
     reserve = math.ceil(
         (
-            (len(encoded) + 8192) * model["input_rate"] * (2 if provider == "claude_code" else 1)
+            input_bound * model["input_rate"] * (2 if provider == "claude_code" else 1)
             + output * model["output_rate"]
         )
         / 1_000_000
