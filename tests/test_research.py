@@ -59,7 +59,11 @@ def setup(system, handler=None):
     return service, dot, user, grant["id"] + ".search", seen
 
 
-def test_research_enable_is_free_and_real_read_is_metered_and_cited(system):
+def test_research_enable_is_free_and_real_read_is_metered_and_cited(system, monkeypatch):
+    events = []
+    monkeypatch.setattr(
+        "aedrova_site.research.emit", lambda kind, **fields: events.append((kind, fields))
+    )
     service, dot, user, tool, seen = setup(system)
     assert not seen  # Connecting alone must never spend AI credit.
     row = service.rows(dot, user)[0]
@@ -70,9 +74,24 @@ def test_research_enable_is_free_and_real_read_is_metered_and_cited(system):
     body = json.loads(seen[0].content)
     assert body["tools"][0]["external_web_access"] is True
     assert body["max_tool_calls"] == 1 and body["store"] is False
+    assert "exactly one search" in body["instructions"] and "140 words" in body["instructions"]
     assert seen[0].headers["idempotency-key"]
     assert service.store.balance(dot["workspace_id"])["spent"] == 11950
     assert "fixture-openai" not in json.dumps(result)
+    assert events == [
+        (
+            "research_result",
+            {
+                "completed": True,
+                "search_calls": 1,
+                "searches_completed": 1,
+                "sources": 1,
+                "summary_characters": 16,
+                "valid_usage": True,
+                "output_limit_reached": False,
+            },
+        )
+    ]
     service.disconnect("session", dot["workspace_id"], dot["id"], row["id"])
     with pytest.raises(Denied):
         service.execute("session", dot["workspace_id"], dot["id"], tool)
