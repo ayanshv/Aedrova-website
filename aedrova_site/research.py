@@ -55,6 +55,7 @@ class Research:
         owned = None
         reservation = None
         sent = False
+        phase = "budget"
         try:
             if run_token:
                 run = self.store.run(run_token)
@@ -103,6 +104,7 @@ class Research:
             )
             started = time.monotonic()
             sent = True
+            phase = "provider"
             with self.client.stream(
                 "POST",
                 "https://api.openai.com/v1/responses",
@@ -125,6 +127,7 @@ class Research:
                     if len(data) + len(chunk) > 524288 or time.monotonic() - started > 60:
                         raise ValueError("Research response exceeded bounds")
                     data.extend(chunk)
+            phase = "decode"
             result = json.loads(data)
             output = result.get("output", [])
             calls = [r for r in output if r.get("type") == "web_search_call"]
@@ -158,6 +161,7 @@ class Research:
                 if valid_usage
                 else None
             )
+            phase = "settle"
             self.store.settle(reservation, charge)
             reservation = None
             summary = "\n".join(texts).strip()
@@ -200,6 +204,7 @@ class Research:
         except Denied:
             raise
         except Exception as error:
+            emit("research_failed", phase=phase, error_type=type(error).__name__)
             raise Denied(
                 "Live research could not finish. No automatic retry; "
                 "check your allowance and try again."
