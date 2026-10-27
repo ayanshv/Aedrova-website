@@ -1,0 +1,151 @@
+{
+  "captured_at": "2026-10-26",
+  "source": "Current Aedrova desktop source; Qt widget captures",
+  "data": "Synthetic demonstration data; no provider, device or production access",
+  "captures": [
+    {
+      "file": "files-dark.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "e323b8c2bc2b01a0a2d82c407072423fd9471e044398058da13a3f568397e166"
+    },
+    {
+      "file": "buds-connectors-current.png",
+      "width": 1200,
+      "height": 1000,
+      "sha256": "10c813a73f584e6291658f833e12e30b5d19c68a3ddc201eeff46fb0fdb7ad11"
+    },
+    {
+      "file": "activity-dark.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "946fec75a3c4b97a9aa565113501aa273f828c33a1d18f860dc3e97d564caa8d"
+    },
+    {
+      "file": "meetings-dark.png",
+      "width": 1060,
+      "height": 830,
+      "sha256": "b08e3052e89a461c2c75d7e84bf86512eafe0b7f1a943072b11dc0e932242126"
+    },
+    {
+      "file": "workspace-dark.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "a4c00d69d23573ed389bb8f5d6c035d7610ec697f6692822672a3ada366f4b21"
+    },
+    {
+      "file": "meetings-light.png",
+      "width": 1060,
+      "height": 830,
+      "sha256": "6ebb63490730a77ebe8699a81254fa2039ea5d788f270135e9288e533edfa591"
+    },
+    {
+      "file": "activity-light.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "1717d5e035304d1a6a42d337d7ecf8a01dd7746bcd86a264e493b925cb7358ce"
+    },
+    {
+      "file": "devices-dark.png",
+      "width": 1050,
+      "height": 1050,
+      "sha256": "f631eaef32598907e4bb47e52ad8b36569530d3945642e6e911f6a70fdf54916"
+    },
+    {
+      "file": "buds-connection-current.png",
+      "width": 1200,
+      "height": 1000,
+      "sha256": "3c6c791b28585f91a8faa186056e42804dfd20313878ed361bd077751a4eb3dc"
+    },
+    {
+      "file": "projects-dark.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "d16b1eedcee12954821436331f4c5959822db237a9da6ec6145b4ae0772bac68"
+    },
+    {
+      "file": "devices-light.png",
+      "width": 1050,
+      "height": 1050,
+      "sha256": "776e5e094bf21edb25c8d318d5c90a2c01e96e0734b7217db8c648eae623ebad"
+    },
+    {
+      "file": "workspace-light.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "6088516b61e3a4daad8c654328b5903d2c3a105e97076b07c91f9c995ac321ae"
+    },
+    {
+      "file": "thread-dark.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "b7f42bbae692d0a4e00662f51bd1ff5b6db48346f1d503a26eff1cd491ccc0e0"
+    },
+    {
+      "file": "files-light.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "b308e3c35ae240eb4eecd29b1e12a7ad39f3b969f24763d77fd82a69fa61f56e"
+    },
+    {
+      "file": "thread-light.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "460e600e673e90dd8190bbd247d5313286539d37c225c6f7bf089850bec33955"
+    },
+    {
+      "file": "projects-light.png",
+      "width": 1800,
+      "height": 1129,
+      "sha256": "2051ebdce5aaacb2d7462d4aca56c6fe934bafffd274757587d77855be1a6894"
+    },
+    {
+      "file": "memory-light.png",
+      "width": 1000,
+      "height": 1050,
+      "sha256": "61c11a4d45944106c41ce6a5b02db2c9ac60fab750d96f569ea7eae15fa4d7af"
+    },
+    {
+      "file": "memory-dark.png",
+      "width": 1000,
+      "height": 1050,
+      "sha256": "e6812fe9a87e04bedb5c8fed68119a1a81c38223909fc0b4d15bb8507a6fcefc"
+    },
+    {
+      "file": "build-review-light.png",
+      "width": 1000,
+      "height": 840,
+      "sha256": "94959f8c51db057c4f92f9d30669a2684df0c968d573244329a5d79a7050fdc0"
+    },
+    {
+      "file": "build-review-dark.png",
+      "width": 1000,
+      "height": 840,
+      "sha256": "3eed371bff6a767f346e6e0682433f387316e24bd30cabc07d57fdae7a9ea64f"
+    },
+    {
+      "file": "teammate-light.png",
+      "width": 820,
+      "height": 900,
+      "sha256": "25f4ee78aeb46b97eed7bad903e904716334ef9f7b4b11b537dbf97b495fdff4"
+    },
+    {
+      "file": "teammate-dark.png",
+      "width": 820,
+      "height": 900,
+      "sha256": "687faad3a3f305991a62aae627694a0eb2aeada9b69e7f3963a863ad83d75c95"
+    },
+    {
+      "file": "buds-connection-dark.png",
+      "width": 1200,
+      "height": 1000,
+      "sha256": "b2d4efce10345fec7550fced976284c22ec56fe3d2299f227ccfcb765a1b48f9"
+    },
+    {
+      "file": "buds-connectors-dark.png",
+      "width": 1200,
+      "height": 1000,
+      "sha256": "88132bed1a347565cf8b39348e435311b204ae81b4b6bf139ac8abf1389003da"
+    }
+  ]
+}
