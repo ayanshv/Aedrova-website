@@ -42,3 +42,32 @@ Owner items at completion: bios for four members; headshots for the other member
 if desired; action-time approval for Cloudflare's displayed Continue/terms screen
 if the browser login is needed to publish the already tested sitemap bundle.
 Stage 1 acceptance remains open for its prior provider/audio gates; payments deferred.
+
+## Published verification
+
+PR27 passed both checks and merged to main as9e26da8. Render production aedrova-website
+reports that commit Live (automatic deploy,1m09s); no paid plan or new backend feature
+was enabled. Live /team renders all4 confirmed names and supplied portrait; PNG/ICO
+and the original public icon all return200 with correct image MIME and no noindex.
+HTTP verification: ../work/team-search-oct27/live-verification.json (primary checkout).
+Search Console reports /team already indexed. Homepage recrawl request accepted after
+the favicon deployment; screenshot home-indexing-requested.png. No repeat team request
+was submitted because the page is already indexed. Google display remains external.
+
+Existing independent sitemap Worker still serves17 pages, excluding/team. Prepared
+18-page bundle is tested but not published: Cloudflare login explicitly says Continue
+accepts its terms/privacy/cookie policies. Need owner action-time agreement approval,
+or owner personal sign-in, before updating the existing Worker. Existing exact4routes
+and free plan must remain. No broad new Worker route, DNS or paid service is required.
+Bios and remaining team portraits are pending owner input; names/credentials are not
+invented. Desktop agent-permissions work is separate from this production website PR.
+
+## Owner-confirmed portrait follow-up
+
+Added supplied photographs: first attachment Abhinav Thirumala, second Minh-Khoa
+Nguyen. Ayansh's role is now Co-Founder & CEO / CTO. Re-encoded web JPEGs contain no
+EXIF payload; originals are unchanged. Shared template now uses each person's own
+name, role and intrinsic dimensions rather than hardcoded Ayansh alternative text.
+Bios remain pending owner input after this response; Joash retains his monogram.
+37 public/discovery/product checks passed; Ruff passed. Scope excludes backend
+staging commits, billing, credentials and permissions.
