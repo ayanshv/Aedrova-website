@@ -11,7 +11,7 @@
   <meta property="og:title" content="{{ seo.title }}">
   <meta property="og:description" content="{{ seo.description }}">
   <meta property="og:url" content="{{ seo.canonical }}">
-  <meta property="og:image" content="https://aedrova.com/static/workspace-dark.png">
+  <meta property="og:image" content="https://aedrova.com/static/workspace-dark.png?v=20261026">
   <meta name="twitter:card" content="summary_large_image">
   {% if seo.graph %}<script type="application/ld+json">{{ seo.graph | tojson }}</script>{% endif %}
   <meta name="theme-color" content="#F5F6F8">
@@ -43,7 +43,7 @@
 <div class="footer-brand"><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team, plus AI.</p></div>
 <nav class="footer-columns" aria-label="Footer navigation">
 <div><h2>Product</h2><a href="/#features">The workspace</a><a href="/#ai-teammates">Meet your Buds</a><a href="/onboarding">Plans for your team</a><a href="{{ '/waitlist' if waitlist_only else '/download' }}">{{ 'Join the waitlist' if waitlist_only else 'Downloads' }}</a></div>
-<div><h2>Resources</h2><a href="/product">What is Aedrova?</a><a href="/faq">Common questions</a><a href="/about">About Aedrova</a><a href="/research/crawlability">Our crawlability study</a><a href="/support">Help & troubleshooting</a><a href="/data-controls">Data & AI controls</a><a href="/enterprise">Enterprise inquiries</a></div>
+<div><h2>Resources</h2><a href="/product">What is Aedrova?</a><a href="/faq">Common questions</a><a href="/about">About Aedrova</a><a href="/#meet-the-team">Meet the team</a><a href="/research/crawlability">Our crawlability study</a><a href="/support">Help & troubleshooting</a><a href="/data-controls">Data & AI controls</a><a href="/enterprise">Enterprise inquiries</a></div>
 <div><h2>Trust</h2><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/refunds">Refund policy</a><a href="/acceptable-use">Acceptable use</a><a href="/subprocessors">Service providers</a><a href="/cookies">Cookies & storage</a><button class="text-link storage-settings" type="button" data-storage-settings>Storage choices</button></div>
 <div><h2>Support</h2><a href="/support">Contact us</a><a href="/security">Security reporting</a><a href="/data-controls#requests">Privacy requests</a><a href="/security#availability">Beta availability</a></div>
 </nav>

@@ -42,6 +42,7 @@ from aedrova_site.policy import PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
+from aedrova_site.team import TEAM_MEMBERS
 from aedrova_site.traffic_limits import TrafficLimits
 
 ROOT = Path(__file__).parent
@@ -357,6 +358,7 @@ def create_app(config=None):
                 "promotion": promotion.status(),
                 "early_access_enabled": config.early_access_enabled,
                 "asset_version": asset_version,
+                "team_members": TEAM_MEMBERS,
                 **context,
             },
         )
