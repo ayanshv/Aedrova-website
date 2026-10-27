@@ -71,3 +71,29 @@ name, role and intrinsic dimensions rather than hardcoded Ayansh alternative tex
 Bios remain pending owner input after this response; Joash retains his monogram.
 37 public/discovery/product checks passed; Ruff passed. Scope excludes backend
 staging commits, billing, credentials and permissions.
+
+Owner approved Cloudflare sign-in/agreement and sitemap deployment. Published the
+reviewed bundle to the existing aedrovaerrorfallback Worker, active version cc6a1990.
+No route/binding/plan changes. Verified both apex and www robots/sitemap endpoints
+HTTP 200 with correct MIME and no noindex; both sitemap responses contain 18 URLs
+including https://aedrova.com/team. Evidence: work/team-portraits-oct27/edge-verification.json
+in the primary website checkout and cloudflare-deployed.png. Prior agreement blocker
+is resolved; Google reprocessing remains asynchronous. Portrait release PR28 pending
+CI/deployment at this record; light/dark local visual checks passed.
+
+PR28 has now passed both branch checks and main CI, merged as ab2bca4, and deployed
+Live on Render (1m02s). Verified live /team Co-Founder title and all three portraits
+against local SHA256 hashes; web copies have no EXIF payload. Google accepted the
+refreshed sitemap submission. Production screenshot: team-portraits-oct27/team-live.png
+in the primary checkout. No remaining Cloudflare owner action; only team bios remain
+for this website task. Stage 1 provider/audio launch gates remain open separately.
+
+## Role-based bios
+
+Owner requested generic public bios based on the confirmed roles. Added concise
+responsibility-focused descriptions for all four team members; no education,
+previous employment, awards, credentials, metrics or personal-history claims.
+Bios use the existing typography and theme colors and stack beneath each role.
+Owner no longer needs to supply bios to complete this page. Public/page checks:
+37 passed; Ruff passed. Cloudflare approval was already used successfully; no repeat
+agreement, Worker deployment or sitemap submission is needed for this text change.
