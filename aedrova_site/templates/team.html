@@ -7,7 +7,7 @@
     {% for member in team_members if member.tier == tier %}
     <article class="team-member" aria-labelledby="team-member-{{ tier }}-{{ loop.index }}">
       {% if member.photo %}
-      <div class="team-portrait"><img class="team-photo-ayansh" src="{{ member.photo }}" alt="Ayansh Varma, Founder and CEO / CTO of Aedrova" width="1008" height="1344" loading="lazy" decoding="async"></div>
+      <div class="team-portrait"><img class="team-photo" src="{{ member.photo }}" alt="{{ member.name }}, {{ member.role }} of Aedrova" width="{{ member.photo_width }}" height="{{ member.photo_height }}" loading="lazy" decoding="async"></div>
       {% else %}
       <div class="team-monogram" aria-hidden="true"><span>{{ member.initials }}</span><span class="team-orbit"></span></div>
       {% endif %}

@@ -23,6 +23,16 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
             assert person["name"] in markup
             assert person["role"].replace("&", "&amp;") in markup
         assert markup.count('class="team-member"') == 4
+        assert markup.count('class="team-photo"') == 3
+        assert TEAM_MEMBERS[0]["role"] == "Co-Founder & CEO / CTO"
+        for person in TEAM_MEMBERS[:3]:
+            assert f'src="{person["photo"]}"' in markup
+            assert f'alt="{person["name"]},' in markup
+            image = client.get(person["photo"])
+            assert image.status_code == 200
+            assert image.content.startswith(b"\xff\xd8")
+            assert b"Exif\x00\x00" not in image.content
+
         founders = markup.index('id="team-tier-founders"')
         communications = markup.index('id="team-tier-communications"')
         for person in TEAM_MEMBERS[:3]:
