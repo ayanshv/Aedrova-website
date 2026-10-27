@@ -23,6 +23,11 @@ def test_team_is_server_rendered_on_home_and_about(client):  # noqa: F811
             assert person["name"] in markup
             assert person["role"].replace("&", "&amp;") in markup
         assert markup.count('class="team-member"') == 4
+        founders = markup.index('id="team-tier-founders"')
+        communications = markup.index('id="team-tier-communications"')
+        for person in TEAM_MEMBERS[:3]:
+            assert founders < markup.index(person["name"]) < communications
+        assert communications < markup.index("Joash Thomas")
         assert "Bio coming soon" not in markup
         assert 'href="/#meet-the-team"' in markup
 
