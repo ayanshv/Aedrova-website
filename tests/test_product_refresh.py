@@ -13,8 +13,8 @@ from aedrova_site.team import TEAM_MEMBERS
 STATIC = Path(__file__).parents[1] / "aedrova_site/static"
 
 
-def test_team_is_server_rendered_on_home_and_about(client):  # noqa: F811
-    for path in ("/", "/about"):
+def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
+    for path in ("/team",):
         response = client.get(path)
         assert response.status_code == 200
         markup = response.text
@@ -29,7 +29,12 @@ def test_team_is_server_rendered_on_home_and_about(client):  # noqa: F811
             assert founders < markup.index(person["name"]) < communications
         assert communications < markup.index("Joash Thomas")
         assert "Bio coming soon" not in markup
-        assert 'href="/#meet-the-team"' in markup
+        assert 'href="/team"' in markup
+        assert '/static/team/ayansh-varma.jpg' in markup
+    for path in ("/", "/about"):
+        markup = client.get(path).text
+        assert 'href="/team"' in markup
+        assert 'class="team-member"' not in markup
 
 
 def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client):  # noqa: F811

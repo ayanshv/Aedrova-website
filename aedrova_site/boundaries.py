@@ -141,7 +141,13 @@ class ResponseHeaders:
                 if (
                     message["status"] >= 400
                     or not discovery.public_deployment(self.config)
-                    or path not in {*discovery.PUBLIC_PAGES, "/robots.txt", "/sitemap.xml"}
+                    or path
+                    not in {
+                        *discovery.PUBLIC_PAGES,
+                        *discovery.PUBLIC_ICONS,
+                        "/robots.txt",
+                        "/sitemap.xml",
+                    }
                 ):
                     headers["X-Robots-Tag"] = "noindex"
                 if self.config.production:

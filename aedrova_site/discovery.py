@@ -3,11 +3,16 @@
 from xml.sax.saxutils import escape
 
 CANONICAL = "https://aedrova.com"
+PUBLIC_ICONS = frozenset({"/favicon.ico", "/favicon.png", "/static/checkout-icon.png"})
 DESCRIPTION = (
     "Aedrova is a collaborative AI workspace for startup teams, combining team chat, "
     "configurable AI teammates called Buds, and coding agents that build from shared context."
 )
 PUBLIC_PAGES = {
+    "/team": (
+        "Meet the Aedrova team",
+        "Meet Aedrova’s founder, co-founders and communications leadership.",
+    ),
     "/faq": (
         "Aedrova FAQ — Buds, building, access and pricing",
         "Answers about workspaces, AI teammates, connectors, privacy and Beta availability.",
