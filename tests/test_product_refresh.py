@@ -25,6 +25,7 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
             assert person["bio"] in markup
         assert markup.count('class="team-member"') == 4
         assert markup.count('class="team-photo"') == 3
+        assert 'class="team-portrait team-person-placeholder"' in markup
         assert TEAM_MEMBERS[0]["role"] == "Co-Founder & CEO / CTO"
         for person in TEAM_MEMBERS[:3]:
             assert f'src="{person["photo"]}"' in markup

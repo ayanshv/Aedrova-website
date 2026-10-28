@@ -422,3 +422,5 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 @media(max-width:850px){.team-portrait{height:140px}}@media(max-width:600px){.team-portrait{height:250px}.team-portrait img{object-position:50% 74%}}
 
 .team-member p.team-bio{font-size:14px;line-height:1.7;margin-top:14px;color:var(--muted);max-width:38ch}
+
+.team-person-placeholder{display:grid;place-items:center;color:var(--muted);background:linear-gradient(145deg,var(--surface),var(--bg))}.team-person-placeholder svg{width:100%;height:100%;max-width:340px;display:block}

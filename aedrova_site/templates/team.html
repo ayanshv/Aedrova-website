@@ -8,6 +8,14 @@
     <article class="team-member" id="{{ member.name | lower | replace(' ', '-') }}" aria-labelledby="team-member-{{ tier }}-{{ loop.index }}">
       {% if member.photo %}
       <div class="team-portrait"><img class="team-photo" src="{{ member.photo }}" alt="{{ member.name }}, {{ member.role }} of Aedrova" width="{{ member.photo_width }}" height="{{ member.photo_height }}" loading="lazy" decoding="async"></div>
+      {% elif member.placeholder %}
+      <div class="team-portrait team-person-placeholder" aria-hidden="true">
+        <svg viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="160" cy="64" r="27" fill="currentColor" opacity=".65"/>
+          <path d="M91 181v-19c0-35 28-59 69-59s69 24 69 59v19H91Z" fill="currentColor" opacity=".45"/>
+          <circle cx="160" cy="91" r="87" stroke="currentColor" opacity=".08"/>
+        </svg>
+      </div>
       {% else %}
       <div class="team-monogram" aria-hidden="true"><span>{{ member.initials }}</span><span class="team-orbit"></span></div>
       {% endif %}

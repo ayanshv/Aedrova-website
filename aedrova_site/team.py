@@ -52,6 +52,7 @@ TEAM_MEMBERS = (
             "consistent day-to-day messaging."
         ),
         "initials": "JT",
+        "placeholder": True,
         "tier": "communications",
     },
 )
