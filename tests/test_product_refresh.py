@@ -17,7 +17,7 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
     for path in ("/team",):
         response = client.get(path)
         assert response.status_code == 200
-        markup = response.text
+        markup = response.text.split("<main", 1)[1]
         assert 'id="meet-the-team"' in markup
         for person in TEAM_MEMBERS:
             assert person["name"] in markup

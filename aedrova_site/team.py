@@ -55,3 +55,8 @@ TEAM_MEMBERS = (
         "tier": "communications",
     },
 )
+
+
+def anchor(member):
+    """Stable public anchors for the owner-confirmed roster."""
+    return member["name"].lower().replace(" ", "-")
