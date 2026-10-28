@@ -13,23 +13,40 @@ from aedrova_site.team import TEAM_MEMBERS
 STATIC = Path(__file__).parents[1] / "aedrova_site/static"
 
 
-def test_team_is_server_rendered_on_home_and_about(client):  # noqa: F811
-    for path in ("/", "/about"):
+def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
+    for path in ("/team",):
         response = client.get(path)
         assert response.status_code == 200
-        markup = response.text
+        markup = response.text.split("<main", 1)[1]
         assert 'id="meet-the-team"' in markup
         for person in TEAM_MEMBERS:
             assert person["name"] in markup
             assert person["role"].replace("&", "&amp;") in markup
+            assert person["bio"] in markup
         assert markup.count('class="team-member"') == 4
+        assert markup.count('class="team-photo"') == 3
+        assert 'class="team-portrait team-person-placeholder"' in markup
+        assert TEAM_MEMBERS[0]["role"] == "Co-Founder & CEO / CTO"
+        for person in TEAM_MEMBERS[:3]:
+            assert f'src="{person["photo"]}"' in markup
+            assert f'alt="{person["name"]},' in markup
+            image = client.get(person["photo"])
+            assert image.status_code == 200
+            assert image.content.startswith(b"\xff\xd8")
+            assert b"Exif\x00\x00" not in image.content
+
         founders = markup.index('id="team-tier-founders"')
         communications = markup.index('id="team-tier-communications"')
         for person in TEAM_MEMBERS[:3]:
             assert founders < markup.index(person["name"]) < communications
         assert communications < markup.index("Joash Thomas")
         assert "Bio coming soon" not in markup
-        assert 'href="/#meet-the-team"' in markup
+        assert 'href="/team"' in markup
+        assert '/static/team/ayansh-varma.jpg' in markup
+    for path in ("/", "/about"):
+        markup = client.get(path).text
+        assert 'href="/team"' in markup
+        assert 'class="team-member"' not in markup
 
 
 def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client):  # noqa: F811

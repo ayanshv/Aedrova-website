@@ -186,7 +186,51 @@ def test_public_reference_pages_are_readable_without_javascript(public_client, p
     assert f'href="https://aedrova.com{path}"' in response.text
     assert "index, follow" in response.text
     data = json.loads("".join(Schema(response.text).parts))
+    if path == "/about":
+        data = next(node for node in data["@graph"] if node["@type"] == "AboutPage")
     assert data["author"]["name"] == "Aedrova team"
     assert data["url"] == "https://aedrova.com" + path
     assert "<loc>https://aedrova.com" + path + "</loc>" in public_client.get("/sitemap.xml").text
     assert f'href="{path}"' in public_client.get("/").text
+
+
+def test_team_and_about_connect_real_people_to_brand(public_client):
+    from aedrova_site.team import TEAM_MEMBERS, anchor
+
+    for path in ("/team", "/about"):
+        response = public_client.get(path)
+        graph = json.loads("".join(Schema(response.text).parts))["@graph"]
+        org = next(node for node in graph if node["@type"] == "Organization")
+        assert org["name"] == "Aedrova"
+        assert "legalName" not in org
+        assert org["logo"] == "https://aedrova.com/favicon.png"
+        assert [p["name"] for p in org["founder"]] == [
+            member["name"] for member in TEAM_MEMBERS[:3]
+        ]
+        page = next(node for node in graph if node["@type"] == "AboutPage")
+        assert page["url"] == "https://aedrova.com" + path
+        people = [node for node in graph if node["@type"] == "Person"]
+        assert len(people) == 4
+        body = response.text.split("<main", 1)[1]
+        for person, member in zip(people, TEAM_MEMBERS, strict=True):
+            assert person["name"] == member["name"]
+            assert person["jobTitle"] == member["role"]
+            assert person["worksFor"] == {"@id": org["@id"]}
+            assert person["@id"] == "https://aedrova.com/team#" + anchor(member)
+            assert member["name"] in body
+            if path == "/team":
+                assert f'id="{anchor(member)}"' in body
+                assert person["description"] == member["bio"]
+        assert "aggregateRating" not in json.dumps(graph)
+        assert "noindex" not in response.headers.get("x-robots-tag", "")
+
+
+def test_home_founders_match_visible_team_summary(public_client):
+    response = public_client.get("/")
+    graph = json.loads("".join(Schema(response.text).parts))["@graph"]
+    organization = next(node for node in graph if node["@type"] == "Organization")
+    body = response.text.split("<main", 1)[1]
+    assert len(organization["founder"]) == 3
+    for person in organization["founder"]:
+        assert person["name"] in body
+    assert 'href="/team"' in body

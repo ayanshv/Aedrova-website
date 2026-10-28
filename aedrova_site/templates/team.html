@@ -1,21 +1,28 @@
 <section class="team-section reveal" id="meet-the-team" aria-labelledby="team-heading">
-  <div class="team-intro">
-    <span class="eyebrow">THE PEOPLE BEHIND AEDROVA</span>
-    <h2 id="team-heading">Meet the team.</h2>
-    <p>Building a calmer place for people, ideas and tools to work together.</p>
-    <a class="text-link" href="/support">Talk to us <span aria-hidden="true">↗</span></a>
-  </div>
   <div class="team-hierarchy">
     {% for tier, title in [("founders", "Founders"), ("communications", "Communications")] %}
     <div class="team-tier team-tier-{{ tier }}" aria-labelledby="team-tier-{{ tier }}">
     <h3 class="team-tier-label" id="team-tier-{{ tier }}">{{ title }}</h3>
     <div class="team-grid">
     {% for member in team_members if member.tier == tier %}
-    <article class="team-member" aria-labelledby="team-member-{{ tier }}-{{ loop.index }}">
+    <article class="team-member" id="{{ member.name | lower | replace(' ', '-') }}" aria-labelledby="team-member-{{ tier }}-{{ loop.index }}">
+      {% if member.photo %}
+      <div class="team-portrait"><img class="team-photo" src="{{ member.photo }}" alt="{{ member.name }}, {{ member.role }} of Aedrova" width="{{ member.photo_width }}" height="{{ member.photo_height }}" loading="lazy" decoding="async"></div>
+      {% elif member.placeholder %}
+      <div class="team-portrait team-person-placeholder" aria-hidden="true">
+        <svg viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="160" cy="64" r="27" fill="currentColor" opacity=".65"/>
+          <path d="M91 181v-19c0-35 28-59 69-59s69 24 69 59v19H91Z" fill="currentColor" opacity=".45"/>
+          <circle cx="160" cy="91" r="87" stroke="currentColor" opacity=".08"/>
+        </svg>
+      </div>
+      {% else %}
       <div class="team-monogram" aria-hidden="true"><span>{{ member.initials }}</span><span class="team-orbit"></span></div>
+      {% endif %}
       <div class="team-member-details">
         <h4 id="team-member-{{ tier }}-{{ loop.index }}">{{ member.name }}</h4>
         <p>{{ member.role }}</p>
+        <p class="team-bio">{{ member.bio }}</p>
       </div>
     </article>
     {% endfor %}

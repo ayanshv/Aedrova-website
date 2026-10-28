@@ -380,6 +380,18 @@ def create_app(config=None):
     def public_about(request: Request):
         return page(request, "about", "About Aedrova")
 
+    @app.get("/team")
+    def public_team(request: Request):
+        return page(request, "team-page", "Meet the Aedrova team")
+
+    @app.api_route("/favicon.png", methods=["GET", "HEAD"], include_in_schema=False)
+    def site_icon_png():
+        return FileResponse(ROOT / "static/checkout-icon.png", media_type="image/png")
+
+    @app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
+    def site_icon_ico():
+        return FileResponse(ROOT / "static/favicon.ico", media_type="image/x-icon")
+
     @app.get("/research/crawlability")
     def public_crawlability(request: Request):
         return page(request, "crawlability", "Aedrova crawlability study")

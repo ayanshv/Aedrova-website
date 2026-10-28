@@ -2,19 +2,27 @@
 
 from xml.sax.saxutils import escape
 
+from aedrova_site.team import TEAM_MEMBERS, anchor
+
 CANONICAL = "https://aedrova.com"
+PUBLIC_ICONS = frozenset({"/favicon.ico", "/favicon.png", "/static/checkout-icon.png"})
 DESCRIPTION = (
     "Aedrova is a collaborative AI workspace for startup teams, combining team chat, "
     "configurable AI teammates called Buds, and coding agents that build from shared context."
 )
 PUBLIC_PAGES = {
+    "/team": (
+        "Aedrova co-founders and team — Ayansh, Minh-Khoa, Abhinav and Joash",
+        "Meet Aedrova’s co-founders Ayansh Varma, Minh-Khoa Nguyen and Abhinav "
+        "Thirumala, and Director of Communication Joash Thomas.",
+    ),
     "/faq": (
         "Aedrova FAQ — Buds, building, access and pricing",
         "Answers about workspaces, AI teammates, connectors, privacy and Beta availability.",
     ),
     "/about": (
         "About Aedrova",
-        "Who publishes Aedrova product information, how to contact us, and how we maintain it.",
+        "Learn what Aedrova does, who its co-founders are, and how to contact the team.",
     ),
     "/research/crawlability": (
         "Aedrova crawlability study — October 22, 2026",
@@ -123,6 +131,30 @@ def public_deployment(config):
     )
 
 
+def organization(*, include_founders=False):
+    brand = {
+        "@type": "Organization",
+        "@id": CANONICAL + "/#brand",
+        "name": "Aedrova",
+        "url": CANONICAL + "/",
+        "description": DESCRIPTION,
+        "logo": CANONICAL + "/favicon.png",
+        "email": "contact@aedrova.com",
+    }
+    if include_founders:
+        brand["founder"] = [
+            {
+                "@type": "Person",
+                "@id": CANONICAL + "/team#" + anchor(member),
+                "name": member["name"],
+                "url": CANONICAL + "/team#" + anchor(member),
+            }
+            for member in TEAM_MEMBERS
+            if member["tier"] == "founders"
+        ]
+    return brand
+
+
 def metadata(config, path, fallback):
     title, description = PUBLIC_PAGES.get(path, (fallback + " · Aedrova", DESCRIPTION))
     indexable = public_deployment(config) and path in PUBLIC_PAGES
@@ -131,14 +163,7 @@ def metadata(config, path, fallback):
         graph = {
             "@context": "https://schema.org",
             "@graph": [
-                {
-                    "@type": "Organization",
-                    "@id": CANONICAL + "/#brand",
-                    "name": "Aedrova",
-                    "url": CANONICAL + "/",
-                    "logo": CANONICAL + "/static/brand.png",
-                    "email": "contact@aedrova.com",
-                },
+                organization(include_founders=path == "/"),
                 {
                     "@type": "WebSite",
                     "@id": CANONICAL + "/#website",
@@ -157,7 +182,7 @@ def metadata(config, path, fallback):
                 },
             ],
         }
-    if indexable and path in {"/faq", "/about", "/research/crawlability"}:
+    if indexable and path in {"/faq", "/research/crawlability"}:
         graph = {
             "@context": "https://schema.org",
             "@type": "Article" if path == "/research/crawlability" else "WebPage",
@@ -171,6 +196,46 @@ def metadata(config, path, fallback):
                 "url": CANONICAL + "/about",
             },
             "publisher": {"@type": "Organization", "name": "Aedrova", "url": CANONICAL},
+        }
+    if indexable and path in {"/team", "/about"}:
+        people = []
+        for member in TEAM_MEMBERS:
+            person = {
+                "@type": "Person",
+                "@id": CANONICAL + "/team#" + anchor(member),
+                "url": CANONICAL + "/team#" + anchor(member),
+                "name": member["name"],
+                "jobTitle": member["role"],
+                "worksFor": {"@id": CANONICAL + "/#brand"},
+            }
+            if path == "/team":
+                person["description"] = member["bio"]
+                if member.get("photo"):
+                    person["image"] = CANONICAL + member["photo"]
+            people.append(person)
+        graph = {
+            "@context": "https://schema.org",
+            "@graph": [
+                organization(include_founders=True),
+                {
+                    "@type": "AboutPage",
+                    "@id": CANONICAL + path + "#webpage",
+                    "url": CANONICAL + path,
+                    "name": title,
+                    "description": description,
+                    "about": {"@id": CANONICAL + "/#brand"},
+                    "mainEntity": [{"@id": person["@id"]} for person in people],
+                    "publisher": {"@id": CANONICAL + "/#brand"},
+                    "author": {
+                        "@type": "Organization",
+                        "name": "Aedrova team",
+                        "url": CANONICAL + "/about",
+                    },
+                    "datePublished": "2026-10-22" if path == "/about" else "2026-10-27",
+                    "dateModified": "2026-10-27",
+                },
+                *people,
+            ],
         }
     return {
         "title": title,
