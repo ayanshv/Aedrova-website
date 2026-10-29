@@ -172,3 +172,22 @@ def test_language_preference_is_private_and_cannot_modify_authority(tmp_path):
         )
         identity.user.return_value = {"id": "reader", "user_metadata": {"aedrova_language": []}}
         assert client.get("/api/language", headers=headers).json()["language"] == "en"
+
+
+def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
+    from aedrova_site.app import asset_fingerprint
+
+    static = tmp_path / "static"
+    (static / "locales").mkdir(parents=True)
+    for name in ("site.css", "site.js", "preparation.js", "localization.js"):
+        (static / name).write_text("fixture")
+    (static / "locales/hi.json").write_text('{"Continue":"initial"}')
+    first = asset_fingerprint(tmp_path)
+    (static / "localization.js").write_text("updated logic")
+    second = asset_fingerprint(tmp_path)
+    assert second != first
+    (static / "locales/hi.json").write_text('{"Continue":"updated"}')
+    third = asset_fingerprint(tmp_path)
+    assert third != second
+    (static / "locales/es.json").write_text('{"Continue":"Continuar"}')
+    assert asset_fingerprint(tmp_path) != third

@@ -166,6 +166,18 @@ class InquiryBody(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
 
+def asset_fingerprint(root):
+    """Invalidate browser caches for interface code and every shipped locale catalog."""
+    static = root / "static"
+    paths = [static / name for name in ("site.css", "site.js", "preparation.js", "localization.js")]
+    paths.extend(sorted((static / "locales").glob("*.json")))
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(str(path.relative_to(static)).encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
+
+
 def create_app(config=None):
     configure_events()
     config = config or Config.load()
@@ -189,11 +201,7 @@ def create_app(config=None):
         Identity(config),
     )
     identity.hierarchy_available = store.hierarchy_available
-    asset_version = hashlib.sha256(
-        (ROOT / "static/site.css").read_bytes()
-        + (ROOT / "static/site.js").read_bytes()
-        + (ROOT / "static/preparation.js").read_bytes()
-    ).hexdigest()[:12]
+    asset_version = asset_fingerprint(ROOT)
     database_events(store.engine)
     payments = Payments(config, store)
     templates = Jinja2Templates(directory=ROOT / "templates")
