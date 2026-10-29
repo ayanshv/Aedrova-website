@@ -52,7 +52,7 @@
     if(pending||language==='en')return;
     const missing=paint();
     if(!missing.length)return;
-    if(!signedIn||!workspace){setStatus('Navigation translated where available. Sign in for full-page AI translation.');return;}
+    if(!signedIn||!workspace){setStatus(signedIn?'Choose a workspace for full-page AI translation.':'Hindi navigation preview. Page content remains in its original language.');return;}
     const stamp=generation, target=language;
     pending=true;setStatus('Translating… Original text stays available.');
     try{
@@ -95,6 +95,13 @@
       signedIn=true;initial=preferences.language;enabled=preferences.translate;
       workspace=spaces[0]?.id||'';
     }catch{}
+    if(!signedIn){
+      for(const option of [...select.options])if(!['en','hi'].includes(option.value))option.remove();
+      select.setAttribute('aria-label','Navigation language');
+      const selected=generation?language:initial;
+      initial=['en','hi'].includes(selected)?selected:'en';
+      language=initial;
+    }
     await choose(generation ? language : initial, generation > 0);
   })();
   document.querySelector('#logout')?.addEventListener('click',()=>{cache.clear();failed.clear();workspace='';signedIn=false;choose('en');});
