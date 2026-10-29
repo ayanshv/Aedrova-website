@@ -22,7 +22,7 @@ if(storageNotice){
     preferenceChoice=button.dataset.storageChoice;
     try{
       localStorage.setItem('aedrova-storage-choice',JSON.stringify(preferenceChoice));
-      const keys=['aedrova-theme','aedrova-intro','aedrova-plan','aedrova-intro-complete'];
+      const keys=['aedrova-theme','aedrova-intro','aedrova-plan','aedrova-intro-complete','aedrova-language'];
       if(preferenceChoice==='essential')keys.forEach(key=>localStorage.removeItem(key));
       else memory.forEach((value,key)=>localStorage.setItem(key,JSON.stringify(value)));
     }catch{}
