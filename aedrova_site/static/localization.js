@@ -95,7 +95,7 @@
       signedIn=true;initial=preferences.language;enabled=preferences.translate;
       workspace=spaces[0]?.id||'';
     }catch{}
-    await choose(initial);
+    await choose(generation ? language : initial, generation > 0);
   })();
   document.querySelector('#logout')?.addEventListener('click',()=>{cache.clear();failed.clear();workspace='';signedIn=false;choose('en');});
 })();

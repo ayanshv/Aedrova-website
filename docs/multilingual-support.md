@@ -22,3 +22,9 @@ native-language quality review have not been established by these tests. Deploy 
 existing staging first, preserve the waitlist production gates, and validate with two
 readers on different language settings before claiming live acceptance. No purchase,
 production AI enablement or public release is authorized by this feature alone.
+
+Staging deployment b5e3fee was visibly Live on October 29. /health returned 200 with
+managed AI enabled and checkout disabled; /api/language returned 403 without sign-in.
+This confirms deployment and the unauthenticated boundary, not live translation quality.
+Full local service suite: 657 passed. Final two-reader/natural-language acceptance still
+requires the owner to sign in to Staging; no new setup, payment or migration is needed.
