@@ -1,6 +1,7 @@
 /* Per-reader display translation. Never rewrites inputs, IDs, links or submitted text. */
 (() => {
   'use strict';
+  const assetQuery=document.currentScript?new URL(document.currentScript.src).search:'';
   const languages={en:'English',hi:'हिन्दी',es:'Español',fr:'Français',de:'Deutsch',pt:'Português',it:'Italiano',ja:'日本語',ko:'한국어',zh:'中文',ar:'العربية',ur:'اردو',bn:'বাংলা',ta:'தமிழ்',te:'తెలుగు',id:'Bahasa Indonesia',vi:'Tiếng Việt',th:'ไทย',tr:'Türkçe',ru:'Русский'};
   const select=document.querySelector('[data-language]'), status=document.querySelector('[data-language-status]');
   if(!select)return;
@@ -81,7 +82,7 @@
     language=Object.hasOwn(languages,value)?value:'en';select.value=language;generation++;failed.clear();
     document.documentElement.lang=language;document.documentElement.dir=['ar','ur'].includes(language)?'rtl':'ltr';
     if(typeof storage!=='undefined')storage.set('aedrova-language',language);
-    if(language==='hi')try{const dictionary=await fetch('/static/locales/hi.json').then(r=>r.json());for(const [key,value] of Object.entries(dictionary))cache.set('hi\0'+key,value);}catch{}
+    if(language==='hi')try{const dictionary=await fetch('/static/locales/hi.json'+assetQuery).then(r=>r.json());for(const [key,value] of Object.entries(dictionary))cache.set('hi\0'+key,value);}catch{}
     paint();setStatus('');schedule();
     if(persist&&signedIn)try{await request('/api/language',{language,translate:enabled});}catch{setStatus('Language changed here. Could not save to your account.');}
   }
