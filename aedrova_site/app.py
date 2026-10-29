@@ -221,6 +221,7 @@ def create_app(config=None):
                 await asyncio.to_thread(provider.close)
             await asyncio.to_thread(speech.close)
             await asyncio.to_thread(dictation.close)
+            await asyncio.to_thread(_app.state.translations.close)
             await asyncio.to_thread(store.engine.dispose)
 
     app = FastAPI(
@@ -340,6 +341,9 @@ def create_app(config=None):
     from aedrova_site.dots import install as install_dots
 
     install_dots(app, config, store, identity, auth)
+    from aedrova_site.translations import install as install_translations
+
+    install_translations(app, config, store, identity, auth)
 
     def page(request, name, title, **context):
         return templates.TemplateResponse(

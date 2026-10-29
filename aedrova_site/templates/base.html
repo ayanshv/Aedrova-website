@@ -23,6 +23,7 @@
   {% if request.url.path in ["/onboarding", "/account"] %}<script src="/static/preparation.js?v={{ asset_version }}" defer></script>{% endif %}
   <script src="/static/site.js?v={{ asset_version }}" defer></script>
 <script src="/static/buds-motion.js" defer></script>
+<script src="/static/localization.js?v={{ asset_version }}" defer></script>
 </head>
 <body class="{% block body_class %}inner-page{% endblock %}">
 <a class="skip" href="#main">Skip to content</a>
@@ -42,6 +43,7 @@
 <footer class="trust-footer bud-corner-section">
 <span class="bud-peek footer-bud" aria-hidden="true"><span class="site-bud look-product"></span></span>
 <div class="footer-brand"><a class="wordmark" href="/"><img src="/static/brand.png" alt="" width="28" height="28"><span>Aedrova</span></a><p>Your team, plus AI.</p></div>
+<div class="language-preferences" data-no-translate><label for="display-language">Language</label><select id="display-language" data-language aria-label="Display language"></select><p>AI translations use your workspace allowance. Original text stays available.</p><p data-language-status role="status" hidden></p></div>
 <nav class="footer-columns" aria-label="Footer navigation">
 <div><h2>Product</h2><a href="/#features">The workspace</a><a href="/#ai-teammates">Meet your Buds</a><a href="/onboarding">Plans for your team</a><a href="{{ '/waitlist' if waitlist_only else '/download' }}">{{ 'Join the waitlist' if waitlist_only else 'Downloads' }}</a></div>
 <div><h2>Resources</h2><a href="/product">What is Aedrova?</a><a href="/faq">Common questions</a><a href="/about">About Aedrova</a><a href="/team">Meet the team</a><a href="/research/crawlability">Our crawlability study</a><a href="/support">Help & troubleshooting</a><a href="/data-controls">Data & AI controls</a><a href="/enterprise">Enterprise inquiries</a></div>
