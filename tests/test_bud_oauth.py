@@ -206,7 +206,8 @@ def test_refresh_rotates_tokens_without_extending_grant_or_resurrecting_disconne
         "session", dot["workspace_id"], dot["id"], result["id"] + ".design"
     )
     assert evidence["records"]["title"] == "Design"
-    assert parse_qs(seen[-1].content.decode())["grant_type"] == ["refresh_token"]
+    assert seen[-1].url.path == "/v1/oauth/refresh"
+    assert parse_qs(seen[-1].content.decode()) == {"refresh_token": ["oauth-refresh-private"]}
     after = oauth.connections.rows(dot, user)[0]
     assert before["expires"] == after["expires"] and before["id"] == after["id"]
     oauth.connections.disconnect("session", dot["workspace_id"], dot["id"], result["id"])
@@ -584,3 +585,24 @@ def test_deferred_selection_failure_scrubs_tokens_and_cannot_claim_success(syste
         oauth.select("session", state, "fileKey123")
     assert oauth.status("session", state)["status"] == "failed"
     assert "token" not in oauth.state(state)[1]
+
+
+def test_figma_refresh_uses_documented_endpoint_basic_auth_and_keeps_refresh_token(system):
+    oauth, _, _, _ = system
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        assert request.url == "https://api.figma.com/v1/oauth/refresh"
+        assert request.headers["authorization"].startswith("Basic ")
+        assert parse_qs(request.content.decode()) == {"refresh_token": ["original-refresh-private"]}
+        return httpx.Response(
+            200, json={"access_token": "renewed-access-private", "expires_in": 7776000}
+        )
+
+    oauth.client.close()
+    oauth.client = httpx.Client(transport=httpx.MockTransport(handler), follow_redirects=False)
+    result = oauth.token("figma", refresh="original-refresh-private")
+    assert result["access"] == "renewed-access-private"
+    assert result["refresh"] == "original-refresh-private"
+    assert len(seen) == 1
