@@ -606,3 +606,19 @@ def test_figma_refresh_uses_documented_endpoint_basic_auth_and_keeps_refresh_tok
     assert result["access"] == "renewed-access-private"
     assert result["refresh"] == "original-refresh-private"
     assert len(seen) == 1
+
+
+@pytest.mark.parametrize("provider", ["github", "tiktok"])
+def test_revoked_refresh_returned_with_http_200_requires_reauthorization(system, provider):
+    oauth, _, _, _ = system
+    prefix = "github_dot" if provider == "github" else provider + "_bud"
+    setattr(oauth.config, prefix + "_client_id", "client-id")
+    setattr(oauth.config, prefix + "_client_secret", "client-secret")
+    oauth.client.close()
+    oauth.client = httpx.Client(transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, json={
+            "error": "invalid_grant", "error_description": "private-provider-details"
+        })
+    ))
+    with pytest.raises(Denied, match="^Needs authorization$"):
+        oauth.token(provider, refresh="revoked-refresh-private")

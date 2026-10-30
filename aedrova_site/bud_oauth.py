@@ -307,6 +307,12 @@ class BudOAuth:
                     if len(raw) > 32768:
                         raise Denied("Unsupported authorization response.")
                 result = json.loads(raw)
+            if not isinstance(result, dict):
+                raise Denied("Unsupported authorization response.")
+            if result.get("error"):
+                # Some providers return OAuth revocation errors with HTTP 200.
+                # Never echo their response or treat it as a malformed token.
+                raise Denied("Needs authorization")
             access = result.get("access_token", "")
             refresh_token = result.get("refresh_token", refresh or "")
             if (
