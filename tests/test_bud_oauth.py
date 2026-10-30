@@ -622,3 +622,15 @@ def test_revoked_refresh_returned_with_http_200_requires_reauthorization(system,
     ))
     with pytest.raises(Denied, match="^Needs authorization$"):
         oauth.token(provider, refresh="revoked-refresh-private")
+
+
+def test_supabase_revoked_refresh_not_found_requires_reauthorization(system):
+    oauth, _, _, _ = system
+    oauth.config.supabase_bud_client_id = "client-id"
+    oauth.config.supabase_bud_client_secret = "client-secret"
+    oauth.client.close()
+    oauth.client = httpx.Client(transport=httpx.MockTransport(
+        lambda request: httpx.Response(404, json={"message": "Token not found"})
+    ))
+    with pytest.raises(Denied, match="^Needs authorization$"):
+        oauth.token("supabase", refresh="revoked-refresh-private")
