@@ -275,6 +275,12 @@ class BudOAuth:
             body.update(code=code, redirect_uri=self.redirect(provider))
             if provider not in {"notion", "stripe", "instagram", "vercel"}:
                 body["code_verifier"] = verifier
+        token_url = PROVIDERS[provider][1]
+        if provider == "figma" and refresh:
+            # Figma's refresh grant has its own endpoint and reuses the original
+            # refresh token when the response only returns a new access token.
+            token_url = "https://api.figma.com/v1/oauth/refresh"
+            body = {"refresh_token": refresh}
         headers = {"Accept": "application/json"}
         kwargs = {"auth": (client_id, client_secret)}
         if provider == "github":
@@ -289,9 +295,7 @@ class BudOAuth:
         else:
             kwargs["data"] = body
         try:
-            with self.client.stream(
-                "POST", PROVIDERS[provider][1], headers=headers, **kwargs
-            ) as response:
+            with self.client.stream("POST", token_url, headers=headers, **kwargs) as response:
                 if response.status_code == 429:
                     raise Denied("Authorization provider rate limit reached. Try again later.")
                 if response.status_code in {400, 401, 403}:
