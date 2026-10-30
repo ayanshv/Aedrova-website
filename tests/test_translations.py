@@ -191,3 +191,22 @@ def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
     assert third != second
     (static / "locales/es.json").write_text('{"Continue":"Continuar"}')
     assert asset_fingerprint(tmp_path) != third
+
+
+def test_every_navigation_choice_has_a_complete_static_catalog():
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "aedrova_site"
+    script = (root / "static/localization.js").read_text()
+    language_object = re.search(r"const languages=(\{.*?\});", script).group(1)
+    languages = json.loads(language_object)
+    assert len(languages) >= 50
+    keys = set(json.loads((root / "static/locales/es.json").read_text()))
+    for code in languages:
+        if code == "en":
+            continue
+        catalog = json.loads((root / "static/locales" / (code + ".json")).read_text())
+        assert keys <= set(catalog)
+        assert all(isinstance(catalog[k], str) and catalog[k].strip() for k in keys)
+        assert all("Aedrova" in catalog[k] for k in keys if "Aedrova" in k)
