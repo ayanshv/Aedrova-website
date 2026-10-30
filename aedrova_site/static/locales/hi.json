@@ -2,7 +2,7 @@
   "Meet your Buds": "अपने Buds से मिलें",
   "Plans for your team": "आपकी टीम के प्लान",
   "Join the waitlist": "प्रतीक्षा सूची से जुड़ें",
-  "Join waitlist today": "आज प्रतीक्षा सूची से जुड़ें",
+  "Join waitlist today": "प्रतीक्षा सूची में शामिल हों",
   "What is Aedrova?": "Aedrova क्या है?",
   "Our crawlability study": "वेब क्रॉलिंग पर हमारा अध्ययन",
   "Help & troubleshooting": "सहायता और समस्या समाधान",
@@ -90,7 +90,6 @@
   "Meetings": "बैठकें",
   "Plans": "योजनाएँ",
   "Sign in": "साइन इन करें",
-  "Join waitlist today": "प्रतीक्षा सूची में शामिल हों",
   "Get started": "शुरू करें",
   "Skip to content": "मुख्य सामग्री पर जाएँ",
   "Product": "उत्पाद",
@@ -110,5 +109,6 @@
   "Open navigation": "नेविगेशन खोलें",
   "Language": "भाषा",
   "Original text": "मूल पाठ",
-  "English": "English"
+  "English": "English",
+  "FAQ": "FAQ"
 }
