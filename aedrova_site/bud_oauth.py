@@ -298,7 +298,10 @@ class BudOAuth:
             with self.client.stream("POST", token_url, headers=headers, **kwargs) as response:
                 if response.status_code == 429:
                     raise Denied("Authorization provider rate limit reached. Try again later.")
-                if response.status_code in {400, 401, 403}:
+                if response.status_code in {400, 401, 403} or (
+                    provider == "supabase" and refresh and response.status_code == 404
+                ):
+                    # Supabase returns 404 when a revoked refresh token no longer exists.
                     raise Denied("Needs authorization")
                 response.raise_for_status()
                 raw = bytearray()
