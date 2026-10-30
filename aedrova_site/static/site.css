@@ -426,3 +426,13 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .team-person-placeholder{display:grid;place-items:center;color:var(--muted);background:linear-gradient(145deg,var(--surface),var(--bg))}.team-person-placeholder svg{width:100%;height:100%;max-width:340px;display:block}
 
 .language-preferences{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.language-preferences label{font-size:12px;color:var(--muted)}.language-preferences select{background:var(--surface);color:var(--text);border:1px solid var(--edge);border-radius:8px;padding:8px 12px;max-width:200px}.language-preferences p{font-size:12px;width:100%;max-width:48ch;margin:0}html[dir="rtl"] .footer-columns{text-align:right}
+
+/* Keep footer navigation out of the brand column, including after locale changes. */
+footer.trust-footer .footer-columns{grid-column:1/-1;width:100%;min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px}
+footer.trust-footer .footer-columns>div{min-width:0;align-items:flex-start}
+footer.trust-footer .footer-columns h2,footer.trust-footer .footer-columns a,footer.trust-footer .footer-columns button{word-break:normal;overflow-wrap:normal;hyphens:manual;line-height:1.6;text-align:start}
+footer.trust-footer .language-preferences{display:grid;grid-template-columns:auto minmax(140px,220px);align-items:center;gap:8px 14px;width:min(100%,480px);min-width:0;justify-self:end}
+footer.trust-footer .language-preferences select{width:100%;max-width:none;min-height:44px}
+footer.trust-footer .language-preferences p{grid-column:1/-1;max-width:none;line-height:1.65}
+@media(max-width:960px){footer.trust-footer .language-preferences{justify-self:start}}
+@media(max-width:600px){footer.trust-footer .footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 20px}footer.trust-footer .footer-columns a,footer.trust-footer .footer-columns button{overflow-wrap:anywhere}}

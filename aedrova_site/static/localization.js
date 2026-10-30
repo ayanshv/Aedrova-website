@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const assetQuery=document.currentScript?new URL(document.currentScript.src).search:'';
-  const languages={en:'English',hi:'हिन्दी',es:'Español',fr:'Français',de:'Deutsch',pt:'Português',it:'Italiano',ja:'日本語',ko:'한국어',zh:'中文',ar:'العربية',ur:'اردو',bn:'বাংলা',ta:'தமிழ்',te:'తెలుగు',id:'Bahasa Indonesia',vi:'Tiếng Việt',th:'ไทย',tr:'Türkçe',ru:'Русский'};
+  const languages={"en":"English","hi":"हिन्दी","ar":"العربية","az":"Azərbaycanca","bg":"Български","bn":"বাংলা","ca":"Català","cs":"Čeština","da":"Dansk","de":"Deutsch","el":"Ελληνικά","eo":"Esperanto","es":"Español","et":"Eesti","eu":"Euskara","fa":"فارسی","fi":"Suomi","fr":"Français","ga":"Gaeilge","gl":"Galego","he":"עברית","hu":"Magyar","id":"Bahasa Indonesia","it":"Italiano","ja":"日本語","ko":"한국어","ky":"Кыргызча","lt":"Lietuvių","lv":"Latviešu","ms":"Bahasa Melayu","nb":"Norsk bokmål","nl":"Nederlands","pb":"Português (Brasil)","pl":"Polski","pt":"Português","ro":"Română","ru":"Русский","sk":"Slovenčina","sl":"Slovenščina","sq":"Shqip","sv":"Svenska","sw":"Kiswahili","th":"ไทย","tl":"Filipino","tr":"Türkçe","uk":"Українська","ur":"اردو","vi":"Tiếng Việt","zh":"简体中文","zt":"繁體中文","ta":"தமிழ்","te":"తెలుగు"};
   const select=document.querySelector('[data-language]'), status=document.querySelector('[data-language-status]');
   if(!select)return;
   for(const [value,name] of Object.entries(languages)){const option=new Option(name,value);select.add(option);}
@@ -53,7 +53,7 @@
     if(pending||language==='en')return;
     const missing=paint();
     if(!missing.length)return;
-    if(!signedIn||!workspace){setStatus(signedIn?'Choose a workspace for full-page AI translation.':'Hindi navigation preview. Page content remains in its original language.');return;}
+    if(!signedIn||!workspace){setStatus(signedIn?'Choose a workspace for full-page AI translation.':'Navigation translated. Page content remains in its original language.');return;}
     const stamp=generation, target=language;
     pending=true;setStatus('Translating… Original text stays available.');
     try{
@@ -80,9 +80,11 @@
   function schedule(){clearTimeout(timer);timer=setTimeout(translate,350);}
   async function choose(value,persist=false){
     language=Object.hasOwn(languages,value)?value:'en';select.value=language;generation++;failed.clear();
-    document.documentElement.lang=language;document.documentElement.dir=['ar','ur'].includes(language)?'rtl':'ltr';
+    document.documentElement.lang=({pb:'pt-BR',zt:'zh-Hant'}[language]||language);document.documentElement.dir=['ar','ur','fa','he'].includes(language)?'rtl':'ltr';
     if(typeof storage!=='undefined')storage.set('aedrova-language',language);
-    if(language==='hi')try{const dictionary=await fetch('/static/locales/hi.json'+assetQuery).then(r=>r.json());for(const [key,value] of Object.entries(dictionary))cache.set('hi\0'+key,value);}catch{}
+    const selected=language, stamp=generation;
+    if(selected!=='en')try{const dictionary=await fetch('/static/locales/'+selected+'.json'+assetQuery).then(r=>{if(!r.ok)throw new Error('unavailable');return r.json();});for(const [key,value] of Object.entries(dictionary))if(typeof value==='string')cache.set(selected+'\0'+key,value);}catch{}
+    if(stamp!==generation)return;
     paint();setStatus('');schedule();
     if(persist&&signedIn)try{await request('/api/language',{language,translate:enabled});}catch{setStatus('Language changed here. Could not save to your account.');}
   }
@@ -97,12 +99,13 @@
       workspace=spaces[0]?.id||'';
     }catch{}
     if(!signedIn){
-      for(const option of [...select.options])if(!['en','hi'].includes(option.value))option.remove();
       select.setAttribute('aria-label','Navigation language');
       const selected=generation?language:initial;
-      initial=['en','hi'].includes(selected)?selected:'en';
+      initial=Object.hasOwn(languages,selected)?selected:'en';
       language=initial;
     }
+    const note=document.querySelector('[data-language-note]');
+    if(note&&signedIn)note.textContent='Navigation translations are included. Full-page AI translation uses your workspace allowance.';
     await choose(generation ? language : initial, generation > 0);
   })();
   document.querySelector('#logout')?.addEventListener('click',()=>{cache.clear();failed.clear();workspace='';signedIn=false;choose('en');});
