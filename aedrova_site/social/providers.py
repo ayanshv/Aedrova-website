@@ -213,7 +213,9 @@ class BufferAdapter:
     def post_status(value):
         return (
             value
-            if isinstance(value, str) and value in {"buffer", "sent", "error", "notSent", "draft"}
+            if isinstance(value, str)
+            and value
+            in {"buffer", "sent", "error", "notSent", "draft", "scheduled", "published", "failed"}
             else "unknown"
         )
 

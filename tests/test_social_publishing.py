@@ -470,3 +470,21 @@ def test_instagram_has_required_format_and_feed_policy(kind, expected):
         assert seen[0]["metadata"]["instagram"] == dict(type=expected, shouldShareToFeed=True)
     finally:
         adapter.close()
+
+
+@pytest.mark.parametrize("status", ["scheduled", "published", "failed"])
+def test_current_buffer_status_vocabulary_is_preserved(status):
+    adapter = BufferAdapter(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "data": {"post": {"id": "post-1", "channelId": "channel-1", "status": status}}
+                },
+            )
+        )
+    )
+    try:
+        assert adapter.get_post_status("fixture-token", "post-1")["status"] == status
+    finally:
+        adapter.close()
