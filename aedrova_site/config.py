@@ -45,6 +45,9 @@ class Config:
     figma_bud_client_secret: str = field(default="", repr=False)
     tiktok_bud_client_id: str = ""
     tiktok_bud_client_secret: str = field(default="", repr=False)
+    buffer_bud_client_id: str = ""
+    buffer_bud_client_secret: str = field(default="", repr=False)
+    social_publishing_enabled: bool = False
     notion_bud_client_id: str = ""
     notion_bud_client_secret: str = field(default="", repr=False)
     supabase_bud_client_id: str = ""

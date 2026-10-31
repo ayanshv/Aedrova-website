@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from aedrova_site.bud_providers import ReadProvider, validate_resource
 from aedrova_site.store import Denied
 
-PICKERS = {"github", "supabase", "notion", "vercel"}
+PICKERS = {"github", "supabase", "notion", "vercel", "buffer"}
 
 
 def resources(provider, token, transport=None, *, team=""):
@@ -18,6 +18,15 @@ def resources(provider, token, transport=None, *, team=""):
             choices.append({"id": identifier, "name": str(title or identifier)[:160]})
 
     try:
+        if provider == "buffer":
+            from aedrova_site.social.providers import BufferAdapter
+
+            adapter = BufferAdapter(transport=transport)
+            try:
+                for row in adapter.organizations(token):
+                    add(row["id"], row["name"])
+            finally:
+                adapter.close()
         if provider == "vercel":
             params = {"limit": 100}
             if team:

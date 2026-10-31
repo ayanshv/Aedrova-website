@@ -39,6 +39,10 @@ def sample(schema, components, key=""):
         return "cs_audit_reference_00001"
     if key == "provider":
         return "codex"
+    if key == "action":
+        return "publish"
+    if key == "kind":
+        return "image"
     if key == "plan":
         return "monthly"
     return "a" * max(20, schema.get("minLength", 0))

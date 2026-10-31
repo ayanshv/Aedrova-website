@@ -53,6 +53,8 @@ class BudConnections:
 
     def close(self):
         self.research.client.close()
+        if hasattr(self, "social"):
+            self.social.close()
         if hasattr(self, "oauth"):
             self.oauth.close()
         for key, provider in self.providers.items():
@@ -108,6 +110,10 @@ class BudConnections:
     ):
         dot, user = self.dots.dot(session, workspace, dot_id)
         dot = dict(dot)
+        if provider == "buffer" and (not isinstance(oauth, dict) or oauth.get("kind") != "oauth"):
+            raise Denied(
+                "Connect Buffer through account sign-in; personal API keys are not accepted."
+            )
         if expected_version is not None and dot["version"] != expected_version:
             raise Denied("Bud settings changed during authorization. Try again.")
         resource = validate_resource(provider, resource)
@@ -236,6 +242,10 @@ class BudConnections:
 
     def access(self, grant, *, force=False):
         """Serialize token rotation without ever recreating a disconnected grant."""
+        if grant["provider"] == "buffer":
+            from aedrova_site.social.tokens import access
+
+            return access(self, grant, force=force)
         secret = self.store.cipher.decrypt(grant["secret"].encode()).decode()
         if not secret.startswith("{"):
             return grant, secret, False
@@ -418,6 +428,9 @@ def install(app, dots, auth):
     from aedrova_site.bud_oauth import install as install_oauth
 
     install_oauth(app, service, auth)
+    from aedrova_site.social.service import install as install_social
+
+    install_social(app, service, auth)
 
     @app.get("/api/buds/connectors")
     def catalog(request: Request):
@@ -435,6 +448,7 @@ def install(app, dots, auth):
                     and dots.config.dots_enabled,
                 }
                 for key in CATALOG
+                if key != "buffer" or dots.config.social_publishing_enabled
             ]
         }
 

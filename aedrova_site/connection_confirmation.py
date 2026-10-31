@@ -7,6 +7,10 @@ from fastapi.templating import Jinja2Templates
 from aedrova_site.bud_providers import CATALOG
 
 COPY = {
+    "buffer": (
+        "is linked to your Buffer organization. "
+        "Choose channels in Social; every post needs your approval."
+    ),
     "github": "can now read your repository, issues, pull requests and deployments.",
     "supabase": (
         "can now check your project’s health and region. Database rows and keys stay private."
@@ -37,5 +41,6 @@ def confirmation(request, provider, bud, *, selecting=False):
             "look": look,
             "capability": COPY[provider],
             "selecting": selecting,
+            "publishing": provider == "buffer",
         },
     )
