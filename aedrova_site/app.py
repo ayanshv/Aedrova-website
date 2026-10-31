@@ -498,7 +498,7 @@ def create_app(config=None):
         return page(
             request,
             "plans",
-            "Your team, plus AI",
+            "Your team, plus Agents",
             allowances=allowances,
             billing_interval=(
                 "annual" if request.query_params.get("billing") == "annual" else "monthly"

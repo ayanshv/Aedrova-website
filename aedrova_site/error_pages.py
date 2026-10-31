@@ -189,7 +189,7 @@ def error_html(status):
 <header>
 <a href="/" aria-label="Aedrova home">
 <img src="{logo_url()}" alt="" width="30" height="30">Aedrova</a>
-<span>Your team, plus AI.</span>
+<span>Your team, plus Agents.</span>
 </header>
 <main>
 <div class="scene" aria-hidden="true">
