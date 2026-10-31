@@ -436,3 +436,37 @@ def test_feature_flag_blocks_existing_grant_dispatch(social):
     with pytest.raises(Denied):
         service.dispatch("session", action(social, row))
     assert not writes(social)
+
+
+@pytest.mark.parametrize("kind,expected", [("image", "post"), ("video", "reel")])
+def test_instagram_has_required_format_and_feed_policy(kind, expected):
+    seen = []
+
+    def respond(request):
+        seen.append(json.loads(request.content)["variables"]["input"])
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "createPost": {
+                        "post": {"id": "post-1", "channelId": "channel-1", "status": "buffer"}
+                    }
+                }
+            },
+        )
+
+    adapter = BufferAdapter(transport=httpx.MockTransport(respond))
+    try:
+        adapter.schedule_post(
+            "fixture-token",
+            dict(
+                channel="channel-1",
+                platform="instagram",
+                text="Reviewed",
+                assets=[dict(kind=kind, url="https://cdn.example.com/media")],
+                due_at="2026-11-30T09:11:54+00:00",
+            ),
+        )
+        assert seen[0]["metadata"]["instagram"] == dict(type=expected, shouldShareToFeed=True)
+    finally:
+        adapter.close()

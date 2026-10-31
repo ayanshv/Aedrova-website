@@ -430,6 +430,7 @@ class SocialService:
                     raise Denied("Channel selection changed. No post was submitted.")
                 request = dict(
                     channel=row["channel"],
+                    platform=content["platform"],
                     text=content["text"],
                     assets=content["assets"],
                 )
