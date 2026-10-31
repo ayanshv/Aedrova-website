@@ -11,6 +11,13 @@ from aedrova_site.store import Denied
 
 # Each entry declares the complete executable surface; everything else fails closed.
 CATALOG = {
+    "buffer": (
+        "Buffer",
+        "Marketing",
+        "Social channels and publishing with your approval",
+        "Buffer organization",
+        {"organization": "Connected Buffer organization"},
+    ),
     "github": (
         "GitHub",
         "Code & delivery",
@@ -92,7 +99,11 @@ def descriptor(key):
         "resource_hint": hint,
         "tools": tools,
         "auth": "Access token",
-        "permissions": "Read-only: " + description,
+        "permissions": (
+            "Post read/write access. Select channels and approve each post in Social."
+            if key == "buffer"
+            else "Read-only: " + description
+        ),
         "configurable": True,
         "available": True,
     }
@@ -112,6 +123,7 @@ def validate_resource(provider, value):
         except ValueError:
             raise Denied("Use the page or team UUID, not its URL.") from None
     patterns = {
+        "buffer": r"[A-Za-z0-9_-]{1,120}",
         "github": r"[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}",
         "supabase": r"[a-z]{20}",
         "figma": r"[A-Za-z0-9_-]{5,100}",
@@ -128,6 +140,7 @@ def validate_resource(provider, value):
 class ReadProvider:
     def __init__(self, key, *, transport=None):
         self.key = key
+        self.transport = transport
         self.client = httpx.Client(
             timeout=httpx.Timeout(12, connect=5),
             follow_redirects=False,
@@ -178,6 +191,17 @@ class ReadProvider:
         resource = validate_resource(self.key, resource)
         if tool not in CATALOG[self.key][4]:
             raise Denied("This tool is not available.")
+        if self.key == "buffer":
+            from aedrova_site.social.providers import BufferAdapter
+
+            adapter = BufferAdapter(transport=self.transport)
+            try:
+                row = next((r for r in adapter.organizations(token) if r["id"] == resource), None)
+                if not row:
+                    raise Denied("Choose an organization from your Buffer account.")
+                return {"records": row, "untrusted": True}
+            finally:
+                adapter.close()
         get = lambda url, **kw: self.request(token, url, **kw)  # noqa: E731
         records = None
         source = ""

@@ -676,6 +676,18 @@ class DotService:
                     text("DELETE FROM bud_connections WHERE dot=:d AND workspace=:w"),
                     {"d": dot_id, "w": workspace},
                 )
+        if hasattr(self, "connections") and hasattr(self.connections, "social"):
+            with self.store.tx() as db:
+                db.execute(
+                    text("DELETE FROM social_posts WHERE dot=:d AND workspace=:w"),
+                    {"d": dot_id, "w": workspace},
+                )
+                db.execute(
+                    text(
+                        "DELETE FROM social_channels WHERE connection NOT IN "
+                        "(SELECT id FROM bud_connections)"
+                    )
+                )
         revoked = all(
             [
                 self.providers[dot["provider"]].revoke(
@@ -760,7 +772,7 @@ def install(app, config, store, identity, auth):
             + [
                 {**descriptor(key), "available": config.dots_enabled}
                 for key in CATALOG
-                if key != "github"
+                if key != "github" and (key != "buffer" or config.social_publishing_enabled)
             ]
         }
 

@@ -1,6 +1,7 @@
 """Catalog-wide grant lifecycle checks, with synthetic provider responses only."""
 
 import json
+import time
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -17,6 +18,7 @@ connections = _connections
 system = _system
 dot_system = _dot_system
 RESOURCES = {
+    "buffer": "org-1",
     "github": "owner/repository",
     "supabase": "a" * 20,
     "figma": "fileKey123",
@@ -45,7 +47,19 @@ def test_every_catalog_grant_is_private_versioned_reconnectable_and_revocable(
         "synthetic-private-access",
         24,
     )
-    saved = service.connect(*args)
+    oauth = (
+        {
+            "oauth": dict(
+                kind="oauth",
+                access="synthetic-private-access",
+                refresh="synthetic-refresh",
+                token_expires=int(time.time()) + 3600,
+            )
+        }
+        if provider == "buffer"
+        else {}
+    )
+    saved = service.connect(*args, **oauth)
     assert reader.execute.call_count == len(CATALOG[provider][4])
     tool = next(iter(CATALOG[provider][4]))
     result = service.execute("session", dot["workspace_id"], dot["id"], saved["id"] + "." + tool)
@@ -67,14 +81,14 @@ def test_every_catalog_grant_is_private_versioned_reconnectable_and_revocable(
     with pytest.raises(Denied):
         service.execute("session", dot["workspace_id"], dot["id"], saved["id"] + "." + tool)
     dot["version"] -= 1
-    replacement = service.connect(*args)
+    replacement = service.connect(*args, **oauth)
     assert replacement["id"] != saved["id"] and len(service.listing(dot, owner)) == 1
     with pytest.raises(Denied):
         service.execute("session", dot["workspace_id"], dot["id"], saved["id"] + "." + tool)
     service.disconnect("session", dot["workspace_id"], dot["id"], replacement["id"])
     with pytest.raises(Denied):
         service.execute("session", dot["workspace_id"], dot["id"], replacement["id"] + "." + tool)
-    expiring = service.connect(*args)
+    expiring = service.connect(*args, **oauth)
     with service.store.tx() as db:
         db.execute(text("UPDATE bud_connections SET expires=0"))
     with pytest.raises(Denied):

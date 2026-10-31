@@ -19,10 +19,12 @@ from sqlalchemy import text
 from aedrova_site.bud_discovery import PICKERS, resources
 from aedrova_site.bud_providers import validate_resource
 from aedrova_site.connection_confirmation import TEMPLATES, confirmation
+from aedrova_site.social.providers import BufferAdapter
 from aedrova_site.store import Denied
 
 # All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
 PROVIDERS = {
+    "buffer": (BufferAdapter.AUTHORIZE, BufferAdapter.TOKEN, BufferAdapter.SCOPES),
     "stripe": (
         "https://marketplace.stripe.com/oauth/v2/authorize",
         "https://api.stripe.com/v1/oauth/token",
@@ -103,6 +105,8 @@ class BudOAuth:
         )
 
     def setup_hint(self, provider):
+        if provider == "buffer" and not self.config.social_publishing_enabled:
+            return "Social publishing is being prepared. Existing Bud conversations still work."
         if provider == "search":
             return (
                 "Aedrova’s owner must configure managed web search before it is available. "
@@ -116,6 +120,7 @@ class BudOAuth:
             "stripe",
             "instagram",
             "vercel",
+            "buffer",
         } and not self.config.origin.startswith("https://"):
             return (
                 provider.title() + " requires an HTTPS callback. Aedrova’s owner must configure "
@@ -219,6 +224,10 @@ class BudOAuth:
             raise Denied("Provider setup is no longer available.")
         self.state(state, transition=("pending", "opened"))
         provider = payload["provider"]
+        if provider == "buffer":
+            return BufferAdapter.connect_provider(
+                self.credentials(provider)[0], self.redirect(provider), state, payload["verifier"]
+            ), payload
         target, _, scope = PROVIDERS[provider]
         params = dict(
             client_id=self.credentials(provider)[0],
@@ -261,6 +270,18 @@ class BudOAuth:
         return target + "?" + urlencode(params), payload
 
     def token(self, provider, *, code=None, verifier=None, refresh=None):
+        if provider == "buffer":
+            adapter = BufferAdapter(transport=self.transport)
+            try:
+                return adapter.token(
+                    *self.credentials(provider),
+                    self.redirect(provider),
+                    code=code,
+                    verifier=verifier,
+                    refresh=refresh,
+                )
+            finally:
+                adapter.close()
         if provider in {"stripe", "instagram", "vercel"}:
             from aedrova_site.bud_account_oauth import exchange
 
