@@ -228,6 +228,14 @@ class BufferAdapter:
             source="Aedrova",
             mode="customScheduled" if post.get("due_at") else "shareNow",
         )
+        if post.get("platform") == "instagram":
+            # Instagram requires explicit format and feed policy, even for one image.
+            payload["metadata"] = {
+                "instagram": {
+                    "type": "reel" if any(a["kind"] == "video" for a in post["assets"]) else "post",
+                    "shouldShareToFeed": True,
+                }
+            }
         if post.get("due_at"):
             payload["dueAt"] = post["due_at"]
         operation = """mutation Publish($input: CreatePostInput!) { createPost(input: $input) {
