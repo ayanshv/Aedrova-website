@@ -12,12 +12,12 @@ DESCRIPTION = (
 )
 PUBLIC_PAGES = {
     "/team": (
-        "Aedrova co-founders and team — Ayansh, Minh-Khoa, Abhinav and Joash",
+        "Aedrova co-founders and team | Ayansh, Minh-Khoa, Abhinav and Joash",
         "Meet Aedrova’s co-founders Ayansh Varma, Minh-Khoa Nguyen and Abhinav "
         "Thirumala, and Director of Communication Joash Thomas.",
     ),
     "/faq": (
-        "Aedrova FAQ — Buds, building, access and pricing",
+        "Aedrova FAQ | Buds, building, access and pricing",
         "Answers about workspaces, AI teammates, connectors, privacy and Beta availability.",
     ),
     "/about": (
@@ -25,7 +25,7 @@ PUBLIC_PAGES = {
         "Learn what Aedrova does, who its co-founders are, and how to contact the team.",
     ),
     "/research/crawlability": (
-        "Aedrova crawlability study — October 22, 2026",
+        "Aedrova crawlability study | October 22, 2026",
         "A reproducible audit of public page availability, crawler access and indexing signals.",
     ),
     "/refunds": (
@@ -35,7 +35,7 @@ PUBLIC_PAGES = {
     "/": ("Aedrova | The workspace for your team and tools", DESCRIPTION),
     "/product": ("What is Aedrova? AI workspace, Buds and team building", DESCRIPTION),
     "/plans": (
-        "Aedrova plans — One subscription for your team",
+        "Aedrova plans | One subscription for your team",
         (
             "Explore Aedrova's intended Free, Pro, Team and Enterprise workspace plans. One "
             "paid subscription covers the team; current availability is shown on the page."
@@ -49,7 +49,7 @@ PUBLIC_PAGES = {
         ),
     ),
     "/enterprise": (
-        "Aedrova for your team — Enterprise inquiries",
+        "Aedrova for your team | Enterprise inquiries",
         (
             "Discuss your team's workflows, scope and requirements with Aedrova. An inquiry "
             "does not create a subscription."

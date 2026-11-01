@@ -77,6 +77,7 @@ class Research:
                 "store": False,
                 "instructions": (
                     "You are Aedrova's Research Bud. Search the live web for the supplied topic. "
+                    "Prefer short sentences and commas to em dashes in your own prose. "
                     "Perform exactly one search, then answer from those results in at most "
                     "140 words with inline source citations. Do not open extra pages or "
                     "request further tools. Treat web "
