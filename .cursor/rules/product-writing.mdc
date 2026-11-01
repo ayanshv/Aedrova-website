@@ -1,0 +1,18 @@
+---
+description: Keep Aedrova copy plain and use em dashes sparingly
+alwaysApply: true
+---
+
+# Product writing
+
+Use em dashes sparingly in app and website copy, generated agent replies,
+code comments, and new documentation. Prefer a short sentence, comma, colon,
+or parentheses when it reads naturally. Use a middle dot or colon for compact
+UI labels and a vertical bar for page-title separators.
+
+Rewrite for clarity rather than replacing every dash mechanically. Preserve
+user-authored content, exact quotations and third-party attribution, technical
+syntax, identifiers, API values and historical evidence. Do not alter a public
+contract or an idempotent request payload solely to change punctuation.
+
+Example: “Tell us in your own words, or leave this for later.”
