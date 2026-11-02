@@ -537,7 +537,10 @@ def create_app(config=None):
     def download(request: Request):
         if config.waitlist_only:
             return RedirectResponse("/waitlist", status_code=303)
-        return page(request, "download", "Aedrova for Mac", release_ready=config.release_ready)
+        return page(
+            request, "download", "Download Aedrova for Mac and Windows",
+            release_ready=config.release_ready,
+        )
 
     @app.get("/enterprise")
     def enterprise(request: Request):

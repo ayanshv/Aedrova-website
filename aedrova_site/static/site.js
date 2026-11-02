@@ -249,11 +249,11 @@ if ($('#workspace')) {
       $('#balance').hidden = false;
       $('#topup').disabled = !canManage || data.plan === 'free';
       status.textContent = data.early_access ? 'Your team has limited early access until ' + new Date(data.early_access_ends_at * 1000).toLocaleString() + '. No payment or subscription was created. Plan usage limits apply.' : testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
-        'Your team’s ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. One subscription covers your team. ' + (child ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the Mac app.');
+        'Your team’s ' + ({free:'Free',monthly:'Pro',annual:'Team'}[data.plan] || data.plan) + ' plan is active. One subscription covers your team. ' + (child ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the desktop app.');
     } else {
       status.textContent = !canManage ? 'Your workspace owner or admin manages the subscription.' :
         checkoutReady ? 'Review your selected plan on Stripe before confirming. ' + (testMode ? 'Test payments only.' : '') :
-        'Paid beta checkout is being prepared. No payment has been taken. Your workspace is ready for the Mac app.';
+        'Paid beta checkout is being prepared. No payment has been taken. Your workspace is ready for the desktop app.';
     }
   }
   async function load(preferredWorkspace = '') {
