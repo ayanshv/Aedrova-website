@@ -436,3 +436,12 @@ footer.trust-footer .language-preferences select{width:100%;max-width:none;min-h
 footer.trust-footer .language-preferences p{grid-column:1/-1;max-width:none;line-height:1.65}
 @media(max-width:960px){footer.trust-footer .language-preferences{justify-self:start}}
 @media(max-width:600px){footer.trust-footer .footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 20px}footer.trust-footer .footer-columns a,footer.trust-footer .footer-columns button{overflow-wrap:anywhere}}
+
+/* Equal platform choices, with release status beside the relevant installer. */
+.download-platforms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:32px 0 40px}
+.download-platform{min-width:0;padding:28px;border:1px solid var(--edge);border-radius:24px;background:var(--surface)}
+.download-platform .platform-icon{width:36px;height:36px;color:var(--text);margin-bottom:16px}
+.download-platform h3{margin:0 0 12px;font-size:26px}
+.download-platform .button{margin-top:12px}
+.download-platform .notice{margin:20px 0 12px}
+@media(max-width:600px){.download-platforms{grid-template-columns:1fr;gap:16px}.download-platform{padding:24px}}
