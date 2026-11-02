@@ -42,7 +42,7 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
         assert communications < markup.index("Joash Thomas")
         assert "Bio coming soon" not in markup
         assert 'href="/team"' in markup
-        assert '/static/team/ayansh-varma.jpg' in markup
+        assert "/static/team/ayansh-varma.jpg" in markup
     for path in ("/", "/about"):
         markup = client.get(path).text
         assert 'href="/team"' in markup
@@ -61,10 +61,21 @@ def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client): 
     markup = client.get("/").text
     images = re.findall(r'<img\b[^>]*src="/static/([\w-]+\.png)([^\"]*)"', markup)
     ui_images = [(name, query) for name, query in images if name in captures]
-    # The two teammate-editor assets are refreshed for direct/legacy links; the
-    # eleven current homepage stories each display both appearances.
+    # The compact tour uses six capture pairs. Other genuine captures remain
+    # available for product details/direct links and retain integrity checks above.
     assert {name for name, _ in ui_images} == {
-        name for name in captures if not name.startswith("teammate-")
+        "workspace-light.png",
+        "workspace-dark.png",
+        "memory-light.png",
+        "memory-dark.png",
+        "build-review-light.png",
+        "build-review-dark.png",
+        "buds-connectors-current.png",
+        "buds-connectors-dark.png",
+        "meetings-light.png",
+        "meetings-dark.png",
+        "devices-light.png",
+        "devices-dark.png",
     }
     assert all(query == "?v=20261026" for _, query in ui_images)
     for name, _ in ui_images:
