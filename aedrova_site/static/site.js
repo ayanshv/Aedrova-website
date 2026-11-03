@@ -50,10 +50,10 @@ if(document.body.classList.contains('home-page')){
 const cinema=$('.cinema');
 const topBar=$('.nav');
 if(cinema&&topBar&&'IntersectionObserver' in window){
-  topBar.classList.toggle('nav-at-hero',cinema.getBoundingClientRect().bottom>96);
+  topBar.classList.toggle('nav-at-hero',cinema.getBoundingClientRect().bottom>170);
   new IntersectionObserver(entries=>{
     topBar.classList.toggle('nav-at-hero',entries[0].isIntersecting);
-  },{rootMargin:'-96px 0px 0px 0px'}).observe(cinema);
+  },{rootMargin:'-170px 0px 0px 0px'}).observe(cinema);
 }
 if(cinema){
   const video=cinema.querySelector('.scene');

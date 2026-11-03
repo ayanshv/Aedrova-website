@@ -539,9 +539,9 @@ html{scroll-padding-top:74px}
  .home-page .nav.nav-at-hero{padding-top:6px;padding-bottom:6px}
  .tour-panel:not([hidden]){display:block}
  .tour-copy{margin:0 0 18px}
- .tour-tabs{display:flex;overflow-x:auto;scrollbar-width:thin;margin-bottom:24px}
+ .tour-tabs{display:grid;margin-bottom:24px;row-gap:4px}
  .tour-tabs[hidden]{display:none}
- .tour-tabs button{flex:0 0 auto;padding:10px 12px}
+ .tour-tabs button{padding:10px 5px}
  .tour-tabs button[aria-selected=true]::after{bottom:0}
  .tour-detail{margin:16px 0 0}
 }
