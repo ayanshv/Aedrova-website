@@ -40,7 +40,7 @@ if(document.body.classList.contains('home-page')){
   history.scrollRestoration='manual';
   function landOnHero(){
     if(!location.hash){window.scrollTo({top:0,left:0,behavior:'instant'});return;}
-    try{const target=document.getElementById(decodeURIComponent(location.hash.slice(1)));(target?.closest('[data-product-tour]')||target)?.scrollIntoView({behavior:'instant',block:'start'});}catch{}
+    try{document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({behavior:'instant',block:'start'});}catch{}
   }
   landOnHero();
   window.addEventListener('pageshow',()=>requestAnimationFrame(landOnHero));

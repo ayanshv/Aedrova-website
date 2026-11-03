@@ -22,7 +22,6 @@
   <link rel="stylesheet" href="/static/site.css?v={{ asset_version }}">
   {% if request.url.path in ["/onboarding", "/account"] %}<script src="/static/preparation.js?v={{ asset_version }}" defer></script>{% endif %}
   <script src="/static/site.js?v={{ asset_version }}" defer></script>
-  {% if request.url.path == "/" %}<script src="/static/home-motion.js?v={{ asset_version }}" defer></script>{% endif %}
 <script src="/static/buds-motion.js" defer></script>
 <script src="/static/localization.js?v={{ asset_version }}" defer></script>
 </head>
