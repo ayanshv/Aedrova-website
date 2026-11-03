@@ -48,6 +48,13 @@ if(document.body.classList.contains('home-page')){
 
 // One local overhead loop. Browser-blocked playback always exposes a play button.
 const cinema=$('.cinema');
+const topBar=$('.nav');
+if(cinema&&topBar&&'IntersectionObserver' in window){
+  topBar.classList.toggle('nav-at-hero',cinema.getBoundingClientRect().bottom>170);
+  new IntersectionObserver(entries=>{
+    topBar.classList.toggle('nav-at-hero',entries[0].isIntersecting);
+  },{rootMargin:'-170px 0px 0px 0px'}).observe(cinema);
+}
 if(cinema){
   const video=cinema.querySelector('.scene');
   const motion=cinema.querySelector('.motion-toggle');
@@ -103,7 +110,7 @@ if(menuButton&&menu){
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
     }
   });
-  matchMedia('(min-width: 961px)').addEventListener('change',event=>{if(event.matches&&!menu.hidden)setMenu(false);});
+  matchMedia('(min-width: 1081px)').addEventListener('change',event=>{if(event.matches&&!menu.hidden)setMenu(false);});
 }
 
 if(!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window){document.documentElement.classList.add('js-motion');const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));}
