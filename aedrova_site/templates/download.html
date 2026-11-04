@@ -1,12 +1,13 @@
 {% extends "base.html" %}
+{% from "visual-components.html" import capture %}
 {% block main %}
-<div class="page-header">
+<div class="page-header reveal">
   <span class="eyebrow">YOUR TEAM, ON YOUR DESKTOP</span>
   <h1>One workspace.<br>Mac and Windows.</h1>
   <p>Your team, your tools and your agents. Choose the version for your computer.</p>
 </div>
-<section class="account-panel">
-  <div class="download-mark"><img src="/static/brand.png" width="80" height="80" alt="Aedrova"></div>
+<section class="account-panel download-showcase reveal">
+
   <h2>Find your download.</h2>
   <div class="download-platforms">
     <section class="download-platform" aria-labelledby="download-mac">
@@ -39,4 +40,5 @@
   <p class="subtle">For future updates, use Help → Check for updates in the app. Quit Aedrova before installing an update. Keep your previous installer until the new version opens successfully; your local project files stay in their original folders.</p>
   <a class="text-link" href="/account">Back to your account →</a>
 </section>
+<div class="download-preview">{{ capture("workspace-light", "workspace-dark", "Aedrova desktop workspace with a team conversation", 1800, 1129) }}</div>
 {% endblock %}
