@@ -1,0 +1,16 @@
+{% macro capture(light, dark, description, width, height, eager=false) -%}
+<figure class="visual-capture reveal">
+  <picture>
+    <img class="meeting-image-light" src="/static/{{ light }}.png?v=20261026" alt="{{ description }}" width="{{ width }}" height="{{ height }}" loading="{{ 'eager' if eager else 'lazy' }}" decoding="async">
+    <img class="meeting-image-dark" src="/static/{{ dark }}.png?v=20261026" alt="{{ description }}" width="{{ width }}" height="{{ height }}" loading="lazy" decoding="async">
+  </picture>
+  <figcaption>Aedrova desktop preview</figcaption>
+</figure>
+{%- endmacro %}
+
+{% macro bud_pair(first, second) -%}
+<div class="visual-buds reveal" aria-hidden="true">
+  <span class="site-bud look-{{ first }}"></span>
+  <span class="site-bud look-{{ second }}"></span>
+</div>
+{%- endmacro %}
