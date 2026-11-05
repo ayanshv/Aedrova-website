@@ -347,7 +347,7 @@ def test_http_routes_google_handoff_cookie_proof_csrf_and_real_callback(tmp_path
         assert "x-aedrova-branded-error" not in mismatch.headers
         recovered = client.get("/buds/authorize/" + "x" * 50, headers={"Accept": "text/html"})
         assert recovered.status_code == 403
-        assert "fresh connection" in recovered.text
+        assert "Start a new connection" in recovered.text
         assert "Connect your account for a fresh link" in recovered.text
         assert "Choose Google account" not in recovered.text
         assert "x-aedrova-branded-error" not in recovered.headers
@@ -455,7 +455,7 @@ def test_every_provider_uses_shared_confirmation_and_escapes_bud_name(provider):
         request, provider, {"name": "<script>bad</script>", "appearance": "finance"}
     )
     html = response.body.decode()
-    assert CATALOG[provider][0] + " is connected." in html
+    assert CATALOG[provider][0] + " is connected</h1>" in html
     assert COPY[provider] in html
     assert "connected-bud look-finance" in html
     assert "&lt;script&gt;bad&lt;/script&gt;" in html

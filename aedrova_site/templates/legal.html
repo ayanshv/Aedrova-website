@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block main %}
 <article class="legal policy-document">
-<span class="eyebrow">CLEAR EXPECTATIONS</span>
+
 <h1>{{ 'Privacy policy' if kind == 'privacy' else 'Terms of service' }}</h1>
 <p class="policy-date">Effective October 12, 2026 · Updated October 21, 2026</p>
 <div class="notice">{% if waitlist_only %}Aedrova is accepting waitlist registrations. Accounts, payments and app downloads are not open on this website.{% else %}Availability depends on your invitation, enabled features and subscription. A feature described here is not a promise that it is available to every account.{% endif %}</div>

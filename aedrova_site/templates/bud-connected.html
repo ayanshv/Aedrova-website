@@ -16,7 +16,7 @@
 <p class="eyebrow">YOUR BUD’S TOOLKIT</p>
 <div class="connected-bud look-{{ look }}" role="img" aria-label="{{ bud_name }} Bud"></div>
 <div class="connection-check" aria-label="{{ 'Account authorized' if selecting else 'Connection verified' }}">✓</div>
-<h1 id="connection-title">{{ provider }} is {{ 'authorized' if selecting else 'connected' }}.</h1>
+<h1 id="connection-title">{{ provider }} is {{ 'authorized' if selecting else 'connected' }}</h1>
 {% if selecting %}
 <p class="connection-lead">One last choice for <strong>{{ bud_name }}</strong>.</p>
 <div class="connection-detail">{{ 'Choose your Buffer organization' if publishing else 'Choose what your Bud can read' }}</div>

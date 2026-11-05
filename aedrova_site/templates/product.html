@@ -2,12 +2,12 @@
 {% from "visual-components.html" import capture %}
 {% block main %}
 <article class="legal policy-document visual-guide">
-<span class="eyebrow">YOUR TEAM, PLUS AGENTS</span>
+
 <h1>What is Aedrova?</h1><p class="eyebrow">By <a href="/about">Aedrova team</a> · Updated <time datetime="2026-10-22">October 22, 2026</time></p>
 <p>Aedrova is a collaborative AI workspace for startup teams. It brings team conversations, configurable AI teammates called Buds, and coding agents into one shared place, so authorized team context can help turn decisions into working software.</p>
 {{ capture("workspace-light", "workspace-dark", "Team channels and a product conversation in the Aedrova desktop app", 1800, 1129, true) }}
 <div class="notice">{% if waitlist_only %}Aedrova is currently accepting waitlist registrations. Public paid checkout and desktop downloads are not open.{% else %}Availability depends on invitations, enabled services and release readiness. Check the current access information before choosing a plan.{% endif %}</div>
-<nav class="policy-index" aria-label="Product guide"><a href="#workspace">The workspace</a><a href="#buds">Buds</a><a href="#building">Building</a><a href="#questions">Questions</a></nav>
+<nav class="policy-index" aria-label="Product guide"><a href="#workspace">The workspace</a><a href="#buds">Buds</a><a href="#shared-context">Shared context</a><a href="#model-router">Model router</a><a href="#building">Building</a><a href="#questions">Questions</a></nav>
 <h2 id="workspace">A workspace for conversations and delivery</h2>
 <p>Teams can organize workspaces, channels and private conversations, reply in threads, react to messages, share verified files and send voice messages. Project, work and file views keep related work near the conversation. Audio and video meetings are part of the application; hosted transcription remains subject to infrastructure and acceptance checks.</p>
 
@@ -15,6 +15,13 @@
 {{ capture("buds-connectors-current", "buds-connectors-dark", "Bud setup with a gallery of available connector options", 1200, 1000) }}
 <p>Buds have names, appearances and working-style preferences. Builder, Designer, Marketing, Finance, Research and Product are the available role orientations. Mention a configured Bud in chat to request help within its authorized context and resources. Buds are software assistants, not human employees or independent professional advisers.</p>
 <p>Connections bring permitted information from external services into supported tasks. Role-based recommendations help people choose relevant tools. Provider authorization, account eligibility, selected resources and actual integration readiness still determine access. A connector listing is not a promise that every provider is fully approved and available.</p>
+<h2 id="shared-context">Your agents can build on each other’s work</h2>
+<p>Aedrova and Buds can consult shared agent work, approved decisions, accessible conversations and supported files. Research can inform the next build, and reviewed build evidence can inform the next task. Context gathering shows when shared agent work is being consulted.</p>
+{{ capture("memory-light", "memory-dark", "Product memory with an approved constraint and source reference", 1000, 1050) }}
+<p>Workspace and private-source permissions determine what can be used. Sharing agent work does not expose inaccessible conversations.</p>
+<h2 id="model-router">Auto chooses an eligible coding provider</h2>
+<p>Keep the coding agent on Auto to route implementation, repair, testing and refactoring tasks between supported Codex and Claude Code providers. The router checks availability, tool support and configured budget or latency constraints. Ordinary conversation uses the conversation path.</p>
+<p>When reviewed, comparable evaluations are available, Auto weighs quality, cost and latency. Otherwise it uses an eligible default. You can select a provider manually or use the workspace default. Provider access and enabled services determine which choices are available.</p>
 <h2 id="building">Build from shared context</h2>
 {{ capture("build-review-light", "build-review-dark", "Build review with requirements, source references and check results", 1000, 840) }}
 <p>The coding workflow can use permitted workspace discussions and connected project context to plan work, edit a separate build copy and run supported checks. Users can select a supported Codex or Claude Code runtime. Applying changes to the original project and publishing retain their relevant approval gates.</p>

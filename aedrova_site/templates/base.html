@@ -54,7 +54,7 @@
 </footer>
 {% if request.url.path in ["/onboarding", "/account"] %}{% include "preparation.html" %}{% endif %}
 <aside id="storage-notice" class="storage-notice" aria-labelledby="storage-title" hidden>
-<div><h2 id="storage-title">Your browser. Your choice.</h2><p>Essential storage supports sign-in and remembers this choice. Allow preferences to remember your appearance and introduction answers on this device. No advertising or analytics cookies. <a href="/cookies">Details</a></p></div>
+<div><h2 id="storage-title">Browser storage choices</h2><p>Essential storage supports sign-in and remembers this choice. Allow preferences to remember your appearance and introduction answers on this device. No advertising or analytics cookies. <a href="/cookies">Details</a></p></div>
 <div class="storage-actions"><button type="button" class="button outline" data-storage-choice="essential">Essential only</button><button type="button" class="button outline" data-storage-choice="preferences">Allow preferences</button></div>
 </aside>
 <div class="toast" role="status" aria-live="polite"></div>
