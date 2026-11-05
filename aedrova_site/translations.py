@@ -74,7 +74,7 @@ LANGUAGES = {
 }
 Language = Literal[tuple(LANGUAGES)]
 MAX_OUTPUT = 16000
-# Protect executable/technical text, account mentions, source references and URLs.
+
 PROTECTED = re.compile(
     r"```[\s\S]*?```|`[^`\n]*`|<@[^>\n]+>|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|@[\w.-]+|https?://[^\s<>\)]+|\[(?:message|file|source):[^\]\n]+\]"
 )
@@ -134,7 +134,7 @@ class Translations:
             raise Denied("Translation text is malformed or too large.")
         if sum(len(t.encode()) for t in texts) > 24000:
             raise Denied("Translate a smaller batch.")
-        # Fresh membership/billing authorization precedes every cache read.
+
         context = self.identity.billing_context(session, workspace)
         if (
             not self.config.gateway_enabled

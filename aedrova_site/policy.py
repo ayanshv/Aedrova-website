@@ -17,7 +17,7 @@ PLAN_POLICY = {
     },
 }
 
-# Team adds capacity to the same implemented collaboration features. No unlimited AI.
+
 USAGE_POLICY = {
     "free": {
         "budget": 500_000,
@@ -57,7 +57,7 @@ USAGE_POLICY = {
 PLAN_NAMES = {"free": "Free", "monthly": "Pro", "annual": "Team"}
 BUD_LIMITS = {"free": 1, "pro": 5, "team": 15}
 
-# Approved public catalog; legacy Stripe SKUs above stay unchanged until migration.
+
 PUBLIC_PLAN_PRICES = {
     "pro": {"monthly": 15, "annual": 120},
     "team": {"monthly": 25, "annual": 250},

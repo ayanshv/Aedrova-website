@@ -174,7 +174,7 @@ class SocialService:
         available = {r["id"]: r for r in adapter.get_connected_accounts(token, grant["resource"])}
         if any(c not in available or not available[c]["can_publish"] for c in body.channels):
             raise Denied("Choose available channels with publishing permission.")
-        # Recheck the grant in the write transaction; a concurrent disconnect must win.
+
         with self.store.tx() as db:
             self.lock_grant(db, grant)
             db.execute(text("DELETE FROM social_channels WHERE connection=:c"), {"c": grant["id"]})
@@ -287,8 +287,8 @@ class SocialService:
             self.lock_grant(db, grant)
             permission = self.permission(db, grant["id"], body.channel)
             channel = json.loads(permission["metadata"])
-            # Validate platform requirements using explicit basic formats; provider
-            # validation remains authoritative for plan and channel-specific limits.
+
+
             if (
                 channel["platform"] in {"instagram", "tiktok", "youtube", "pinterest"}
                 and not body.assets
@@ -319,7 +319,7 @@ class SocialService:
                     and self.decode(previous) == content
                     and previous["revision"] == body.revision + 1
                 ):
-                    return self.public(previous)  # Lost save response; no second draft.
+                    return self.public(previous)
                 if previous["revision"] != body.revision or previous["state"] not in {
                     "draft",
                     "approved",
@@ -386,7 +386,7 @@ class SocialService:
         if row["revision"] != body.revision:
             raise Denied("Review the latest draft first.")
         if row["state"] in {"sending", "submitted", "unknown"}:
-            return self.public(row)  # An ambiguous request is never sent again.
+            return self.public(row)
         grant, token, adapter = self.grant(dot, user, row["connection"])
         channels = adapter.get_connected_accounts(token, grant["resource"])
         if not any(
@@ -416,7 +416,7 @@ class SocialService:
             db.execute(
                 text("UPDATE social_posts SET state='sending' WHERE id=:i"), {"i": row["id"]}
             )
-        # Durable claim precedes any external write. Crash/timeout cannot replay it.
+
         state, result, error = "unknown", {}, "Check Buffer before resubmitting this post."
         try:
             fresh, fresh_user = self.scope(session, body.workspace, body.dot)
@@ -424,7 +424,7 @@ class SocialService:
                 raise Denied("Bud settings changed. No post was submitted.")
             with self.store.tx() as db:
                 self.lock_grant(db, grant)
-                # Disconnect and channel deselection serialize with this request.
+
                 current_permission = self.permission(db, row["connection"], row["channel"])
                 if current_permission["permission"] != content["permission"]:
                     raise Denied("Channel selection changed. No post was submitted.")

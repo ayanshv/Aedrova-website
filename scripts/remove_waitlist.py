@@ -13,8 +13,8 @@ def remove_registration(store, email):
     address = email.strip().casefold()
     if not address or "@" not in address:
         raise ValueError("Provide a verified registration address.")
-    # Fail closed if decryption fails. Inspect only the waitlist kind; OAuth/account
-    # records can have the same email and must never be removed by this operation.
+
+
     with store.tx() as db:
         matches = []
         for identifier, encrypted in db.execute(text("SELECT id,payload FROM sessions")):

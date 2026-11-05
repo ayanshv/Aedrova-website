@@ -46,8 +46,8 @@ def test_user_values_never_become_sql(client, payload):  # noqa: F811
 
 
 def test_no_interpolated_sql_literals():
-    # Guard new direct interpolation at SQLAlchemy text sinks. Existing dynamic
-    # schema/lease statements are reviewed constant allowlists, not user SQL.
+
+
     for path in Path("aedrova_site").glob("*.py"):
         for node in ast.walk(ast.parse(path.read_text())):
             if (
@@ -78,7 +78,7 @@ def test_unsubscribe_requires_valid_purpose_and_confirmation(client, tmp_path): 
     )
     url = unsubscribe_url(store, "person@example.com", "http://127.0.0.1:8090")
     token = parse_qs(urlsplit(url).query)["token"][0]
-    assert client.get(url).status_code == 200  # GET must not suppress link scanners.
+    assert client.get(url).status_code == 200
     assert export(store, tmp_path / "before.csv") == 1
     headers = {"origin": "http://127.0.0.1:8090"}
     assert (

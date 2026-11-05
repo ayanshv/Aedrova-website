@@ -62,7 +62,7 @@ class StorageCleanup:
         if not isinstance(rows, list) or len(rows) > 10:
             raise RuntimeError("Invalid cleanup batch.")
         seen = set()
-        # Validate the ENTIRE batch before any external deletion.
+
         for row in rows:
             if not isinstance(row, dict) or not isinstance(row.get("object_path"), str):
                 raise RuntimeError("Invalid cleanup object.")
@@ -84,7 +84,7 @@ class StorageCleanup:
             )
             if not isinstance(removed, list):
                 raise RuntimeError("Invalid Storage deletion response.")
-            # SQL independently verifies storage metadata is gone before releasing bytes.
+
             result = self.request(
                 "POST",
                 "/rest/v1/rpc/finish_storage_cleanup",

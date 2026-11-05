@@ -97,7 +97,7 @@ def main():
     try:
         report = check(Config.load(), probe=args.probe, speech=args.speech, database=args.database)
     except Exception:
-        # Config/HTTP/SQL error payloads can contain keys, origins or DSNs.
+
         raise SystemExit(
             "Meeting staging preflight failed. Check server configuration, "
             "HTTPS and the independent guard; credentials were not printed."

@@ -22,7 +22,6 @@ from aedrova_site.connection_confirmation import TEMPLATES, confirmation
 from aedrova_site.social.providers import BufferAdapter
 from aedrova_site.store import Denied
 
-# All destinations are fixed. Scopes are configured by Aedrova, never model/client input.
 PROVIDERS = {
     "buffer": (BufferAdapter.AUTHORIZE, BufferAdapter.TOKEN, BufferAdapter.SCOPES),
     "stripe": (
@@ -244,7 +243,7 @@ class BudOAuth:
                 payload,
             )
         if provider == "stripe":
-            # Preserve provider-issued external-test parameters; never accept a client URL.
+
             from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
             parts = urlsplit(self.config.stripe_bud_authorize_url)
@@ -298,14 +297,14 @@ class BudOAuth:
                 body["code_verifier"] = verifier
         token_url = PROVIDERS[provider][1]
         if provider == "figma" and refresh:
-            # Figma's refresh grant has its own endpoint and reuses the original
-            # refresh token when the response only returns a new access token.
+
+
             token_url = "https://api.figma.com/v1/oauth/refresh"
             body = {"refresh_token": refresh}
         headers = {"Accept": "application/json"}
         kwargs = {"auth": (client_id, client_secret)}
         if provider == "github":
-            # GitHub App user authorization (repository access is selected at installation).
+
             body.update(client_id=client_id, client_secret=client_secret)
             kwargs = {}
         if provider == "tiktok":
@@ -322,7 +321,7 @@ class BudOAuth:
                 if response.status_code in {400, 401, 403} or (
                     provider == "supabase" and refresh and response.status_code == 404
                 ):
-                    # Supabase returns 404 when a revoked refresh token no longer exists.
+
                     raise Denied("Needs authorization")
                 response.raise_for_status()
                 raw = bytearray()
@@ -334,8 +333,8 @@ class BudOAuth:
             if not isinstance(result, dict):
                 raise Denied("Unsupported authorization response.")
             if result.get("error"):
-                # Some providers return OAuth revocation errors with HTTP 200.
-                # Never echo their response or treat it as a malformed token.
+
+
                 raise Denied("Needs authorization")
             access = result.get("access_token", "")
             refresh_token = result.get("refresh_token", refresh or "")
@@ -349,7 +348,7 @@ class BudOAuth:
                 or any(c.isspace() for c in refresh_token)
             ):
                 raise Denied("Unsupported authorization response.")
-            # Reject unexpectedly broad grants where the provider returns OAuth scopes.
+
             scope = result.get("scope")
             if scope and provider in {"figma", "supabase", "tiktok"}:
                 scopes = set(scope.replace(",", " ").split() if isinstance(scope, str) else scope)
@@ -412,8 +411,8 @@ class BudOAuth:
                     **({"team": token.get("team", "")} if provider == "vercel" else {}),
                 )
                 if provider == "vercel" and len(payload["choices"]) == 1:
-                    # Vercel already lets the customer restrict the install to a project.
-                    # Do not ask them to select that sole authorized project a second time.
+
+
                     resource = payload["choices"][0]["id"]
                 else:
                     payload.pop("proof", None)
@@ -439,7 +438,7 @@ class BudOAuth:
             connection_id, status = result["id"], "connected"
             return result
         finally:
-            # Remove desktop session, browser proof and verifier once callback is consumed.
+
             if status != "choose_resource":
                 payload = {k: payload[k] for k in ("dot", "user", "provider", "resource")}
             with self.store.tx() as db:
@@ -479,7 +478,7 @@ class BudOAuth:
 
     def select(self, session, state, resource):
         row, payload = self.state(state)
-        self.status(session, state)  # Checks membership, account and Bud version.
+        self.status(session, state)
         if row["status"] != "choose_resource":
             raise Denied("Connect your account again before selecting a resource.")
         resource = validate_resource(payload["provider"], resource)

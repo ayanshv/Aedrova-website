@@ -220,7 +220,7 @@ def test_webhook_tampering_rejected_before_stripe_request(tmp_path, monkeypatch)
 
 
 def test_checkout_rejects_price_mismatch_before_creating_session(store, monkeypatch):
-    # Normal paid checkout is tested outside the shared free introductory window.
+
     monkeypatch.setattr("aedrova_site.promotion.status", lambda: {"active": False})
     payments = Payments(
         Config(
@@ -263,7 +263,7 @@ def test_purchased_credits_are_explicit_idempotent_and_carry_over(store):
         PLAN_POLICY["monthly"],
     )
     assert store.balance("space-a")["available"] == 4_000_000
-    # Renewals in the same UTC month do not grant a second monthly AI budget.
+
 
 
 def test_pending_wallet_reservation_survives_period_renewal(store):
@@ -400,7 +400,7 @@ def test_duplicate_parallel_credit_events_cannot_grant_twice(store):
 
 
 def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(store, monkeypatch):
-    # Normal paid checkout is tested outside the shared free introductory window.
+
     monkeypatch.setattr("aedrova_site.promotion.status", lambda: {"active": False})
     store.customer("space-new", "cus_new")
     config = Config(
@@ -472,7 +472,7 @@ def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
     def create(**kw):
         calls.append(kw)
         key = kw["idempotency_key"]
-        # Simulate Stripe creating the session, then losing the HTTP response.
+
         stripe_objects.setdefault(
             key, {"url": "https://checkout.stripe.com/retry", "expires_at": kw["expires_at"]}
         )
@@ -494,7 +494,7 @@ def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
     clock = time.time()
     monkeypatch.setattr("time.time", lambda: clock + 5)
     assert checkout("Renamed team") == "https://checkout.stripe.com/retry"
-    assert calls[0] == calls[1]  # Expiry, text, metadata and Stripe key all identical.
+    assert calls[0] == calls[1]
     assert len(stripe_objects) == 1
     assert checkout("Again") == "https://checkout.stripe.com/retry"
     assert len(calls) == 2

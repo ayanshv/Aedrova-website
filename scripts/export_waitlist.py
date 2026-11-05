@@ -15,7 +15,7 @@ from aedrova_site.store import Store
 
 
 def export(store, destination, origin="https://aedrova.com"):
-    # Exclusive create prevents overwriting another list; output is owner-readable only.
+
     with store.tx(write=False) as db:
         rows = (
             db.execute(
@@ -34,7 +34,7 @@ def export(store, destination, origin="https://aedrova.com"):
                 continue
             opt_out = unsubscribe_url(store, email, origin)
             if email.startswith(("=", "+", "-", "@")):
-                email = "'" + email  # Prevent spreadsheet formula execution on CSV open.
+                email = "'" + email
             detail = str(payload.get("referral_detail", ""))
             if detail.startswith(("=", "+", "-", "@")):
                 detail = "'" + detail

@@ -39,7 +39,7 @@ class Identity:
                 json=data,
             )
             response.raise_for_status()
-            # PostgREST void RPCs (presence/leave/end) succeed with HTTP 204.
+
             if response.status_code == 204:
                 return None
             return response.json()
@@ -209,8 +209,8 @@ class Payments:
                     return prior["url"]
                 if prior["expires"] <= int(time.time()):
                     raise Denied("Checkout expired. Start a new checkout.")
-                # Retry uncertain network failures with the exact same Stripe idempotency key.
-                # A different request is still blocked while this reservation is pending.
+
+
             waiting = db.execute(
                 text("SELECT id FROM checkout WHERE workspace=:w AND expires>:now"),
                 {"w": workspace, "now": int(time.time())},
@@ -252,8 +252,8 @@ class Payments:
             idempotency_key="aedrova-checkout-" + identifier,
             api_key=config.stripe_key,
         )
-        # Freeze every Stripe argument before the network request. An uncertain
-        # response must be retried with the same key AND identical parameters.
+
+
         api_key = parameters.pop("api_key")
         parameters = self.store.checkout_parameters(identifier, parameters)
         session = stripe.checkout.Session.create(**parameters, api_key=api_key)
@@ -293,7 +293,7 @@ class Payments:
                     return prior["url"]
                 if prior["expires"] <= int(time.time()):
                     raise Denied("This AI credit checkout expired. Start a new checkout.")
-                # Same pending transaction may retry Stripe with its original key.
+
             if (
                 not prior
                 and db.execute(
@@ -324,8 +324,8 @@ class Payments:
             + hashlib.sha256((workspace + request_id).encode()).hexdigest(),
             api_key=self.config.stripe_key,
         )
-        # Freeze every Stripe argument before the network request. An uncertain
-        # response must be retried with the same key AND identical parameters.
+
+
         api_key = parameters.pop("api_key")
         parameters = self.store.checkout_parameters(identifier, parameters)
         session = stripe.checkout.Session.create(**parameters, api_key=api_key)
@@ -398,7 +398,7 @@ class Payments:
             ):
                 raise Denied("Invalid credit reversal amount.")
             self.store.reverse_credit(charge.get("payment_intent", ""), refunded, charge["amount"])
-            # A full subscription refund/dispute cannot be undone by delayed paid webhooks.
+
             if refunded >= charge["amount"] and charge.get("invoice"):
                 invoice = stripe.Invoice.retrieve(charge["invoice"], api_key=self.config.stripe_key)
                 subscription = invoice.get("subscription") or invoice.get("parent", {}).get(
@@ -478,7 +478,7 @@ class Payments:
             subscription = item["id"]
         if not subscription:
             return
-        # Current canonical Stripe state prevents delayed events from reactivating stale plans.
+
         current = stripe.Subscription.retrieve(
             subscription, expand=["latest_invoice"], api_key=self.config.stripe_key
         )
@@ -495,7 +495,7 @@ class Payments:
         ):
             raise Denied("Subscription pricing does not match an approved plan.")
         invoice = current.get("latest_invoice") or {}
-        # Recent Stripe API versions use invoice.status instead of invoice.paid.
+
         paid = isinstance(invoice, dict) and (
             invoice.get("status") == "paid" or invoice.get("paid") is True
         )
@@ -527,8 +527,8 @@ class Payments:
         expected_state = fingerprint(current)
 
         def recheck():
-            # Re-read under the ledger's workspace lock: overlapping webhook deliveries
-            # cannot apply an old canonical snapshot after a newer cancellation/refund.
+
+
             latest = stripe.Subscription.retrieve(
                 subscription, expand=["latest_invoice"], api_key=self.config.stripe_key
             )

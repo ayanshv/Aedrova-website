@@ -1,6 +1,6 @@
-# MANUAL IMPORT ONLY: one $7/month base guard worker, after owner cost approval.
-# First upgrade and configure the EXISTING aedrova-beta-staging API.
-# Copies only the guard's required staging configuration; no speech/provider key.
+
+
+
 services:
   - type: worker
     name: aedrova-beta-meeting-guard

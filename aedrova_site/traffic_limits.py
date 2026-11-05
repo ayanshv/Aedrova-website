@@ -65,15 +65,15 @@ class TrafficLimits:
             )
             return
         category, maximum, seconds = policy(path, scope["method"])
-        # scope.client is supplied by the ASGI server. Its proxy allowlist must be
-        # configured at deployment; raw X-Forwarded-For must never be a bypass.
+
+
         client = scope.get("client")
         address = client[0] if client else "unknown"
         key = "ingress:" + category + ":" + hashlib.sha256(address.encode()).hexdigest()
         try:
             if path == "/health":
-                # Liveness must survive a DB outage. One bounded process-wide
-                # counter, no growing per-IP fallback and no product API bypass.
+
+
                 window = int(time.monotonic()) // 60
                 if window != self.health_window:
                     self.health_window, self.health_count = window, 0

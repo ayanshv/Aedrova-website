@@ -1,6 +1,6 @@
 'use strict';
 const $ = (selector) => document.querySelector(selector);
-// Only persist optional preferences after a clear storage choice. No tracking SDKs.
+
 const memory = new Map();
 let preferenceChoice = null;
 try{preferenceChoice=JSON.parse(localStorage.getItem('aedrova-storage-choice'));}catch{}
@@ -35,7 +35,7 @@ document.documentElement.dataset.theme=theme;
 document.querySelectorAll('.theme-toggle').forEach(button=>button.addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;storage.set('aedrova-theme',next);}));
 document.querySelectorAll('.desktop-nav a,.mobile-menu a').forEach(link=>{if(link.getAttribute('href')===location.pathname&&location.pathname!=='/')link.setAttribute('aria-current','page');});
 
-// Homepage visits begin at the hero; explicit section links retain their target.
+
 if(document.body.classList.contains('home-page')){
   history.scrollRestoration='manual';
   function landOnHero(){
@@ -46,7 +46,7 @@ if(document.body.classList.contains('home-page')){
   window.addEventListener('pageshow',()=>requestAnimationFrame(landOnHero));
 }else history.scrollRestoration='auto';
 
-// One local overhead loop. Browser-blocked playback always exposes a play button.
+
 const cinema=$('.cinema');
 if(cinema){
   const video=cinema.querySelector('.scene');
@@ -116,7 +116,7 @@ const form=$('#onboarding-form');
 if(form){
   const saved=storage.get('aedrova-intro',{});
   const state=saved&&typeof saved==='object'&&!Array.isArray(saved)?saved:{};
-  // Every visit begins with an introduction; retain answers, never restore the old page.
+
   let step=0;
   const fields=[...form.querySelectorAll('fieldset')];
   const lastStep=fields.length-1;
@@ -380,7 +380,7 @@ if(unsubscribeForm)unsubscribeForm.addEventListener('submit',async event=>{
   catch(error){result.textContent=error.message;button.disabled=false;}
 });
 
-// Pricing choice is ephemeral and does not require preference storage.
+
 const pricing=document.querySelector('[data-pricing]');
 if(pricing){document.querySelectorAll('[data-billing-choice]').forEach(choice=>choice.addEventListener('click',event=>{
   if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
@@ -390,8 +390,8 @@ if(pricing){document.querySelectorAll('[data-billing-choice]').forEach(choice=>c
   history.replaceState(null,'',choice.href);
 }));}
 
-// Server-calculated remaining time, advanced by a monotonic clock. No localStorage
-// countdown and no dependency on the visitor's editable device date.
+
+
 const earlyOffer=document.querySelector('[data-early-access]');
 if(earlyOffer&&!earlyOffer.hidden){
   let initialRemaining=Number(earlyOffer.dataset.remaining);
@@ -418,7 +418,7 @@ if(earlyOffer&&!earlyOffer.hidden){
       const current=await response.json();
       if(current.ends_at!==Number(earlyOffer.dataset.endsAt)||!Number.isFinite(current.remaining_seconds))return;
       initialRemaining=Math.max(0,current.remaining_seconds);receivedAt=performance.now();updateOffer();
-    }catch{/* Server entitlement checks remain authoritative when offline. */}
+    }catch{                                                                  }
   }
   updateOffer();
   if(initialRemaining>0){offerInterval=setInterval(updateOffer,1000);offerSync=setInterval(syncOffer,60000);}

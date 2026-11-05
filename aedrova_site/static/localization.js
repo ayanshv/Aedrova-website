@@ -1,4 +1,4 @@
-/* Per-reader display translation. Never rewrites inputs, IDs, links or submitted text. */
+
 (() => {
   'use strict';
   const assetQuery=document.currentScript?new URL(document.currentScript.src).search:'';

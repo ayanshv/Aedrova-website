@@ -22,7 +22,7 @@ def test_login_limit_persists_across_workers_and_forwarded_header_is_not_a_bypas
 
         return app
 
-    # Keep the test away from an actual fixed-window boundary.
+
     from unittest.mock import patch
 
     with patch.object(time, "time", return_value=1800000001):
@@ -43,7 +43,7 @@ def test_unknown_routes_and_metadata_are_bounded(tmp_path):
             "/missing", headers=[("authorization", "one"), ("authorization", "two")]
         )
         assert ambiguous.status_code == 400
-        # Unmatched paths share the same bucket; random URLs cannot grow keys.
+
         calls = []
         original = app.state.store.rate_limit
 

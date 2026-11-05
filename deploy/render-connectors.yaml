@@ -1,5 +1,5 @@
-# Separate free HTTPS connector service. Never import the root website Blueprint for this task.
-# Use only the approved connector branch. Persistent data stays in the restricted Supabase schema.
+
+
 services:
   - type: web
     name: aedrova-connectors

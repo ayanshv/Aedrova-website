@@ -253,7 +253,7 @@ class BrowserErrors:
             and not scope.get("path", "").startswith(("/api/", "/gateway/", "/static/", "/stripe/"))
         )
         if not browser:
-            # Keep JSON/API errors bounded and private even for unexpected failures.
+
             sent = False
 
             async def machine_response(message):
@@ -279,8 +279,8 @@ class BrowserErrors:
             nonlocal started, replaced
             if message["type"] == "http.response.start":
                 started = True
-                # Only our explicit recovery templates may retain their actionable copy.
-                # A response marker is set by server code, never by request headers.
+
+
                 response_headers = message.get("headers", [])
                 recovery = (b"x-aedrova-branded-error", b"1") in response_headers
                 message["headers"] = [

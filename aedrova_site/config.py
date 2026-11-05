@@ -156,7 +156,7 @@ class Config:
         }:
             raise ValueError("Choose development, staging or production environment.")
         if self.deployment_environment == "staging":
-            # A staging label alone must never permit writes to the existing production project.
+
             if not self.production or not self.supabase_database:
                 raise ValueError("Staging requires HTTPS and a separate Supabase database.")
             if urlparse(self.supabase_url).hostname == "cpelagtufyocepnqcqqd.supabase.co":

@@ -1,4 +1,4 @@
-# Isolated beta staging. No production credentials, checkout or public downloads.
+
 services:
   - type: web
     name: aedrova-beta-staging

@@ -150,7 +150,7 @@ def test_busy_and_disabled_never_send():
 
 def test_models_reject_speaker_and_invalid_review():
     good = body().model_dump()
-    # Every meeting input forbids extra fields; trusted identity owns the speaker.
+
     with pytest.raises(ValueError):
         MeetingSpeechBody(**good, speaker_id=str(uuid4()))
     for values in [dict(version=-1), dict(body="x" * 2001), dict(decision="yes")]:

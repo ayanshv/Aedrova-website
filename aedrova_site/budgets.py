@@ -31,7 +31,7 @@ def month():
 
 
 def lock(db):
-    # Always before the workspace lock: consistent ordering avoids cross-workspace deadlocks.
+
     if db.dialect.name == "postgresql":
         db.execute(text("SELECT pg_advisory_xact_lock(73114012)"))
 

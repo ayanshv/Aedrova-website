@@ -153,7 +153,7 @@ def test_cancellation_falls_back_to_free_only_after_server_enable(ledger):
     )
     assert ledger.balance("one")["plan"] == "free"
     assert ledger.balance("one")["available"] == 500_000
-    # A canonical reactivation restores Pro, preserving the underlying Stripe customer.
+
     now = int(time.time())
     ledger.subscription(
         "reactivated",
@@ -179,8 +179,8 @@ def test_threshold_alerts_and_private_report_preserve_usage(ledger):
         450_000,
         {"id": "approved-model", "input_rate": 1_000_000},
     )
-    # Reservations are included so an operator can intervene before they settle.
-    assert ledger.budget_health()["alerts"] == []  # reserve emitted each alert once
+
+    assert ledger.budget_health()["alerts"] == []
     ledger.settle(identifier, 400_000, b"ok", {"input_tokens": 123, "output_tokens": 45})
     result = report(ledger)
     assert result["usage"][0]["estimated_microusd"] == 400_000

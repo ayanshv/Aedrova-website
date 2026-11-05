@@ -16,7 +16,7 @@ def test_release_endpoint_stays_closed_before_notarized_release():
 
 
 def test_verified_manifest_drives_update_and_download_handoff(tmp_path):
-    # A manifest fixture tests wiring only; it is not signing/notarization acceptance.
+
     artifact = tmp_path / "Aedrova.dmg"
     artifact.write_bytes(b"release endpoint fixture")
     digest = hashlib.sha256(artifact.read_bytes()).hexdigest()

@@ -88,7 +88,7 @@ def exchange(oauth, provider, *, code=None, refresh=None):
             team and not re.fullmatch(r"team_[A-Za-z0-9]{1,100}", team)
         ):
             raise Denied("Unsupported authorization account.")
-        # Long-lived integration tokens are revoked by uninstalling the integration.
+
         data["expires_in"] = 31536000
     elif provider == "instagram":
         if refresh:
@@ -134,7 +134,7 @@ def exchange(oauth, provider, *, code=None, refresh=None):
             params={"fields": "id,user_id,username"},
         )
         actor = validate_resource(provider, str(profile.get("user_id") or profile.get("id", "")))
-        # Instagram renews its long-lived access token, rather than issuing a refresh token.
+
         data["refresh_token"] = data["access_token"]
     else:
         raise Denied("Unsupported authorization provider.")

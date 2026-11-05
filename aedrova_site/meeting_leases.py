@@ -42,7 +42,7 @@ class MeetingLeases:
         return time.monotonic() - self.last_success < 10
 
     def external_ready(self):
-        # Shared evidence, not HTTP-process uptime. A stopped guard expires fail-closed.
+
         try:
             with self.store.tx() as db:
                 row = db.execute(
@@ -158,13 +158,13 @@ class MeetingLeases:
                     p["user_id"] == row["user_id"] for p in snapshot["participants"]
                 )
             except Exception:
-                valid = False  # Includes membership loss, expired JWT and auth outage.
+                valid = False
         if valid:
             return True
         if not await asyncio.to_thread(self.revoke_current, row):
-            return False  # A heartbeat or another guard changed it; recheck next sweep.
+            return False
         try:
-            # Cloud explicit cutoff rejects freshly refreshed cached tokens too.
+
             await asyncio.wait_for(
                 service.room.remove_participant(
                     api.RoomParticipantIdentity(
@@ -176,7 +176,7 @@ class MeetingLeases:
                 timeout=5,
             )
         except Exception:
-            return False  # Durable retry; never silently forget failed removal.
+            return False
         await asyncio.to_thread(self.mark_revoked, row)
         return True
 
@@ -222,7 +222,7 @@ class MeetingLeases:
                     try:
                         await asyncio.to_thread(self.publish_health, role, False)
                     except Exception:
-                        pass  # Prior heartbeat expires; never replace with a success.
+                        pass
                 await asyncio.sleep(3)
         finally:
             try:

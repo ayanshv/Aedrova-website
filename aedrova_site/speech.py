@@ -33,7 +33,7 @@ def decode_audio(encoded, *, max_seconds=10):
             pcm = wav.readframes(n)
             if not 16000 <= n <= max_seconds * 16000 or len(pcm) != n * 2:
                 raise ValueError("duration")
-            # Re-encode only PCM. Discard arbitrary RIFF metadata/trailing payloads.
+
             result = io.BytesIO()
             with wave.open(result, "wb") as clean:
                 clean.setnchannels(1)
@@ -116,7 +116,7 @@ class SpeechService:
                     reservation, _ = self.store.reserve(
                         run, values["digest"], estimate, {"id": "whisper-1"}
                     )
-                # Stream response with a hard bound; never echo provider bodies or keys.
+
                 started = time.monotonic()
                 with self.client.stream(
                     "POST",

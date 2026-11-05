@@ -226,7 +226,7 @@ class GitHubProvider:
         else:
             raise Denied("This tool is not available.")
         serialized = json.dumps(result, ensure_ascii=False)
-        # External text is evidence, never instructions. Refuse recognizable credentials.
+
         if token in serialized or re.search(
             r"(?:gh[pousr]_[A-Za-z0-9]{20,}|sk_(?:live|test)_[A-Za-z0-9]+|"
             r"AKIA[A-Z0-9]{16}|-----BEGIN .*PRIVATE KEY)",

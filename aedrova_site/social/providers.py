@@ -67,8 +67,8 @@ class BufferAdapter:
 
     @staticmethod
     def disconnect_provider():
-        # No documented token-revocation endpoint. Local revocation is immediate;
-        # provider-side removal is available in Buffer's Connected Apps settings.
+
+
         return "Remove Aedrova from Buffer's connected apps to revoke the provider grant."
 
     def token(self, client_id, client_secret, redirect, *, code=None, verifier=None, refresh=None):
@@ -109,7 +109,7 @@ class BufferAdapter:
         except Denied:
             raise
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
-            # A refresh is single-use; ambiguous exchange errors require reconnect.
+
             raise Denied("Needs authorization") from None
 
     @staticmethod
@@ -220,7 +220,7 @@ class BufferAdapter:
         )
 
     def create_post(self, token, post):
-        # The service speaks a neutral draft vocabulary; Buffer's wire format lives here.
+
         payload = dict(
             channelId=post["channel"],
             text=post["text"],
@@ -231,7 +231,7 @@ class BufferAdapter:
             mode="customScheduled" if post.get("due_at") else "shareNow",
         )
         if post.get("platform") == "instagram":
-            # Instagram requires explicit format and feed policy, even for one image.
+
             payload["metadata"] = {
                 "instagram": {
                     "type": "reel" if any(a["kind"] == "video" for a in post["assets"]) else "post",

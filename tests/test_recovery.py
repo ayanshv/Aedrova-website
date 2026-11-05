@@ -26,7 +26,7 @@ def test_restored_ledger_preserves_money_replay_private_sessions_and_pending_wor
     store.settle(completed, 80, b"private-result")
     pending, _ = store.reserve(run, "pending", 200)
     before = store.balance("workspace")
-    # SQLite's backup API provides a consistent committed snapshot, including WAL.
+
     with sqlite3.connect(source) as original, sqlite3.connect(restored) as target:
         original.backup(target)
         assert target.execute("PRAGMA integrity_check").fetchone() == ("ok",)
@@ -40,7 +40,7 @@ def test_restored_ledger_preserves_money_replay_private_sessions_and_pending_wor
     assert recovered.balance("workspace") == before
     assert recovered.subscription("evt_paid", "customer", "subscription", "monthly", "active",
                                   now - 10, now + 86400, PLAN_POLICY["monthly"]) is False
-    # Uncertain in-flight requests remain reserved; restore never refunds them silently.
+
     recovered.settle(pending, None)
     assert recovered.balance("workspace")["spent"] == 280
     recovered.engine.dispose()
