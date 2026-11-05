@@ -647,3 +647,21 @@ html{scroll-padding-top:84px}
   .nav>.desktop-nav{display:none}
   .nav>.menu-toggle{display:block;grid-column:2}
 }
+.nav{
+  background:var(--bg);
+  box-shadow:0 4px 18px #00000006;
+}
+@supports ((backdrop-filter:blur(18px)) or (-webkit-backdrop-filter:blur(18px))){
+  .nav{
+    background:color-mix(in srgb,var(--bg) 82%,transparent);
+    -webkit-backdrop-filter:blur(18px) saturate(115%);
+    backdrop-filter:blur(18px) saturate(115%);
+  }
+}
+@media(prefers-reduced-transparency:reduce){
+  .nav{
+    background:var(--bg);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
