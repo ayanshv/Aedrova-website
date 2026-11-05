@@ -31,7 +31,7 @@
     active = true;
     previousFocus = document.activeElement;
     const checkout = kind === 'checkout';
-    title.textContent = checkout ? 'Getting your team’s order ready.' : 'Bringing your setup together.';
+    title.textContent = checkout ? 'Getting your team’s order ready' : 'Bringing your setup together';
     copy.textContent = checkout
       ? 'One subscription for your team. You’ll review everything on Stripe before paying.'
       : 'A space for your people, your tools, and what comes next.';
@@ -76,7 +76,7 @@
         location.assign('/plans');
       } catch {
         if (!active || controller !== request) return;
-        title.textContent = 'Let’s take the next step.';
+        title.textContent = 'Let’s take the next step';
         status.textContent = 'The plan page is taking a moment. Continue to open it directly.';
         rows.forEach(row => { row.dataset.state = 'pending'; row.removeAttribute('aria-current'); });
       } finally {
