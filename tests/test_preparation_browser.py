@@ -186,3 +186,56 @@ def test_checkout_failures_restore_the_review_screen(ui, failure):
         }[failure]
     )
     assert page.url.startswith("https://aedrova.test/account")
+
+
+def test_navigation_ink_tracks_background_and_overlapping_text(ui):
+    page, held, mode, errors = ui
+    page.route(
+        "https://aedrova.test/contrast-fixture",
+        lambda route: route.fulfill(
+            content_type="text/html",
+            body="""<!doctype html><html><head>
+              <link rel="stylesheet" href="/static/site.css">
+              <script src="/static/navigation-contrast.js" defer></script>
+              </head><body><header class="nav">
+              <a class="wordmark" href="/">Aedrova</a>
+              <nav class="desktop-nav"><a href="/product">The workspace</a></nav>
+              </header></body></html>""",
+        ),
+    )
+    page.goto("https://aedrova.test/contrast-fixture")
+    page.evaluate("""() => {
+        const background = document.createElement('div');
+        background.id = 'contrast-fixture';
+        Object.assign(background.style, {
+            position: 'fixed', inset: '0', background: '#000',
+            zIndex: '1', color: '#fff', font: '80px sans-serif',
+            whiteSpace: 'nowrap', lineHeight: '80px'
+        });
+        document.body.append(background);
+        window.dispatchEvent(new Event('resize'));
+    }""")
+    link = page.locator(".desktop-nav > a").first
+    expect(link).to_have_css("color", "rgb(255, 255, 255)")
+
+    page.evaluate("""() => {
+        document.querySelector('#contrast-fixture').style.background = '#fff';
+        window.dispatchEvent(new Event('resize'));
+    }""")
+    expect(link).to_have_css("color", "rgb(17, 17, 17)")
+
+    page.evaluate("""() => {
+        const background = document.querySelector('#contrast-fixture');
+        background.style.background = '#000';
+        background.textContent = 'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM';
+        window.dispatchEvent(new Event('resize'));
+    }""")
+    expect(link).to_have_css("color", "rgb(17, 17, 17)")
+
+    page.evaluate("""() => {
+        const background = document.querySelector('#contrast-fixture');
+        background.style.background = '#fff';
+        background.style.color = '#000';
+        window.dispatchEvent(new Event('resize'));
+    }""")
+    expect(link).to_have_css("color", "rgb(255, 255, 255)")

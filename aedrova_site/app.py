@@ -169,7 +169,16 @@ class InquiryBody(BaseModel):
 def asset_fingerprint(root):
     """Invalidate browser caches for interface code and every shipped locale catalog."""
     static = root / "static"
-    paths = [static / name for name in ("site.css", "site.js", "preparation.js", "localization.js")]
+    paths = [
+        static / name
+        for name in (
+            "site.css",
+            "site.js",
+            "preparation.js",
+            "localization.js",
+            "navigation-contrast.js",
+        )
+    ]
     paths.extend(sorted((static / "locales").glob("*.json")))
     digest = hashlib.sha256()
     for path in paths:

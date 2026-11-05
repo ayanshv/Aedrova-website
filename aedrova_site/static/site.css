@@ -688,3 +688,17 @@ html{scroll-padding-top:84px}
   .nav::before{display:none}
   .nav{box-shadow:none}
 }
+.nav .wordmark,
+.nav .desktop-nav>a:not(.button),
+.nav .theme-toggle,
+.home-page .nav .menu-toggle,
+.nav>.menu-toggle{
+  color:var(--navigation-ink,var(--text));
+  text-shadow:0 1px 2px var(--navigation-halo,transparent);
+}
+@media(forced-colors:active){
+  .nav .wordmark,.nav .desktop-nav>a:not(.button),.nav .theme-toggle,.home-page .nav .menu-toggle,.nav>.menu-toggle{
+    color:CanvasText;
+    text-shadow:none;
+  }
+}

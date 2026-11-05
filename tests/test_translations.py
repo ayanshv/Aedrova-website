@@ -179,7 +179,13 @@ def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
 
     static = tmp_path / "static"
     (static / "locales").mkdir(parents=True)
-    for name in ("site.css", "site.js", "preparation.js", "localization.js"):
+    for name in (
+        "site.css",
+        "site.js",
+        "preparation.js",
+        "localization.js",
+        "navigation-contrast.js",
+    ):
         (static / name).write_text("fixture")
     (static / "locales/hi.json").write_text('{"Continue":"initial"}')
     first = asset_fingerprint(tmp_path)
@@ -190,7 +196,10 @@ def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
     third = asset_fingerprint(tmp_path)
     assert third != second
     (static / "locales/es.json").write_text('{"Continue":"Continuar"}')
-    assert asset_fingerprint(tmp_path) != third
+    fourth = asset_fingerprint(tmp_path)
+    assert fourth != third
+    (static / "navigation-contrast.js").write_text("updated contrast")
+    assert asset_fingerprint(tmp_path) != fourth
 
 
 def test_every_navigation_choice_has_a_complete_static_catalog():
