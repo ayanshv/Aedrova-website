@@ -648,20 +648,25 @@ html{scroll-padding-top:84px}
   .nav>.menu-toggle{display:block;grid-column:2}
 }
 .nav{
-  background:var(--bg);
-  box-shadow:0 4px 18px #00000006;
+  background:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:blur(1.5px) saturate(108%);
+  backdrop-filter:blur(1.5px) saturate(108%);
 }
-@supports ((backdrop-filter:blur(18px)) or (-webkit-backdrop-filter:blur(18px))){
-  .nav{
-    background:color-mix(in srgb,var(--bg) 82%,transparent);
-    -webkit-backdrop-filter:blur(18px) saturate(115%);
-    backdrop-filter:blur(18px) saturate(115%);
-  }
+.nav-glass-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+@supports (backdrop-filter:url("#nav-glass")){
+  .nav{backdrop-filter:blur(1px) url("#nav-glass")}
 }
+.home-page .nav.nav-over-hero{color:#fff}
+.nav-over-hero .desktop-nav>a:not(.button),.nav-over-hero .wordmark{ text-shadow:0 1px 6px #0008 }
+.home-page .nav .menu-toggle{background:transparent;color:inherit;border:0;box-shadow:none}
+.nav .menu-toggle::before{display:none}
 @media(prefers-reduced-transparency:reduce){
-  .nav{
+  .nav,.home-page .nav.nav-over-hero{
     background:var(--bg);
+    color:var(--text);
     -webkit-backdrop-filter:none;
     backdrop-filter:none;
   }
+  .nav-over-hero .desktop-nav>a:not(.button),.nav-over-hero .wordmark{text-shadow:none}
 }
