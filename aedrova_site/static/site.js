@@ -48,6 +48,15 @@ if(document.body.classList.contains('home-page')){
 
 
 const cinema=$('.cinema');
+const persistentNav=$('.nav');
+if(cinema&&persistentNav){
+  persistentNav.classList.toggle('nav-over-hero',cinema.getBoundingClientRect().bottom>72);
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(entries=>{
+      persistentNav.classList.toggle('nav-over-hero',entries[0].isIntersecting);
+    },{rootMargin:'-72px 0px 0px 0px'}).observe(cinema);
+  }
+}
 if(cinema){
   const video=cinema.querySelector('.scene');
   const motion=cinema.querySelector('.motion-toggle');
