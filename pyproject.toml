@@ -26,4 +26,8 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.uv]
-constraint-dependencies = ["aiohttp>=3.14.4"]
+constraint-dependencies = [
+    "aiohttp>=3.14.4",
+    "certifi>=2026.10.19",
+    "opentelemetry-api>=1.45.1",
+]
