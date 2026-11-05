@@ -649,9 +649,9 @@ html{scroll-padding-top:84px}
 }
 .nav{
   background:transparent;
-  box-shadow:none;
-  -webkit-backdrop-filter:blur(1.5px) saturate(108%);
-  backdrop-filter:blur(1.5px) saturate(108%);
+  box-shadow:inset 0 1px 0 #ffffff55,inset 0 -1px 0 #ffffff26,0 4px 16px #00000008;
+  -webkit-backdrop-filter:blur(2px) saturate(115%);
+  backdrop-filter:blur(2px) saturate(115%);
 }
 .nav-glass-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
 @supports (backdrop-filter:url("#nav-glass")){
@@ -669,4 +669,22 @@ html{scroll-padding-top:84px}
     backdrop-filter:none;
   }
   .nav-over-hero .desktop-nav>a:not(.button),.nav-over-hero .wordmark{text-shadow:none}
+}
+
+.nav::before{
+  content:"";
+  position:absolute;
+  left:8%;
+  top:-4px;
+  width:140px;
+  height:8px;
+  border-radius:50%;
+  background:#ffffff38;
+  box-shadow:0 0 32px 10px #ffffff24,65vw 0 38px 10px #c7ddff24;
+  filter:blur(6px);
+  pointer-events:none;
+}
+@media(prefers-reduced-transparency:reduce){
+  .nav::before{display:none}
+  .nav{box-shadow:none}
 }
