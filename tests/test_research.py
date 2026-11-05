@@ -65,7 +65,7 @@ def test_research_enable_is_free_and_real_read_is_metered_and_cited(system, monk
         "aedrova_site.research.emit", lambda kind, **fields: events.append((kind, fields))
     )
     service, dot, user, tool, seen = setup(system)
-    assert not seen  # Connecting alone must never spend AI credit.
+    assert not seen
     row = service.rows(dot, user)[0]
     assert "fixture-openai" not in service.store.cipher.decrypt(row["secret"].encode()).decode()
     result = service.execute("session", dot["workspace_id"], dot["id"], tool)

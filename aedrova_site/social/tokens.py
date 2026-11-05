@@ -28,7 +28,7 @@ def access(service, grant, *, force=False):
         renewal = envelope.get("refresh")
         if not renewal:
             raise Denied("Needs authorization")
-        # Commit removal before sending a single-use refresh token to Buffer.
+
         claimed = store.cipher.encrypt(json.dumps({**envelope, "refresh": ""}).encode()).decode()
         db.execute(
             text("UPDATE bud_connections SET secret=:s,status='Refreshing' WHERE id=:i"),

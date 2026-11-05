@@ -72,7 +72,7 @@ def main():
         with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
             report["http_ready"] = readiness(config, client)
     except Exception:
-        # Connection errors may include database URLs, tokens or private hostnames.
+
         report["probe"] = "failed; inspect private host configuration/logs"
     finally:
         if engine is not None:

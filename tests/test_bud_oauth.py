@@ -131,7 +131,7 @@ def test_fixed_endpoints_provider_scopes_pkce_and_confidential_exchange(system, 
     if provider != "github":
         assert request.headers["authorization"].startswith("Basic ")
     if provider == "supabase":
-        assert "scope" not in params  # Dashboard-configured Projects Read, never deprecated 'all'.
+        assert "scope" not in params
 
 
 def test_wrong_browser_provider_replay_and_expiry_are_blocked(system):
@@ -401,7 +401,7 @@ def test_concurrent_refresh_uses_one_rotating_refresh_token(system):
     with ThreadPoolExecutor(max_workers=4) as pool:
         values = list(pool.map(read, range(4)))
     assert values == ["oauth-access-private"] * 4
-    assert len(seen) == 2  # Initial exchange plus a single refresh.
+    assert len(seen) == 2
 
 
 def test_expired_grant_does_not_refresh_and_removal_during_read_withholds_evidence(system):

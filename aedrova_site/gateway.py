@@ -22,8 +22,8 @@ def cost(usage, model):
     outputs = usage.get("output_tokens")
     if type(inputs) is not int or type(outputs) is not int or inputs < 0 or outputs < 0:
         return None
-    # OpenAI includes cached tokens in input_tokens; Anthropic reports cache
-    # reads/writes separately. Never charge cached OpenAI tokens twice.
+
+
     details = usage.get("input_tokens_details") or {}
     if not isinstance(details, dict):
         return None
@@ -142,7 +142,7 @@ async def counted_input(body, provider, headers):
         count = result.get("input_tokens") if isinstance(result, dict) else None
         if type(count) is not int or not 0 <= count <= 8 * 1024 * 1024:
             raise ValueError("Invalid token count")
-        # Allow for the provider's counting estimate and protocol differences.
+
         return math.ceil(count * 1.1) + 1024
     except (httpx.HTTPError, TimeoutError, ValueError) as exc:
         raise Denied("Could not verify this model request's size. Retry in a moment.") from exc
@@ -167,8 +167,8 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     ):
         raise Denied("Invalid tool definitions.")
 
-    # Remote image/file references can incur unbounded input costs. This beta accepts
-    # text and locally supplied tool results; reject hosted multimedia references.
+
+
     def remote_content(value):
         stack = [(value, 0)]
         visited = 0
@@ -216,8 +216,8 @@ async def inference(request: Request, provider, config, store, identity, *, comp
                 if key in {"input", "instructions", "service_tier"}
             }
     else:
-        # The managed allowance is priced for standard global inference. Client
-        # options must not select a surcharge that reservations don't account for.
+
+
         if (
             body.get("inference_geo", "global") != "global"
             or body.get("speed", "standard") != "standard"
@@ -230,7 +230,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
         }
-        # Provider-hosted tools have separate costs. Local agent tools have no type or type=custom.
+
         if any(tool.get("type") not in {None, "custom"} for tool in body.get("tools", [])):
             raise Denied("Hosted tools are not included in this beta gateway.")
         beta = request.headers.get("anthropic-beta", "")
@@ -248,8 +248,8 @@ async def inference(request: Request, provider, config, store, identity, *, comp
         raise Denied("Invalid output limit.") from exc
     body["model"] = model["id"]
     if compact:
-        # The standalone API has no output-limit parameter. Reserve its model
-        # ceiling before calling it; small balances fail without provider spend.
+
+
         output = 128000
     else:
         body[output_key] = output
@@ -263,7 +263,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
             "This request exceeds the beta model context limit. "
             "Narrow the build or start a fresh run."
         )
-    # Small requests use the conservative byte bound; large harnesses use verified counts.
+
     reserve = math.ceil(
         (
             input_bound * model["input_rate"] * (2 if provider == "claude_code" else 1)
@@ -293,7 +293,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
             ):
                 async with client.stream("POST", url, headers=headers, content=encoded) as upstream:
                     if upstream.status_code != 200:
-                        # Explicit rejection: no completed inference; keep diagnostics private.
+
                         await asyncio.to_thread(store.settle, identifier, 0)
                         settled = True
                         failure = {
@@ -364,7 +364,7 @@ async def inference(request: Request, provider, config, store, identity, *, comp
                 yield b'{"error":{"message":"Managed model connection interrupted."}}'
         finally:
             if not settled:
-                # Never refund an uncertain upstream request or replay it silently.
+
                 try:
                     await asyncio.shield(asyncio.to_thread(store.settle, identifier, None))
                 except SQLAlchemyError:

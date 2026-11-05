@@ -1,5 +1,5 @@
-# Initial website deployment only. No paid resources or product release gates are enabled.
-# Use the existing Supabase session pooler and restricted website database role.
+
+
 services:
   - type: web
     name: aedrova-website

@@ -16,7 +16,7 @@ def test_preference_storage_is_opt_in_and_reversible(ui):  # noqa: F811
     page.get_by_role("button", name="Storage choices", exact=True).click()
     page.get_by_role("button", name="Allow preferences", exact=True).click()
     assert page.evaluate("JSON.parse(localStorage.getItem('aedrova-theme'))") == "dark"
-    # Another tab can withdraw consent; this open page must stop persisting too.
+
     page.evaluate(
         "localStorage.setItem('aedrova-storage-choice',JSON.stringify('essential'));localStorage.removeItem('aedrova-theme')"
     )

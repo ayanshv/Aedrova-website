@@ -29,7 +29,7 @@ class BudConnections:
         self.providers = {
             key: ReadProvider(key, transport=transport) for key in CATALOG if key != "github"
         }
-        # Reuse the existing bounded GitHub reader; token-based access does not invoke OAuth.
+
         self.providers["github"] = dots.providers["github"]
         with self.store.tx() as db:
             if self.store.engine.dialect.name == "postgresql":
@@ -121,7 +121,7 @@ class BudConnections:
             raise Denied("Enter a valid access token without spaces.")
         if not 1 <= hours <= 2160:
             raise Denied("Choose an access lifetime from 1 hour to 90 days.")
-        # A successful real API read is mandatory; no optimistic 'Connected' state.
+
         for tool in (
             ()
             if provider == "search"
@@ -260,7 +260,7 @@ class BudConnections:
             return grant, self.dots.config.search_bud_key, envelope
         if not force and envelope["token_expires"] > int(time.time()) + 60:
             return grant, envelope["access"], envelope if grant["provider"] == "vercel" else True
-        # Row locks serialize refresh across server workers; SQLite uses BEGIN IMMEDIATE.
+
         with self.store.tx() as db:
             suffix = " FOR UPDATE" if self.store.engine.dialect.name == "postgresql" else ""
             current = (
@@ -314,7 +314,7 @@ class BudConnections:
         if result.rowcount != 1:
             raise Denied("This connection is no longer available to your account.")
         self.dots.audit(dot, user, "connector_disconnected")
-        # API tokens cannot generally be revoked by the consumer. Be explicit about that.
+
         return {"disconnected": True, "provider_revoked": False}
 
     def execute(self, session, workspace, dot_id, composite, *, run_token=None):

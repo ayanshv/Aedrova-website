@@ -1,4 +1,4 @@
-/* Local artwork, eye-only blinks. No model calls, tracking or timers in hidden tabs. */
+
 (() => {
   const eyes = [
     [[257,309,35,79],[349,308,34,77]], [[222,303,36,80],[322,303,36,80]],
@@ -57,7 +57,7 @@
     mount(); schedule();
     new MutationObserver(() => { mount(); }).observe(document.body,{childList:true,subtree:true});
   };
-  // Asset failure leaves the original CSS artwork intact.
+
   atlas.src = '/static/buds-atlas.png';
   document.addEventListener('visibilitychange', schedule);
   motion.addEventListener('change', schedule);

@@ -104,7 +104,7 @@ def create_connector_app(config=None):
         )
         return response
 
-    # Keep admission outside this service's early root/404 responses, too.
+
     app.user_middleware = [
         m for m in app.user_middleware if m.cls not in {TrafficLimits, ResponseHeaders}
     ]

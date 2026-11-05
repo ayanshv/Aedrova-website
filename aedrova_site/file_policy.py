@@ -105,7 +105,7 @@ def inspect_file(name, data):
             offset += length
         raise ValueError(invalid)
     if suffix == ".pdf" and data.startswith(b"%PDF-") and b"%%EOF" in data[-1024:]:
-        return "application/pdf"  # Download only; never execute or auto-render PDF contents.
+        return "application/pdf"
     if suffix in OFFICE:
         try:
             with zipfile.ZipFile(io.BytesIO(data)) as archive:

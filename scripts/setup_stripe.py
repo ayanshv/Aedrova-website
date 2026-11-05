@@ -56,7 +56,7 @@ def provision(config, output, *, live=False):
                 api_key=config.stripe_key,
             )
         validate_price(price, policy, live=live)
-        # Existing immutable Price amounts are retained; update their product presentation.
+
         linked = stripe.Product.retrieve(price["product"], api_key=config.stripe_key)
         if linked.get("metadata", {}).get("application") != "aedrova":
             raise ValueError("The existing price is not linked to an Aedrova product.")
@@ -112,7 +112,7 @@ def main():
     parser.add_argument("--configure-test-branding", action="store_true")
     parser.add_argument("--output", type=Path, default=Path("work/stripe-plans.json"))
     args = parser.parse_args()
-    # Provisioning can start before the output plan file exists.
+
     import os
 
     if args.provision_test_prices or args.configure_test_portal or args.configure_test_branding:
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     try:
         main()
     except (ValueError, stripe.StripeError, OSError):
-        # Never print upstream exception bodies or request headers containing credentials.
+
         print(
             "Stripe setup did not pass. "
             "Check test credentials, price configuration and connectivity."

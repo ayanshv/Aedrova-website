@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// animation-map.mjs — HyperFrames animation map for agents
-//
-// Reads every GSAP timeline registered in window.__timelines, enumerates
-// tweens, samples bboxes at N points per tween, computes flags and
-// human-readable summaries. Outputs a single animation-map.json.
-//
-// Usage:
-//   node skills/hyperframes/scripts/animation-map.mjs <composition-dir> \
-//     [--frames N] [--out <dir>] [--min-duration S] [--width W] [--height H] [--fps N]
+
+
+
+
+
+
+
+
+
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
@@ -20,7 +20,7 @@ import {
   getCompositionDuration,
 } from "../node_modules/hyperframes/dist/src-UQ72QBPU.js";
 
-// ─── CLI ─────────────────────────────────────────────────────────────────────
+
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.composition) die("missing <composition-dir>");
@@ -35,7 +35,7 @@ const COMP_DIR = resolve(args.composition);
 
 await mkdir(OUT_DIR, { recursive: true });
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+
 
 const server = await createFileServer({ projectDir: COMP_DIR, port: 0 });
 const session = await createCaptureSession(
@@ -103,7 +103,7 @@ try {
     }
   }
 
-  // ── Composition-level analysis ──
+
   report.choreography = buildTimeline(report.tweens, duration);
   report.density = computeDensity(report.tweens, duration);
   report.staggers = detectStaggers(report.tweens);
@@ -119,7 +119,7 @@ try {
   server.close();
 }
 
-// ─── Seek helper ────────────────────────────────────────────────────────────
+
 
 async function seekTo(session, t) {
   await session.page.evaluate((time) => {
@@ -137,7 +137,7 @@ async function seekTo(session, t) {
   await new Promise((r) => setTimeout(r, 100));
 }
 
-// ─── Timeline introspection ──────────────────────────────────────────────────
+
 
 async function enumerateTweens(session) {
   return await session.page.evaluate(() => {
@@ -212,7 +212,7 @@ async function measureTarget(session, selector) {
   }, selector);
 }
 
-// ─── Tween description (the key output for agents) ──────────────────────────
+
 
 function describeTween(tw, props, bboxes, flags) {
   const dur = (tw.end - tw.start).toFixed(2);
@@ -220,7 +220,7 @@ function describeTween(tw, props, bboxes, flags) {
 
   parts.push(`${tw.selectorHint} animates ${props.join("+")} over ${dur}s (${tw.ease})`);
 
-  // Movement
+
   const first = bboxes[0];
   const last = bboxes[bboxes.length - 1];
   if (first && last) {
@@ -235,7 +235,7 @@ function describeTween(tw, props, bboxes, flags) {
     }
   }
 
-  // Opacity
+
   if (first && last && first.opacity !== undefined && last.opacity !== undefined) {
     const o1 = first.opacity;
     const o2 = last.opacity;
@@ -246,12 +246,12 @@ function describeTween(tw, props, bboxes, flags) {
     }
   }
 
-  // Scale (from props)
+
   if (props.includes("scale") || props.includes("scaleX") || props.includes("scaleY")) {
     parts.push("scales");
   }
 
-  // Size changes
+
   if (first && last) {
     const dw = last.w - first.w;
     const dh = last.h - first.h;
@@ -259,17 +259,17 @@ function describeTween(tw, props, bboxes, flags) {
     if (Math.abs(dh) > 5) parts.push(`height ${first.h}→${last.h}px`);
   }
 
-  // Visibility
+
   if (first && last && first.visible !== last.visible) {
     parts.push(last.visible ? "becomes visible" : "becomes hidden");
   }
 
-  // Final position
+
   if (last && !last.missing) {
     parts.push(`ends at (${last.x}, ${last.y}) ${last.w}×${last.h}px`);
   }
 
-  // Flags
+
   if (flags.length > 0) {
     parts.push(`FLAGS: ${flags.join(", ")}`);
   }
@@ -277,7 +277,7 @@ function describeTween(tw, props, bboxes, flags) {
   return parts.join(". ") + ".";
 }
 
-// ─── Flag computation ───────────────────────────────────────────────────────
+
 
 function computeFlags(tw, bboxes, { width, height }) {
   const flags = [];
@@ -339,7 +339,7 @@ function rectOverlapArea(a, b) {
   return Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
 }
 
-// ─── Composition-level analysis ─────────────────────────────────────────────
+
 
 function buildTimeline(tweens, duration) {
   const cols = 60;
@@ -547,7 +547,7 @@ async function captureSnapshots(session, tweens, duration) {
   return snapshots;
 }
 
-// ─── Output ─────────────────────────────────────────────────────────────────
+
 
 function printSummary(report) {
   console.log(

@@ -12,7 +12,6 @@ import httpx
 from aedrova_site.observability import emit
 from aedrova_site.store import Denied
 
-# Pinned model/rates: official OpenAI model and tool pricing, checked 2026-10-25.
 MODEL = {"id": "gpt-5.4-mini-2026-03-17", "input_rate": 750000, "output_rate": 4500000}
 INPUT_LIMIT, OUTPUT_LIMIT, TOOL_FEE = 128000, 2048, 10000
 RESERVATION = (
@@ -50,7 +49,7 @@ class Research:
     def search(self, session, workspace, user, topic, *, run_token=None):
         if not self.available:
             raise Denied("Aedrova live research needs the included AI service enabled.")
-        # Resolve billing membership freshly, even when borrowing a live model run.
+
         context = self.identity.billing_context(session, workspace)
         owned = None
         reservation = None
@@ -117,7 +116,7 @@ class Research:
                 },
             ) as response:
                 if response.status_code >= 400:
-                    # Explicit rejection has no usable result. Do not echo provider bodies.
+
                     self.store.settle(reservation, 0)
                     reservation = None
                     raise Denied(
@@ -166,8 +165,8 @@ class Research:
             self.store.settle(reservation, charge)
             reservation = None
             summary = "\n".join(texts).strip()
-            # Only structural booleans/counts; never log topics, source URLs,
-            # provider bodies, credentials or account identifiers.
+
+
             emit(
                 "research_result",
                 completed=result.get("status") == "completed",
@@ -212,7 +211,7 @@ class Research:
             ) from error
         finally:
             if reservation:
-                # Uncertain outcomes keep the conservative reservation charged.
+
                 self.store.settle(reservation, None if sent else 0)
             if owned:
                 self.store.end_run(owned["id"], user)

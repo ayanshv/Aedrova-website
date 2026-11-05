@@ -66,7 +66,7 @@ def test_simultaneous_joins_only_reserve_one_lease(tmp_path):
 
 
 def test_production_lifespan_does_not_start_embedded_guard(tmp_path, monkeypatch):
-    # Isolate deployment policy from PostgreSQL connection setup in this unit test.
+
     monkeypatch.setattr(Config, 'validate', lambda self: None)
     app = create_app(Config(production=True, meetings_enabled=True,
                             database=f'sqlite:///{tmp_path}/api.sqlite3'))

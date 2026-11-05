@@ -113,9 +113,9 @@ PRIVATE_PATHS = (
     "/account",
     "/welcome",
     "/onboarding",
-    # Let crawlers see /download's waitlist redirect (or its noindex landing page).
-    # Blocking the landing URL hides both signals and can leave a bare URL indexed.
-    # Actual downloads remain protected by /api/ and the server release gate.
+
+
+
     "/download/",
     "/health",
     "/docs",
@@ -249,8 +249,8 @@ def metadata(config, path, fallback):
 def robots(config):
     if not public_deployment(config):
         return "User-agent: *\nDisallow: /\n"
-    # Search access is distinct from training. Google-Extended also controls Gemini
-    # grounding; allow public pages under this mixed-purpose token for this goal.
+
+
     groups = ["User-agent: *\n" + "\n".join("Disallow: " + p for p in PRIVATE_PATHS)]
     for agent in (
         "OAI-SearchBot",

@@ -64,7 +64,7 @@ def test_late_join_and_replay_never_extend_window_or_replenish(ledger, clock, pl
     assert ledger.activate_free("owner", "one")["plan"] == "free"
     with ledger.tx() as db:
         row = ledger.billing_lock(db, "one")
-        assert row["subscription"] == ""  # no automatic subscription after expiry
+        assert row["subscription"] == ""
 
 
 def test_shared_owner_and_company_free_pool_limits(ledger):
@@ -92,7 +92,7 @@ def test_expiry_or_disabled_flag_checked_inside_every_reservation(ledger, clock)
     ledger.grant_early_access("owner", "one")
     run = ledger.run(ledger.create_run("owner", "one", "codex", "one")["token"])
     clock[0] = promotion.ENDS_AT
-    # A long-lived request cannot continue using Team capacity after the cutoff.
+
     with pytest.raises(Denied):
         ledger.reserve(run, "after-deadline", 500_001)
     assert ledger.balance("one")["plan"] == "free"
@@ -181,7 +181,7 @@ def test_csrf_workspace_checks_and_no_paid_checkout(tmp_path, clock, monkeypatch
         assert client.post("/api/free/other", headers={"X-CSRF-Token": "csrf"}).status_code == 403
         result = client.post("/api/free/one", headers={"X-CSRF-Token": "csrf"})
         assert result.status_code == 200 and result.json()["early_access"]
-        # GET never activates a new plan and expiry is not client-controlled.
+
         assert client.get("/api/balance/one").json()["early_access_ends_at"] == promotion.ENDS_AT
 
         def no_stripe(*args, **kwargs):

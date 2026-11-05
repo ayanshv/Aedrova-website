@@ -135,11 +135,11 @@ class Store:
             ),
         )
         if self.engine.dialect.name == "postgresql":
-            # Keep billing/auth tables outside Supabase's exposed public schema.
+
             with self.engine.begin() as db:
                 db.execute(text("SELECT pg_advisory_xact_lock(73114011)"))
-                # A restricted Supabase login owns the pre-created private schema,
-                # but deliberately cannot CREATE schemas in the shared database.
+
+
                 missing = db.scalar(text("SELECT to_regnamespace('aedrova_billing') IS NULL"))
                 if missing:
                     db.execute(text("CREATE SCHEMA aedrova_billing"))
@@ -244,7 +244,7 @@ class Store:
                     )
                 )
                 db.execute(text("UPDATE inference SET base_reserved=amount"))
-        # Backfill existing money without resetting it. Legacy owner identity remains unknown.
+
         with self.tx() as db:
             budgets.lock(db)
             marker = "migration:monthly-budget-v2"
@@ -325,7 +325,7 @@ class Store:
             return dict(self.billing_lock(db, workspace))
 
     def wallet(self, db, workspace):
-        # Caller holds the workspace billing lock; this also serializes credit grants.
+
         db.execute(
             text("INSERT INTO wallets(workspace) VALUES(:w) ON CONFLICT(workspace) DO NOTHING"),
             {"w": workspace},
@@ -490,7 +490,7 @@ class Store:
             )
             row = self.billing_lock(db, workspace)
             if promotion.is_grant(row):
-                # Replays do not extend expiry, switch tier or replenish usage.
+
                 return row["budget_owner"] == user
             if (
                 row["subscription"]
@@ -608,7 +608,7 @@ class Store:
             if suggested and suggested != workspace:
                 raise Denied("Shared Space billing is not enabled. No provider request was made.")
             return workspace
-        # Local tests/development receive the root from the already authorized Identity context.
+
         return suggested or workspace
 
     def run_limits(self, run):
@@ -812,7 +812,7 @@ class Store:
             row = self.billing_lock(db, workspace)
             if row["customer"] != customer or row["status"] != "development":
                 raise Denied("This workspace already has another billing or funding record.")
-            # Reruns must not reset spending, renew expiry or replenish a hard cap.
+
         return self.balance(workspace)
 
     def development_workspace(self, workspace):
@@ -1102,8 +1102,8 @@ class Store:
                 .one()
             )
             row = self.billing_lock(db, entry["workspace"])
-            # Re-read after taking the workspace lock: concurrent settlement must see the
-            # committed state instead of charging an entry twice on PostgreSQL.
+
+
             entry = (
                 db.execute(text("SELECT * FROM inference WHERE id=:id"), {"id": identifier})
                 .mappings()

@@ -39,7 +39,7 @@ def main():
     try:
         run()
     except Exception:
-        # Driver/provider exceptions can include credentials or connection strings.
+
         raise SystemExit(
             "Meeting guard stopped. Check its private configuration, database and LiveKit "
             "connectivity; credentials were not printed."

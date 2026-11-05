@@ -1,7 +1,7 @@
-# MANUAL IMPORT ONLY: two paid always-on services. Review charges before deployment.
-# Does not modify the free website Blueprint. No secrets belong here.
-# First create the aedrova-meeting-staging environment group in Render.
-# API database health permits startup; /health/meetings additionally requires the guard.
+
+
+
+
 services:
   - type: web
     name: aedrova-meetings

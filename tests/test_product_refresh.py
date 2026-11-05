@@ -61,8 +61,8 @@ def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client): 
     markup = client.get("/").text
     images = re.findall(r'<img\b[^>]*src="/static/([\w-]+\.png)([^\"]*)"', markup)
     ui_images = [(name, query) for name, query in images if name in captures]
-    # The two teammate-editor assets are refreshed for direct/legacy links; the
-    # eleven current homepage stories each display both appearances.
+
+
     assert {name for name, _ in ui_images} == {
         name for name in captures if not name.startswith("teammate-")
     }

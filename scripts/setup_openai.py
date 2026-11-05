@@ -28,7 +28,7 @@ def verify(key, model, *, client=None):
         if response.status_code != 200 or not isinstance(data, dict) or data.get("id") != model:
             raise ValueError("OpenAI key or configured model access could not be verified.")
     except (httpx.HTTPError, ValueError):
-        # Provider response bodies, exceptions and request headers may contain secrets.
+
         raise ValueError(
             "OpenAI access check failed. Check the key and model permissions."
         ) from None

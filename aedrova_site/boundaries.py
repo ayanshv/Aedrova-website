@@ -126,7 +126,7 @@ class ResponseHeaders:
                 headers["X-Content-Type-Options"] = "nosniff"
                 headers["Referrer-Policy"] = "no-referrer"
                 headers["X-Frame-Options"] = "DENY"
-                # Branded errors carry a hash-based policy for their embedded style.
+
                 headers.setdefault(
                     "Content-Security-Policy",
                     "default-src 'self'; script-src 'self'; style-src 'self'; "

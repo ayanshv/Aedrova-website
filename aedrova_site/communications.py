@@ -32,7 +32,7 @@ def unsubscribe(store, token):
             raise ValueError("purpose")
     except (InvalidToken, ValueError, KeyError, TypeError, UnicodeError):
         raise Denied("This unsubscribe link is invalid. Contact contact@aedrova.com.") from None
-    # Retain a minimal suppression instead of deleting account or waitlist data.
+
     store.session("suppressed:" + key, {"kind": "launch-suppression"}, lifetime=10 * 365 * 86400)
 
 

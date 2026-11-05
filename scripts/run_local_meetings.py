@@ -74,7 +74,7 @@ def main():
     parser.add_argument("--with-openai", action="store_true")
     parser.add_argument("--with-anthropic", action="store_true")
     args = parser.parse_args()
-    # Adjacent desktop checkout is the established local development layout.
+
     command, environment = launch_configuration(
         ROOT.parent / "Aedrova", openai=args.with_openai, anthropic=args.with_anthropic
     )

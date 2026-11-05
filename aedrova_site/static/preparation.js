@@ -1,6 +1,6 @@
 'use strict';
-// Shared by website onboarding and billing opened from the desktop app.
-// Completion reflects a loaded page or an actual checkout response, never a fake build.
+
+
 (() => {
   const dialog = document.getElementById('preparation');
   if (!dialog || typeof dialog.showModal !== 'function') return;
@@ -31,7 +31,7 @@
     active = true;
     previousFocus = document.activeElement;
     const checkout = kind === 'checkout';
-    title.textContent = checkout ? 'Getting your team’s order ready.' : 'Bringing your setup together.';
+    title.textContent = checkout ? 'Getting your team’s order ready' : 'Bringing your setup together';
     copy.textContent = checkout
       ? 'One subscription for your team. You’ll review everything on Stripe before paying.'
       : 'A space for your people, your tools, and what comes next.';
@@ -48,7 +48,7 @@
   }
   action.addEventListener('click', () => { close(); location.assign('/plans'); });
   dialog.addEventListener('cancel', event => {
-    // A submitted checkout request must finish before another can be submitted.
+
     if (action.hidden) event.preventDefault();
     else close();
   });
@@ -61,10 +61,10 @@
       controller = request;
       const timeout = setTimeout(() => request.abort(), 6000);
       try {
-        // Warm the real plan page; do not send the optional introduction answers.
+
         const loaded = fetch('/plans', {credentials: 'same-origin', signal: request.signal})
           .then(response => { if (!response.ok) throw new Error('Plans unavailable'); return response.text(); });
-        // Attach rejection immediately, including when an early network failure occurs.
+
         const ready = Promise.all([loaded, pause(900)]);
         step(1, 'Getting your team’s plan options ready.');
         await ready;
@@ -76,7 +76,7 @@
         location.assign('/plans');
       } catch {
         if (!active || controller !== request) return;
-        title.textContent = 'Let’s take the next step.';
+        title.textContent = 'Let’s take the next step';
         status.textContent = 'The plan page is taking a moment. Continue to open it directly.';
         rows.forEach(row => { row.dataset.state = 'pending'; row.removeAttribute('aria-current'); });
       } finally {
@@ -90,7 +90,7 @@
       const timeout = setTimeout(() => request.abort(), 20000);
       try {
         step(1, 'Preparing your secure checkout. No payment has been taken.');
-        // The caller validates the returned Stripe URL before this step completes.
+
         const target = await operation(request.signal);
         step(2, 'Opening Stripe. Review your order before confirming.');
         await pause(200);

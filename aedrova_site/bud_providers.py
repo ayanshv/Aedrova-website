@@ -9,7 +9,6 @@ import httpx
 
 from aedrova_site.store import Denied
 
-# Each entry declares the complete executable surface; everything else fails closed.
 CATALOG = {
     "buffer": (
         "Buffer",
@@ -153,7 +152,7 @@ class ReadProvider:
 
     def request(self, token, url, *, headers=None, body=None, list_response=False):
         try:
-            # URLs below are constructed exclusively by these adapters, never provider payloads.
+
             with self.client.stream(
                 "POST" if body is not None else "GET",
                 url,
@@ -381,7 +380,7 @@ class ReadProvider:
             source = "https://vercel.com/dashboard"
         else:
             raise Denied("This provider has no adapter.")
-        # Never return provider credentials, raw headers, or unbounded response objects.
+
         serialized = json.dumps(records, ensure_ascii=False)
         if len(serialized.encode()) > 64 * 1024:
             raise Denied("The selected evidence is too large.")

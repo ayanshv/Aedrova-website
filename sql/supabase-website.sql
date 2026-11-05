@@ -1,5 +1,5 @@
--- Run once in the existing Aedrova project's Supabase SQL Editor as postgres.
--- No secrets belong in this file. The new role cannot log in until you set its password.
+
+
 BEGIN;
 DO $$
 BEGIN
@@ -24,9 +24,9 @@ BEGIN
     RAISE EXCEPTION 'Existing private schema has another owner; stop and review before migration.';
   END IF;
 END $$;
--- Supabase postgres is not a superuser. Schema ownership and default privileges
--- require it to SET ROLE to the website role. This is deliberately one-way:
--- the administrator can assume the restricted role; the website gains no admin role.
+
+
+
 GRANT aedrova_website TO CURRENT_USER;
 CREATE SCHEMA IF NOT EXISTS aedrova_billing AUTHORIZATION aedrova_website;
 REVOKE ALL ON SCHEMA aedrova_billing FROM PUBLIC, anon, authenticated, service_role;
@@ -41,6 +41,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE aedrova_website IN SCHEMA aedrova_billing
 ALTER DEFAULT PRIVILEGES FOR ROLE aedrova_website IN SCHEMA aedrova_billing
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated, service_role;
 COMMIT;
--- Keep aedrova_billing OUT of Supabase Data API exposed schemas.
--- Owner next step: set a strong private password for this role and enable LOGIN.
--- Never reset the existing postgres password or paste a password into chat/GitHub.

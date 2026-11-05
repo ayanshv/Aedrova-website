@@ -68,7 +68,7 @@ def test_multiple_resources_encrypted_and_private_by_user(connections):
     catalog = service.dots.list("session", dot["workspace_id"])
     tool = first["id"] + ".design"
     assert tool in catalog[0]["tools"]
-    assert "repository" not in catalog[0]["tools"]  # OAuth was never authorized
+    assert "repository" not in catalog[0]["tools"]
     result = service.dots.execute(
         "session", dot["workspace_id"], [{"dot": dot["id"], "tool": tool}]
     )[0]

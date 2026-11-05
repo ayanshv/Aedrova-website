@@ -299,7 +299,7 @@ def create_app(config=None):
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request, _exc):
-        # Pydantic's default response includes input values (including audio/tokens).
+
         return JSONResponse(
             {"error": "Some request fields are invalid. Check your input."}, status_code=422
         )
@@ -867,7 +867,7 @@ def create_app(config=None):
             raise Denied("Checkout does not belong to this workspace.")
         if current.get("livemode") is not (not config.stripe_test_mode):
             raise Denied("Checkout mode does not match this server.")
-        # The browser return never grants entitlement. Only signed canonical webhooks do.
+
         return {
             "workspace": workspace,
             "payment_status": current.get("payment_status"),
@@ -984,7 +984,7 @@ def create_app(config=None):
             raise Denied("Audio transcription is not enabled.")
         token = meeting_context_token(request)
         user = identity.user(token)
-        # RLS resolves the workspace; never accept a client-supplied billing scope.
+
         meetings = identity.request(
             "/rest/v1/meetings?id=eq." + str(body.meeting) + "&select=channel_id", token
         )

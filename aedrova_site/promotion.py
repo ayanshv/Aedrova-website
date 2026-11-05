@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 DAYS = 60
 STARTS_AT = int(datetime(2026, 10, 22, 4, 58, 40, tzinfo=UTC).timestamp())
-# Owner extended the final day through 11:59 p.m. Pacific; never move the start.
+
 ENDS_AT = int(datetime(2026, 12, 21, 7, 59, 59, tzinfo=UTC).timestamp())
 ENDS_ISO = datetime.fromtimestamp(ENDS_AT, UTC).isoformat()
 ENDS_LABEL = "December 20, 2026 at 11:59 p.m. Pacific"
