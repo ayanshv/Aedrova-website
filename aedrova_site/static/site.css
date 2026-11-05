@@ -642,3 +642,8 @@ html{scroll-padding-top:84px}
   .preparation{padding:20px}
   .preparation h2{font-size:28px}
 }
+@media(max-width:1080px){
+  .nav{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+  .nav>.desktop-nav{display:none}
+  .nav>.menu-toggle{display:block;grid-column:2}
+}
