@@ -372,6 +372,7 @@ def create_app(config=None):
                 "stripe_test_mode": config.stripe_test_mode,
                 "checkout_enabled": config.checkout_enabled,
                 "waitlist_only": config.waitlist_only,
+                "apple_login_enabled": config.apple_login_enabled,
                 "plan_policy": PLAN_POLICY,
                 "public_prices": PUBLIC_PLAN_PRICES,
                 "bud_limits": BUD_LIMITS,
@@ -603,6 +604,15 @@ def create_app(config=None):
 
     @app.get("/auth/google")
     def google(request: Request):
+        return provider_login(request, "google")
+
+    @app.get("/auth/apple")
+    def apple(request: Request):
+        if not config.apple_login_enabled:
+            raise HTTPException(status_code=404, detail="Apple sign-in is not enabled.")
+        return provider_login(request, "apple")
+
+    def provider_login(request: Request, provider: str):
         if config.waitlist_only:
             return RedirectResponse("/waitlist", status_code=303)
         store.rate_limit(
@@ -636,8 +646,8 @@ def create_app(config=None):
             + "/auth/v1/authorize?"
             + urlencode(
                 {
-                    "provider": "google",
-                    "scopes": "openid email profile",
+                    "provider": provider,
+                    "scopes": "email name" if provider == "apple" else "openid email profile",
                     "redirect_to": config.origin + "/auth/callback",
                     "code_challenge": challenge,
                     "code_challenge_method": "s256",
