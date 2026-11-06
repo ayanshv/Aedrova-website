@@ -48,6 +48,7 @@ PUBLIC = {
 SIGNED = {"/stripe/webhook", "/dots/github/events"}
 OAUTH = {
     "/auth/google",
+    "/auth/apple",
     "/auth/callback",
     "/buds/authorize/{state}",
     "/dots/authorize/{state}",
