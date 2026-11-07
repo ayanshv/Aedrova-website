@@ -11,3 +11,7 @@ Owner reports paid production hosting, verified in Render as 0.5c-512mb. render.
 Production health is ready, but managed AI and checkout remain disabled and the current environment has no managed model-provider key/model configuration. Reviewed production migrations, provider and spending setup, recovery/operations, operator details and final installer acceptance remain public-launch gates. Apple setup and paid compute alone do not close these gates.
 
 All personal actions are consolidated in the native repository's docs/apple-and-local-meeting-release-2026-11-05.md. Do not ask for the completed hosting purchase, notary credentials or signing unlock again. No payments may be submitted by the agent.
+
+November 6 acceptance update: owner completed fresh native Sign in with Apple; the existing staging workspace and message history loaded. The approved production Supabase Apple provider is now enabled. The production Blueprint explicitly enables AEDROVA_APPLE_LOGIN_ENABLED so the website can expose the prepared Apple button after deployment. Other waitlist, release, legal, managed-AI and checkout gates remain unchanged. Actual website production session exchange still requires acceptance after the deploy; native staging acceptance is not proof of that separate flow.
+
+Apple accepted both the app and staging DMG, and stapler/Gatekeeper verification passed. No personal credential-restoration or staging Apple-login action remains. The staging installer is not a production download.
