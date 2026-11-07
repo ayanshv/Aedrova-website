@@ -702,3 +702,10 @@ html{scroll-padding-top:84px}
     text-shadow:none;
   }
 }
+
+.login-panel .apple{display:flex;width:fit-content;max-width:100%;margin:16px auto 0;background:#fff;color:#000;border:1px solid #aaa;border-radius:6px;justify-content:center}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;display:inline-block;flex:0 0 auto;width:18px;max-width:18px;height:18px;min-height:18px;padding:0;vertical-align:middle;border:1px solid var(--muted,#667180);border-radius:7px;background:transparent;cursor:pointer}
+input[type=checkbox]:checked{border:none;background:transparent url('/static/checkbox-checked.svg') center/contain no-repeat}
+input[type=checkbox]:focus-visible{outline:2px solid #007aff;outline-offset:3px}
+input[type=checkbox]:disabled{opacity:.5;cursor:default}
+.login-panel .apple{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;font-weight:500;letter-spacing:normal;min-height:48px}

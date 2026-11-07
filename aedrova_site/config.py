@@ -21,6 +21,7 @@ class Config:
     production: bool = False
     deployment_environment: str = "unspecified"
     waitlist_only: bool = False
+    apple_login_enabled: bool = False
     supabase_database: bool = False
     db_pool_size: int = 5
     db_max_overflow: int = 5

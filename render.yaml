@@ -4,7 +4,6 @@ services:
   - type: web
     name: aedrova-website
     runtime: docker
-    plan: free
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
