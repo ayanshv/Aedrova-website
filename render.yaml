@@ -18,6 +18,8 @@ services:
         value: "true"
       - key: AEDROVA_PRODUCTION
         value: "true"
+      - key: AEDROVA_APPLE_LOGIN_ENABLED
+        value: "true"
       - key: AEDROVA_SUPABASE_DATABASE
         value: "true"
       - key: AEDROVA_DB_POOL_SIZE
