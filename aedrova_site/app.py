@@ -224,7 +224,7 @@ def create_app(config=None):
         stop_monitor = asyncio.Event()
         monitor = (
             asyncio.create_task(monitor_spending(store.engine, config, stop_monitor))
-            if config.production
+            if config.production and store.engine.dialect.name == "postgresql"
             else None
         )
         guard = (
