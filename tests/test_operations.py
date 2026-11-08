@@ -1,5 +1,6 @@
 """Operational probes reject unavailable services and never repair/mutate the ledger."""
 
+import asyncio
 import json
 import time
 
@@ -10,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 
 from aedrova_site.budgets import month
 from aedrova_site.config import Config
+from aedrova_site.operations import monitor_spending
 from aedrova_site.store import Store
 from scripts.check_operations import database_checks, healthy, main, readiness
 
@@ -69,3 +71,25 @@ def test_failure_report_never_exposes_credentials(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert secret not in output
     assert json.loads(output)["status"] == "attention_required"
+
+
+def test_monitor_reports_failed_database_and_stops_without_waiting(monkeypatch):
+    class BrokenEngine:
+        def connect(self):
+            raise RuntimeError("private-database-credential")
+
+    async def run():
+        stop = asyncio.Event()
+        events = []
+
+        def record(event, **fields):
+            events.append((event, fields))
+            stop.set()
+
+        monkeypatch.setattr("aedrova_site.operations.emit", record)
+        await asyncio.wait_for(monitor_spending(BrokenEngine(), Config(), stop), timeout=2)
+        return events
+
+    assert asyncio.run(run()) == [
+        ("operations_spending_probe", {"status": "attention_required", "database": "failed"})
+    ]

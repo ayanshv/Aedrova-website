@@ -38,6 +38,7 @@ from aedrova_site.observability import (
     database_events,
     emit,
 )
+from aedrova_site.operations import monitor_spending
 from aedrova_site.policy import BUD_LIMITS, PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
@@ -220,6 +221,12 @@ def create_app(config=None):
 
     @asynccontextmanager
     async def lifespan(_app):
+        stop_monitor = asyncio.Event()
+        monitor = (
+            asyncio.create_task(monitor_spending(store.engine, config, stop_monitor))
+            if config.production
+            else None
+        )
         guard = (
             asyncio.create_task(leases.run(config, identity))
             if config.meetings_enabled and not config.production
@@ -228,6 +235,9 @@ def create_app(config=None):
         try:
             yield
         finally:
+            if monitor:
+                stop_monitor.set()
+                await monitor
             if guard:
                 guard.cancel()
                 with suppress(asyncio.CancelledError):
