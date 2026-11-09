@@ -37,6 +37,7 @@ header a{display:flex;align-items:center;gap:9px;font-size:22px;
 font-weight:650;
 letter-spacing:-.7px}
 header img{width:30px;height:30px;object-fit:contain}
+header a svg{display:block;width:100px;height:auto}
 header span{color:var(--muted);
 font-size:13px}
 main{min-height:70vh;
@@ -138,6 +139,11 @@ def logo_url():
     )
 
 
+@lru_cache(maxsize=1)
+def wordmark_svg():
+    return (ROOT / "templates" / "brand-wordmark.svg").read_text(encoding="utf-8")
+
+
 @lru_cache(maxsize=64)
 def error_html(status):
     status = int(status)
@@ -188,7 +194,7 @@ def error_html(status):
 <body>
 <header>
 <a href="/" aria-label="Aedrova home">
-<img src="{logo_url()}" alt="" width="30" height="30">Aedrova</a>
+<img src="{logo_url()}" alt="" width="30" height="30">{wordmark_svg()}</a>
 <span>Your team, plus Agents.</span>
 </header>
 <main>

@@ -709,3 +709,15 @@ input[type=checkbox]:checked{border:none;background:transparent url('/static/che
 input[type=checkbox]:focus-visible{outline:2px solid #007aff;outline-offset:3px}
 input[type=checkbox]:disabled{opacity:.5;cursor:default}
 .login-panel .apple{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;font-weight:500;letter-spacing:normal;min-height:48px}
+
+.brand-name {
+  display: block;
+  flex: none;
+  height: 19px;
+  width: auto;
+  aspect-ratio: 380.5 / 74.48;
+}
+.nav .brand-name { height: 21px; }
+.mobile-preview-brand { gap: 4px; }
+.mobile-preview-brand .brand-name { height: 11px; }
+@media (max-width: 620px) { .nav .brand-name { height: 19px; } }
