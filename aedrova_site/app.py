@@ -339,6 +339,10 @@ def create_app(config=None):
 
     install_dots(app, config, store, identity, auth)
 
+    from aedrova_site.apple_revocation import install as install_apple_revocation
+
+    install_apple_revocation(app, store, identity, auth)
+
     def page(request, name, title, **context):
         return templates.TemplateResponse(
             request=request,
