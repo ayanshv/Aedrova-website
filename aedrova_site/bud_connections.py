@@ -12,6 +12,8 @@ from sqlalchemy import inspect, text
 from aedrova_site.bud_providers import CATALOG, ReadProvider, descriptor, validate_resource
 from aedrova_site.store import Denied
 
+BUFFER_HISTORY = "recent_published_posts"
+DIRECT_SOCIAL = frozenset({"instagram", "tiktok"})
 SCHEMA = """CREATE TABLE IF NOT EXISTS bud_connections (
  id TEXT PRIMARY KEY, dot TEXT NOT NULL, workspace TEXT NOT NULL, user_id TEXT NOT NULL,
  provider TEXT NOT NULL, resource TEXT NOT NULL, dot_version INTEGER NOT NULL,
@@ -79,21 +81,51 @@ class BudConnections:
         return [dict(r) for r in rows]
 
     def listing(self, dot, user):
-        return [
-            {
-                "id": r["id"],
-                "provider": r["provider"],
-                "resource": r["resource"],
-                "expires": r["expires"],
-                "last_sync": r["synced"],
-                "status": r["status"]
-                if r["dot_version"] == dot["version"]
-                else "Needs authorization",
-                "tools": CATALOG[r["provider"]][4],
-                "version": r["id"],
-            }
-            for r in self.rows(dot, user)
-        ]
+        result = []
+        for r in self.rows(dot, user):
+            scope = self.history_scope(r)
+            tools = CATALOG[r["provider"]][4]
+            if scope:
+                tools = {
+                    **tools,
+                    BUFFER_HISTORY: "Recent published captions from selected channels",
+                }
+            result.append(
+                {
+                    "id": r["id"],
+                    "provider": r["provider"],
+                    "resource": r["resource"],
+                    "expires": r["expires"],
+                    "last_sync": r["synced"],
+                    "status": r["status"]
+                    if r["dot_version"] == dot["version"]
+                    else "Needs authorization",
+                    "tools": tools,
+                    "version": self.connection_version(r, scope),
+                }
+            )
+        return result
+
+    def shows_in_catalog(self, provider):
+        if provider == "buffer":
+            return self.dots.config.social_publishing_enabled
+        return not (self.dots.config.buffer_primary_social and provider in DIRECT_SOCIAL)
+
+    def history_scope(self, grant):
+        if (
+            grant["provider"] == "buffer"
+            and self.dots.config.social_publishing_enabled
+            and hasattr(self, "social")
+        ):
+            return self.social.context_scope(grant["id"])
+        return {}
+
+    @staticmethod
+    def connection_version(grant, scope):
+        if not scope:
+            return grant["id"]
+        revision = json.dumps(scope, sort_keys=True)
+        return hashlib.sha256((grant["id"] + revision).encode()).hexdigest()
 
     def connect(
         self,
@@ -110,6 +142,8 @@ class BudConnections:
     ):
         dot, user = self.dots.dot(session, workspace, dot_id)
         dot = dict(dot)
+        if provider in DIRECT_SOCIAL and not self.shows_in_catalog(provider):
+            raise Denied("Connect Instagram and TikTok through Buffer.")
         if provider == "buffer" and (not isinstance(oauth, dict) or oauth.get("kind") != "oauth"):
             raise Denied(
                 "Connect Buffer through account sign-in; personal API keys are not accepted."
@@ -331,31 +365,38 @@ class BudConnections:
             or grant["status"] not in {"Connected", "Error"}
         ):
             raise Denied("Needs authorization")
+        scope = self.history_scope(grant)
+        history = grant["provider"] == "buffer" and tool == BUFFER_HISTORY
+        if history and not scope:
+            raise Denied("Enable published captions for selected channels in Social.")
+
+        def read_grant():
+            if history:
+                return self.social.published_context(grant, secret, scope)
+            return self.read(grant["provider"], secret, grant["resource"], tool, oauth=oauth)
+
         try:
             grant, secret, oauth = self.access(grant)
             if isinstance(oauth, dict) and oauth.get("kind") == "openai_search":
                 oauth = {**oauth, "session": session, "run_token": run_token}
             try:
-                evidence = self.read(
-                    grant["provider"], secret, grant["resource"], tool, oauth=oauth
-                )
+                evidence = read_grant()
             except Denied as error:
                 if not oauth or str(error) != "Needs authorization":
                     raise
                 grant, secret, oauth = self.access(grant, force=True)
-                evidence = self.read(
-                    grant["provider"], secret, grant["resource"], tool, oauth=oauth
-                )
+                evidence = read_grant()
         except Denied as exc:
             state = str(exc) if str(exc) in {"Needs authorization", "Permission issue"} else "Error"
-            with self.store.tx() as db:
-                db.execute(
-                    text(
-                        "UPDATE bud_connections SET status=:s WHERE id=:id AND user_id=:u "
-                        "AND secret=:secret"
-                    ),
-                    {"s": state, "id": connection_id, "u": user, "secret": grant["secret"]},
-                )
+            if not history or state != "Error":
+                with self.store.tx() as db:
+                    db.execute(
+                        text(
+                            "UPDATE bud_connections SET status=:s WHERE id=:id AND user_id=:u "
+                            "AND secret=:secret"
+                        ),
+                        {"s": state, "id": connection_id, "u": user, "secret": grant["secret"]},
+                    )
             self.dots.audit(dot, user, "connector_failed:" + grant["provider"] + ":" + tool)
             raise
         if oauth and grant["provider"] != "search":
@@ -369,6 +410,7 @@ class BudConnections:
             not current
             or fresh["version"] != dot["version"]
             or current["secret"] != grant["secret"]
+            or self.history_scope(current) != scope
         ):
             raise Denied("The connector was disconnected while working. Retry your request.")
         now = int(time.time())
@@ -387,7 +429,7 @@ class BudConnections:
             "name": dot["name"],
             "dot_version": dot["version"],
             "connection_id": connection_id,
-            "connection_version": connection_id,
+            "connection_version": self.connection_version(grant, scope),
             "provider": grant["provider"],
             "resource": grant["resource"],
             "tool": tool,
@@ -448,7 +490,7 @@ def install(app, dots, auth):
                     and dots.config.dots_enabled,
                 }
                 for key in CATALOG
-                if key != "buffer" or dots.config.social_publishing_enabled
+                if service.shows_in_catalog(key)
             ]
         }
 

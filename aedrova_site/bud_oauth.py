@@ -104,6 +104,8 @@ class BudOAuth:
         )
 
     def setup_hint(self, provider):
+        if self.config.buffer_primary_social and provider in {"instagram", "tiktok"}:
+            return "Connect Instagram and TikTok through Buffer."
         if provider == "buffer" and not self.config.social_publishing_enabled:
             return "Social publishing is being prepared. Existing Bud conversations still work."
         if provider == "search":

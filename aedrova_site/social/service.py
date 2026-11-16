@@ -71,6 +71,7 @@ class Scope(BaseModel):
 class ChannelSelection(Scope):
     connection: UUID
     channels: list[str] = Field(max_length=50)
+    use_for_context: bool = Field(default=False, strict=True)
 
 
 class Asset(BaseModel):
@@ -141,6 +142,38 @@ class SocialService:
             raise Denied("Select this social channel before preparing a post.")
         return dict(row)
 
+    def channel_selections(self, connection):
+        with self.store.tx(write=False) as db:
+            return {
+                row["channel"]: (row["permission"], json.loads(row["metadata"]))
+                for row in db.execute(
+                    text("SELECT * FROM social_channels WHERE connection=:c"),
+                    {"c": connection},
+                ).mappings()
+            }
+
+    def context_scope(self, connection):
+        return {
+            channel: permission
+            for channel, (permission, metadata) in self.channel_selections(connection).items()
+            if metadata.get("use_for_context") is True
+        }
+
+    def published_context(self, grant, token, scope):
+        adapter = self.adapters["buffer"]
+        channels = {
+            c["id"]: c["platform"]
+            for c in adapter.get_connected_accounts(token, grant["resource"])
+            if c["id"] in scope and c["can_publish"]
+        }
+        if channels.keys() != scope.keys():
+            raise Denied("Review the selected channels in Social before using post history.")
+        return {
+            "records": adapter.recent_published_posts(token, grant["resource"], channels),
+            "untrusted": True,
+            "coverage": "Up to 10 published Buffer captions from channels selected for context.",
+        }
+
     def channels(self, session, workspace, bud):
         dot, user = self.scope(session, workspace, bud)
         items = []
@@ -148,15 +181,16 @@ class SocialService:
             if row["provider"] not in self.adapters:
                 continue
             grant, token, adapter = self.grant(dot, user, row["id"])
-            with self.store.tx() as db:
-                selected = set(
-                    db.execute(
-                        text("SELECT channel FROM social_channels WHERE connection=:c"),
-                        {"c": row["id"]},
-                    ).scalars()
-                )
+            selected = self.channel_selections(grant["id"])
             items.extend(
-                {**channel, "connection": grant["id"], "selected": channel["id"] in selected}
+                {
+                    **channel,
+                    "connection": grant["id"],
+                    "selected": channel["id"] in selected,
+                    "use_for_context": selected.get(channel["id"], ("", {}))[1].get(
+                        "use_for_context", False
+                    ),
+                }
                 for channel in adapter.get_connected_accounts(token, grant["resource"])
             )
         return {
@@ -185,7 +219,9 @@ class SocialService:
                         "c": grant["id"],
                         "h": channel,
                         "p": str(uuid4()),
-                        "m": json.dumps(available[channel]),
+                        "m": json.dumps(
+                            {**available[channel], "use_for_context": body.use_for_context}
+                        ),
                     },
                 )
             db.execute(
@@ -287,7 +323,6 @@ class SocialService:
             self.lock_grant(db, grant)
             permission = self.permission(db, grant["id"], body.channel)
             channel = json.loads(permission["metadata"])
-
 
             if (
                 channel["platform"] in {"instagram", "tiktok", "youtube", "pinterest"}
@@ -517,6 +552,7 @@ def install(app, connections, auth):
         return {
             "available": connections.oauth.available("buffer"),
             "analytics_available": False,
+            "published_context_available": connections.oauth.available("buffer"),
             "setup_hint": connections.oauth.setup_hint("buffer"),
         }
 

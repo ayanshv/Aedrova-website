@@ -772,7 +772,7 @@ def install(app, config, store, identity, auth):
             + [
                 {**descriptor(key), "available": config.dots_enabled}
                 for key in CATALOG
-                if key != "github" and (key != "buffer" or config.social_publishing_enabled)
+                if key != "github" and service.connections.shows_in_catalog(key)
             ]
         }
 
