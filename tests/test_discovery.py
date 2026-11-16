@@ -210,7 +210,7 @@ def test_team_and_about_connect_real_people_to_brand(public_client):
         page = next(node for node in graph if node["@type"] == "AboutPage")
         assert page["url"] == "https://aedrova.com" + path
         people = [node for node in graph if node["@type"] == "Person"]
-        assert len(people) == 4
+        assert len(people) == 3
         body = response.text.split("<main", 1)[1]
         for person, member in zip(people, TEAM_MEMBERS, strict=True):
             assert person["name"] == member["name"]

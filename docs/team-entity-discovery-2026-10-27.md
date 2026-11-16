@@ -6,12 +6,12 @@ Overviews/AI Mode; no special schema guarantees inclusion or a response for ever
 
 Implemented visible founder/role summaries and linked person anchors on /team,
 /about and Home. Product description names the actual audience, workspace, Buds and
-coding-agent workflow. Team questions answer who founded Aedrova and who handles
-communication, with product, controls, availability and support links. Business
+coding-agent workflow. Team questions cover who founded Aedrova, with product,
+controls, availability and support links. Business
 identity disclosure remains accurate: brand Aedrova, no invented registered entity.
 
 Structured data now connects Organization, Person and AboutPage using stable canonical
-IDs. Three co-founders are distinguished from the communications director. Names,
+IDs. Names,
 roles, biographies and portrait URLs match visible owner-approved content. Home links
 the same founder entities; product Organization metadata retains its factual scope.
 Organization logo references the stable crawlable /favicon.png. No invented personal

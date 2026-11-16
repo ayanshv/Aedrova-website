@@ -12,9 +12,9 @@ DESCRIPTION = (
 )
 PUBLIC_PAGES = {
     "/team": (
-        "Aedrova co-founders and team | Ayansh, Minh-Khoa, Abhinav and Joash",
+        "Aedrova co-founders | Ayansh, Minh-Khoa and Abhinav",
         "Meet Aedrova’s co-founders Ayansh Varma, Minh-Khoa Nguyen and Abhinav "
-        "Thirumala, and Director of Communication Joash Thomas.",
+        "Thirumala.",
     ),
     "/faq": (
         "Aedrova FAQ | Buds, building, access and pricing",
