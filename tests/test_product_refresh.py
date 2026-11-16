@@ -23,9 +23,8 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
             assert person["name"] in markup
             assert person["role"].replace("&", "&amp;") in markup
             assert person["bio"] in markup
-        assert markup.count('class="team-member"') == 4
+        assert markup.count('class="team-member"') == 3
         assert markup.count('class="team-photo"') == 3
-        assert 'class="team-portrait team-person-placeholder"' in markup
         assert TEAM_MEMBERS[0]["role"] == "Co-Founder & CEO / CTO"
         for person in TEAM_MEMBERS[:3]:
             assert f'src="{person["photo"]}"' in markup
@@ -36,10 +35,8 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
             assert b"Exif\x00\x00" not in image.content
 
         founders = markup.index('id="team-tier-founders"')
-        communications = markup.index('id="team-tier-communications"')
-        for person in TEAM_MEMBERS[:3]:
-            assert founders < markup.index(person["name"]) < communications
-        assert communications < markup.index("Joash Thomas")
+        for person in TEAM_MEMBERS:
+            assert founders < markup.index(person["name"])
         assert "Bio coming soon" not in markup
         assert 'href="/team"' in markup
         assert '/static/team/ayansh-varma.jpg' in markup

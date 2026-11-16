@@ -43,18 +43,6 @@ TEAM_MEMBERS = (
         "photo_height": 1080,
         "tier": "founders",
     },
-    {
-        "name": "Joash Thomas",
-        "role": "Director of Communication",
-        "bio": (
-            "Helps keep communication between Aedrova and its community clear and "
-            "approachable, with a focus on product updates, announcements and "
-            "consistent day-to-day messaging."
-        ),
-        "initials": "JT",
-        "placeholder": True,
-        "tier": "communications",
-    },
 )
 
 

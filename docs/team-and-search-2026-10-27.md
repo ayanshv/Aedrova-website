@@ -38,7 +38,7 @@ Sources:
 - https://developers.google.com/search/docs/appearance/favicon-in-search
 - https://developers.google.com/search/docs/appearance/ai-features
 
-Owner items at completion: bios for four members; headshots for the other members
+Owner items at completion: bios and additional headshots
 if desired; action-time approval for Cloudflare's displayed Continue/terms screen
 if the browser login is needed to publish the already tested sitemap bundle.
 Stage 1 acceptance remains open for its prior provider/audio gates; payments deferred.
@@ -47,7 +47,7 @@ Stage 1 acceptance remains open for its prior provider/audio gates; payments def
 
 PR27 passed both checks and merged to main as9e26da8. Render production aedrova-website
 reports that commit Live (automatic deploy,1m09s); no paid plan or new backend feature
-was enabled. Live /team renders all4 confirmed names and supplied portrait; PNG/ICO
+was enabled. Live /team rendered the confirmed roster and supplied portrait. PNG/ICO
 and the original public icon all return200 with correct image MIME and no noindex.
 HTTP verification: ../work/team-search-oct27/live-verification.json (primary checkout).
 Search Console reports /team already indexed. Homepage recrawl request accepted after
@@ -68,7 +68,7 @@ Added supplied photographs: first attachment Abhinav Thirumala, second Minh-Khoa
 Nguyen. Ayansh's role is now Co-Founder & CEO / CTO. Re-encoded web JPEGs contain no
 EXIF payload; originals are unchanged. Shared template now uses each person's own
 name, role and intrinsic dimensions rather than hardcoded Ayansh alternative text.
-Bios remain pending owner input after this response; Joash retains his monogram.
+Bios remained pending owner input.
 37 public/discovery/product checks passed; Ruff passed. Scope excludes backend
 staging commits, billing, credentials and permissions.
 
