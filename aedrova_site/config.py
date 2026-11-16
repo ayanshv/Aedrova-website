@@ -88,6 +88,8 @@ class Config:
     models: dict = field(default_factory=dict)
     download_path: str = ""
     download_sha256: str = ""
+    windows_download_path: str = ""
+    windows_download_sha256: str = ""
     release_ready: bool = False
     legal_ready: bool = False
 
@@ -356,6 +358,25 @@ class Config:
                 raise ValueError(
                     "Release manifest requires version, processor and macOS requirements."
                 )
+        if self.release_ready and (self.windows_download_path or self.windows_download_sha256):
+            windows = Path(self.windows_download_path)
+            if not windows.is_file() or windows.suffix.lower() != ".exe":
+                raise ValueError("Windows release requires its verified installer.")
+            windows_manifest = windows.with_suffix(".manifest.json")
+            if not windows_manifest.is_file():
+                raise ValueError("Windows release requires its signing verification manifest.")
+            manifest = json.loads(windows_manifest.read_text())
+            with windows.open("rb") as stream:
+                checksum = hashlib.file_digest(stream, "sha256").hexdigest()
+            if (
+                checksum != self.windows_download_sha256
+                or manifest.get("sha256") != checksum
+                or manifest.get("public_release") is not True
+                or manifest.get("authenticode_verified") is not True
+                or manifest.get("architecture") != "x86_64"
+                or not re.fullmatch(r"\d{1,4}\.\d{1,4}\.\d{1,4}", str(manifest.get("version", "")))
+            ):
+                raise ValueError("Windows installer does not match the verified release.")
         if self.stripe_test_mode and not self.stripe_key.startswith(("sk_test_", "rk_test_")):
             raise ValueError(
                 "Stripe sandbox mode requires a test secret key; live keys are rejected."

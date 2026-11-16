@@ -25,8 +25,12 @@
       <svg class="platform-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M4 6l24-3v26L4 26V6Zm10-1v22M4 16h24" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
       <h3 id="download-windows">Windows</h3>
       <p>The same workspace, on your PC.</p>
+      {% if windows_ready %}
+      <a class="button" href="/api/download?platform=windows">Download for Windows ↓</a>
+      {% else %}
       <p class="notice">Installer in preparation</p>
       <p class="subtle">Downloads open after Windows signing and release verification.</p>
+      {% endif %}
     </section>
   </div>
   <h3>A familiar start, wherever you work</h3>
