@@ -564,6 +564,7 @@ def create_app(config=None):
         return page(
             request, "download", "Download Aedrova for Mac and Windows",
             release_ready=config.release_ready,
+            windows_ready=config.release_ready and bool(config.windows_download_path),
         )
 
     @app.get("/enterprise")
@@ -957,7 +958,18 @@ def create_app(config=None):
         return {"ok": True, "reference": identifier}
 
     @app.get("/api/download")
-    def release_download():
+    def release_download(platform: Literal["mac", "windows"] = "mac"):
+        if platform == "windows":
+            path = Path(config.windows_download_path)
+            if (
+                not config.release_ready
+                or not path.is_file()
+                or not path.with_suffix(".manifest.json").is_file()
+            ):
+                raise HTTPException(503, "The verified Windows installer is not available yet.")
+            return FileResponse(
+                path, filename="Aedrova-Setup.exe", media_type="application/octet-stream"
+            )
         path = Path(config.download_path)
         if not config.release_ready or not path.is_file() or path.suffix != ".dmg":
             raise HTTPException(503, "The verified installer is not available yet.")
@@ -966,25 +978,32 @@ def create_app(config=None):
         )
 
     @app.get("/api/release")
-    def release_information():
+    def release_information(platform: Literal["mac", "windows"] = "mac"):
         if not config.release_ready:
             raise HTTPException(503, "The verified public installer is not available yet.")
-        path = Path(config.download_path)
+        windows = platform == "windows"
+        path = Path(config.windows_download_path if windows else config.download_path)
         try:
+            if not path.is_file():
+                raise FileNotFoundError(path)
             manifest = json.loads(path.with_suffix(".manifest.json").read_text())
             size = path.stat().st_size
         except (OSError, ValueError):
             raise HTTPException(
                 503, "The verified public installer is not available yet."
             ) from None
-        return {
+        release = {
             "version": manifest["version"],
             "architecture": manifest["architecture"],
-            "minimum_macos": manifest["minimum_macos"],
             "size_bytes": size,
-            "sha256": config.download_sha256,
+            "sha256": config.windows_download_sha256 if windows else config.download_sha256,
             "public_release": True,
         }
+        if windows:
+            release["platform"] = "windows"
+        else:
+            release["minimum_macos"] = manifest["minimum_macos"]
+        return release
 
     @app.post("/api/meetings/join")
     def meeting_join(request: Request, body: MeetingJoinBody):
