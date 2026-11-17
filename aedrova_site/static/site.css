@@ -710,13 +710,14 @@ input[type=checkbox]:disabled{opacity:.5;cursor:default}
 .login-panel .apple{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;font-weight:500;letter-spacing:normal;min-height:48px}
 
 .brand-name {
+  --wordmark-canvas-scale: calc(80.48 / 74.48);
   display: block;
   flex: none;
-  height: 19px;
+  height: calc(19px * var(--wordmark-canvas-scale));
   width: auto;
-  aspect-ratio: 380.5 / 74.48;
+  aspect-ratio: 380.5 / 80.48;
 }
-.nav .brand-name { height: 21px; }
+.nav .brand-name { height: calc(21px * var(--wordmark-canvas-scale)); }
 .mobile-preview-brand { gap: 4px; }
-.mobile-preview-brand .brand-name { height: 11px; }
-@media (max-width: 620px) { .nav .brand-name { height: 19px; } }
+.mobile-preview-brand .brand-name { height: calc(11px * var(--wordmark-canvas-scale)); }
+@media (max-width: 620px) { .nav .brand-name { height: calc(19px * var(--wordmark-canvas-scale)); } }
