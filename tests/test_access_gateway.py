@@ -147,6 +147,50 @@ def test_inference_rechecks_revocation_and_provider_binding(client):
     assert client.app.state.store.balance("space-a")["reserved"] == 0
 
 
+def test_waitlist_ai_pilot_only_funds_and_runs_in_the_configured_workspace(tmp_path):
+    pilot = "dfa20ae0-0352-42c3-8c4e-ab81291b4150"
+    sibling = "9ab7ac73-a594-4bff-9ad6-977d7758ee93"
+    config = Config(
+        database=f"sqlite:///{tmp_path / 'pilot.sqlite'}",
+        waitlist_only=True,
+        gateway_enabled=True,
+        ai_pilot_workspace=pilot,
+        models={"codex": MODELS["codex"]},
+        openai_key="server-only-key",
+    )
+    config.validate()
+    app = create_app(config)
+    identity = app.state.identity
+    identity.require = lambda *_args, **_kwargs: {"id": "pilot-owner"}
+    headers = {"Authorization": "Bearer access-a"}
+
+    def start(client, workspace, request_id):
+        return client.post(
+            "/api/runs",
+            headers=headers,
+            json={"workspace": workspace, "provider": "codex", "request_id": request_id},
+        )
+
+    with TestClient(app) as client:
+        assert client.get("/download", follow_redirects=False).headers["location"] == "/waitlist"
+        assert client.post(f"/api/free/{sibling}", headers=headers).status_code == 403
+        assert start(client, sibling, "pilot-denied-attempt").status_code == 403
+        assert client.post(f"/api/free/{pilot}", headers=headers).status_code == 200
+        root_pilot = identity.billing_context
+        identity.billing_context = lambda *_args: {"billing_workspace": sibling}
+        assert start(client, pilot, "pilot-inherited-attempt").status_code == 403
+        identity.billing_context = root_pilot
+        run = start(client, pilot, "pilot-allowed-attempt")
+        assert run.status_code == 200
+        config.ai_pilot_workspace = sibling
+        assert client.post(
+            "/gateway/codex/v1/responses",
+            headers={"Authorization": "Bearer " + run.json()["token"]},
+            json={},
+        ).status_code == 403
+        assert app.state.store.balance(pilot)["reserved"] == 0
+
+
 @pytest.mark.parametrize(
     "body",
     [

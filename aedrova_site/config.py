@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
+from uuid import UUID
 
 from cryptography.fernet import Fernet
 from sqlalchemy.engine import make_url
@@ -76,6 +77,7 @@ class Config:
     stripe_test_mode: bool = False
     checkout_enabled: bool = False
     gateway_enabled: bool = False
+    ai_pilot_workspace: str = ""
     development_ai: bool = False
     usage_limits: dict = field(default_factory=dict)
     company_budget_microusd: int = 100_000_000
@@ -90,6 +92,11 @@ class Config:
     download_sha256: str = ""
     release_ready: bool = False
     legal_ready: bool = False
+
+    def managed_ai_for(self, workspace):
+        return self.gateway_enabled and (
+            not self.ai_pilot_workspace or workspace == self.ai_pilot_workspace
+        )
 
     @classmethod
     def load(cls):
@@ -202,9 +209,16 @@ class Config:
                     "Use the restricted Aedrova website role, Supabase session pooler "
                     "on port 5432, TLS and at most three pooled connections."
                 )
+        if self.ai_pilot_workspace:
+            try:
+                pilot = str(UUID(self.ai_pilot_workspace))
+            except ValueError:
+                raise ValueError("The AI pilot requires a workspace UUID.") from None
+            if pilot != self.ai_pilot_workspace or not self.waitlist_only:
+                raise ValueError("Use a canonical workspace UUID for the waitlist AI pilot.")
         if self.waitlist_only and (
             self.checkout_enabled
-            or self.gateway_enabled
+            or (self.gateway_enabled and not self.ai_pilot_workspace)
             or self.meetings_enabled
             or self.chat_speech_enabled
             or self.free_enabled

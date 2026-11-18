@@ -85,7 +85,7 @@ def test_authorization_database_operations_never_run_on_event_loop_thread():
         authorize_run(
             request,
             "codex",
-            SimpleNamespace(gateway_enabled=True, models={"codex": {}}),
+            Config(gateway_enabled=True, models={"codex": {}}),
             store,
             identity,
         )

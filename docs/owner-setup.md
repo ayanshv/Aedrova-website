@@ -126,6 +126,15 @@ reservation and are not automatically retried. Reconcile exceptional uncertain c
 provider logs before making a manual adjustment. Measure real build costs and reconcile rate
 assumptions before advertising general production allowances.
 
+To test managed coding and chat in production during the waitlist, set
+`AEDROVA_AI_PILOT_WORKSPACE` to the canonical UUID of one independent test workspace.
+Keep `AEDROVA_WAITLIST_ONLY=true` and public Free activation and checkout disabled.
+After verifying both provider keys, set `AEDROVA_MODELS_FILE=config/models.beta.json`
+and enable the gateway. The test workspace owner can then choose **Activate included AI**
+in desktop settings. The workspace uses the Free budget and request limits.
+Disable the gateway to end the pilot. Remove the workspace setting when switching
+to the public launch configuration.
+
 ## 5. Signed Mac installer
 
 Join the Apple Developer Program, install a Developer ID Application certificate in this Mac's
