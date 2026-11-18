@@ -94,6 +94,8 @@ async def authorize_run(request: Request, provider, config, store, identity):
         "x-api-key", ""
     )
     run = await asyncio.to_thread(store.run, token)
+    if not config.managed_ai_for(run["workspace"]):
+        raise Denied("This workspace does not have managed AI access.")
     if run["provider"] != provider:
         raise Denied("This build token cannot access that provider.")
     session = await asyncio.to_thread(store.session, token)
@@ -109,6 +111,8 @@ async def authorize_run(request: Request, provider, config, store, identity):
     context = await asyncio.to_thread(
         identity.billing_context, session["access_token"], run["workspace"]
     )
+    if not config.managed_ai_for(context["billing_workspace"]):
+        raise Denied("AI pilot access requires an independent workspace.")
     run["billing_workspace"] = context["billing_workspace"]
     await asyncio.to_thread(store.rate_limit, "inference:" + run["id"], limit=120)
     return run

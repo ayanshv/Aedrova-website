@@ -809,7 +809,8 @@ def create_app(config=None):
                 "coding_providers": [
                     {"provider": provider, "model": model["id"]}
                     for provider, model in config.models.items()
-                    if config.gateway_enabled
+                    if config.managed_ai_for(workspace)
+                    and config.managed_ai_for(context["billing_workspace"])
                 ],
             }
         except Denied:
@@ -825,11 +826,14 @@ def create_app(config=None):
 
     @app.post("/api/free/{workspace}")
     def activate_free(request: Request, workspace: str):
-        if not config.free_enabled or config.waitlist_only:
+        pilot = bool(config.ai_pilot_workspace and config.managed_ai_for(workspace))
+        if not pilot and (not config.free_enabled or config.waitlist_only):
             raise Denied("Free access opens after the waitlist. No AI usage was started.")
         token = auth(request, change=True)
         context = identity.billing_context(token, workspace)
         workspace = context["billing_workspace"]
+        if pilot and not config.managed_ai_for(workspace):
+            raise Denied("AI pilot access requires an independent workspace.")
         user = identity.require(token, workspace, billing=True)
         store.rate_limit("free:" + user["id"], limit=5)
         if config.early_access_enabled and promotion.status()["active"]:
@@ -1222,7 +1226,7 @@ def create_app(config=None):
 
     @app.post("/api/runs")
     def create_run(request: Request, body: RunBody):
-        if not config.gateway_enabled or body.provider not in config.models:
+        if not config.managed_ai_for(body.workspace) or body.provider not in config.models:
             raise Denied("Included AI access is not configured yet.")
         token = auth(request, change=True)
         user = identity.require(
@@ -1231,6 +1235,8 @@ def create_app(config=None):
         store.rate_limit("runs:" + user["id"], limit=20)
         store.reconcile_expired()
         context = identity.billing_context(token, body.workspace)
+        if not config.managed_ai_for(context["billing_workspace"]):
+            raise Denied("AI pilot access requires an independent workspace.")
         run = store.create_run(
             user["id"],
             body.workspace,
