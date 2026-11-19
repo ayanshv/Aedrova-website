@@ -61,7 +61,7 @@ def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client): 
 
 
     assert {name for name, _ in ui_images} == {
-        name for name in captures if not name.startswith("teammate-")
+        name for name in captures if not name.startswith(("teammate-", "activity-"))
     }
     assert all(query == "?v=20261026" for _, query in ui_images)
     for name, _ in ui_images:

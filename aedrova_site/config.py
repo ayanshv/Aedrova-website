@@ -390,7 +390,7 @@ class Config:
             self.legal_ready
             and self.release_ready
             and self.gateway_enabled
-            and set(self.models) == {"codex", "claude_code"}
+            and "codex" in self.models
             and self.stripe_key.startswith(("sk_live_", "rk_live_"))
         )
         if self.checkout_enabled and not (
