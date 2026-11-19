@@ -44,16 +44,11 @@
     <article class="visual-feature" id="ai-teammates">
       <div class="feature-copy"><h2>A little personality<br>A lot of teamwork</h2><p>Specialist Buds that build on your team’s shared context.</p></div>
       <figure class="bud-scene feature-scene" data-feature-scene>
-        <div class="bud-role-tabs" role="tablist" aria-label="Explore Bud roles">
-          <button type="button" role="tab" aria-selected="true" aria-controls="bud-role-scene" id="bud-builder-tab" data-bud-demo="builder">Builder</button>
-          <button type="button" role="tab" aria-selected="false" aria-controls="bud-role-scene" id="bud-designer-tab" data-bud-demo="designer" tabindex="-1">Designer</button>
-          <button type="button" role="tab" aria-selected="false" aria-controls="bud-role-scene" id="bud-research-tab" data-bud-demo="research" tabindex="-1">Research</button>
-        </div>
-        <div id="bud-role-scene" role="tabpanel" aria-labelledby="bud-builder-tab">
+        <div class="bud-illustration">
           <div class="bud-portrait"><span class="site-bud look-builder" aria-hidden="true"></span><span class="bud-portrait-shadow" aria-hidden="true"></span></div>
           <div class="bud-output"><strong data-bud-name>Orbit</strong><p data-bud-response>I found the brief. I’ll build the invite flow from it.</p><div class="bud-deliverable"><span class="document-mark" aria-hidden="true"></span><span data-bud-deliverable>Invite flow ready for review</span><span class="source-check" aria-hidden="true">✓</span></div></div>
         </div>
-        <figcaption class="scene-caption">Choose a role to explore the illustrated workflow</figcaption>
+        <figcaption class="scene-caption">Illustrated workflow · Shared context, specialist work</figcaption>
       </figure>
     </article>
     <article class="visual-feature" id="meetings">
@@ -92,7 +87,7 @@
 
   <section class="workspace-peek" aria-label="See the Aedrova desktop app"><details><summary>See the actual workspace <span aria-hidden="true">+</span></summary><figure><picture><img class="meeting-image-light" src="/static/workspace-light.png?v=20261026" alt="Aedrova desktop workspace in light mode" loading="lazy" width="1800" height="1129"><img class="meeting-image-dark" src="/static/workspace-dark.png?v=20261026" alt="Aedrova desktop workspace in dark mode" loading="lazy" width="1800" height="1129"></picture><figcaption>Actual desktop app · Demonstration workspace</figcaption></figure></details></section>
 
-  <section class="visual-faq" aria-labelledby="visual-faq-heading"><h2 id="visual-faq-heading">A few things to know</h2><div><details><summary>What can my agent see?</summary><p>Permitted conversations, shared files and selected connected resources. Private-source access is checked for each request.</p></details><details><summary>Who approves changes?</summary><p>You review before changes reach your original files. Publishing requires a separate approval.</p></details><details><summary>How do meeting notes work?</summary><p>Audio transcription requires current consent from every participant. AI reuse is a separate choice. You review notes before sharing them as context. Screen sharing does not give the agent automatic visual understanding of your screen.</p></details><details><summary>When can I get it?</summary><p>Mac and Windows releases are being prepared. Public rollout pending final acceptance. <a href="/waitlist">Join the waitlist</a> for availability.</p></details></div></section>
+  <section class="visual-faq" id="questions" aria-labelledby="visual-faq-heading"><h2 id="visual-faq-heading">A few things to know</h2><div><details><summary>What can my agent see?</summary><p>Permitted conversations, shared files and selected connected resources. Private-source access is checked for each request.</p></details><details><summary>Who approves changes?</summary><p>You review before changes reach your original files. Publishing requires a separate approval.</p></details><details><summary>How do meeting notes work?</summary><p>Audio transcription requires current consent from every participant. AI reuse is a separate choice. You review notes before sharing them as context. Screen sharing does not give the agent automatic visual understanding of your screen.</p></details><details><summary>When can I get it?</summary><p>Mac and Windows releases are being prepared. Public rollout pending final acceptance. <a href="/waitlist">Join the waitlist</a> for availability.</p></details></div></section>
   <section class="team-invitation" id="meet-the-team" aria-labelledby="team-invitation-heading"><div><h2 id="team-invitation-heading">The people behind Aedrova</h2><p>Ayansh Varma, Minh-Khoa Nguyen and Abhinav Thirumala</p></div><a class="visual-text-link" href="/team">Meet the team</a></section>
   <section class="visual-cta"><span class="site-bud look-marketing" aria-hidden="true"></span><h2>Make something together</h2><a class="button" href="{{ "/waitlist" if waitlist_only else "/onboarding" }}">{{ "Join the waitlist" if waitlist_only else "Get started" }}</a></section>
 </div>
