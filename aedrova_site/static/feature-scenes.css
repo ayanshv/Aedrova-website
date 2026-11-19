@@ -107,8 +107,6 @@
 .mini-message strong { display: block; font-size: 12px; margin: 0 0 4px; }
 .mini-message p { font-size: 14px; }
 .source-brief, .source-design { display: flex; gap: 14px; align-items: center; padding: 16px 20px; }
-.source-brief { margin: 0 16px 0 -12px; }
-.source-design { margin: 0 -6px 0 12px; }
 .source-sheet strong { font-size: 14px; font-weight: 560; }
 .source-sheet > div > p { margin-top: 5px; color: var(--muted); font-size: 12px; }
 .source-check { color: var(--scene-green); font-size: 15px; margin-left: auto; }
@@ -298,7 +296,7 @@
   .mini-message { margin-top: 11px; }
   .mini-message p { font-size: 13px; }
   .source-sheet > div > p { font-size: 11px; }
-  .source-brief { margin: 0 6px; padding: 12px 16px; }
+  .source-brief { padding: 12px 16px; }
   .source-design { display: none; }
   .context-bridge { gap: 16px; }
   .context-bridge > span { max-width: 50px; }
