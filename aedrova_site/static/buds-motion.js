@@ -12,7 +12,7 @@
   let timer;
   function mount() {
     document.querySelectorAll('.site-bud,.connected-bud').forEach((el) => {
-      if (mounted.has(el)) return;
+      if (mounted.has(el) || el.closest('.visual-home')) return;
       const index = looks.findIndex(look => el.classList.contains('look-' + look));
       if (index < 0) return;
       const canvas = document.createElement('canvas');

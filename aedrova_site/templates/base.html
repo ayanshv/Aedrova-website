@@ -24,7 +24,7 @@
   <script src="/static/site.js?v={{ asset_version }}" defer></script>
   {% if request.url.path == "/" %}<link rel="stylesheet" href="/static/feature-scenes.css?v={{ asset_version }}"><script src="/static/feature-scenes.js?v={{ asset_version }}" defer></script>{% endif %}
   <script src="/static/navigation-contrast.js?v={{ asset_version }}" defer></script>
-<script src="/static/buds-motion.js" defer></script>
+<script src="/static/buds-motion.js?v={{ asset_version }}" defer></script>
 <script src="/static/localization.js?v={{ asset_version }}" defer></script>
 </head>
 <body class="{% block body_class %}inner-page{% endblock %}">

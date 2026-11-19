@@ -220,7 +220,9 @@ def test_feature_illustrations_preserve_permissions_and_release_disclosures(clie
     for asset in ("feature-scenes.css", "feature-scenes.js", "feature-icons/figma.svg"):
         assert asset in page
         assert client.get("/static/" + asset).status_code == 200
-    assert 'role="tablist"' in page
+    assert 'data-bud-demo' not in page
+    assert 'class="bud-role-tabs"' not in page
+    assert 'id="questions"' in page
     assert 'data-build-step="review"' in page
     assert "Planned video calls" not in page
 

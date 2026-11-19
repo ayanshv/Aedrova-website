@@ -144,12 +144,7 @@
 .feature-copy h2 { font-size: clamp(30px, 3vw, 40px); }
 .feature-copy p { max-width: 420px; }
 .bud-scene, .notes-scene { min-height: 510px; }
-.bud-role-tabs { display: flex; justify-content: center; gap: 32px; padding: 22px 16px 0; }
-.bud-role-tabs button {
-  background: none; border: 0; border-bottom: 2px solid transparent;
-  padding: 10px 0; color: var(--muted); font-size: 14px;
-}
-.bud-role-tabs button[aria-selected=true] { border-bottom-color: var(--scene-blue); color: var(--text); }
+.bud-scene { padding-top: 26px; }
 .bud-portrait { position: relative; height: 220px; display: grid; place-items: center; }
 .bud-portrait > .site-bud { position: relative; width: 190px; height: 190px; z-index: 1; }
 .bud-portrait-shadow { position: absolute; width: 85px; height: 12px; border-radius: 50%; background: #17253d1c; bottom: 20px; filter: blur(5px); }
@@ -232,11 +227,23 @@
 .workspace-peek details[open] summary > span { transform: rotate(45deg); }
 .workspace-peek picture img { width: 100%; height: auto; border-radius: 12px; box-shadow: var(--scene-shadow); }
 .workspace-peek figcaption { color: var(--muted); font-size: 12px; margin-top: 16px; text-align: center; }
-.visual-faq { display: grid; grid-template-columns: 1fr 1.2fr; gap: 50px; padding-top: 80px; }
-.visual-faq h2 { font-size: 34px; }
-.visual-faq details { padding: 18px 0; }
-.visual-faq summary { font-size: 17px; cursor: pointer; }
-.visual-faq details p { padding-top: 15px; font-size: 15px; }
+.visual-faq { max-width: 760px; margin: 0 auto; padding-top: 64px; scroll-margin-top: 100px; }
+.visual-faq h2 { font-size: 32px; text-align: center; margin-bottom: 24px; }
+.visual-faq details { padding: 0; }
+.visual-faq summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  position: relative; font-size: 17px; line-height: 1.5; padding: 18px 28px 18px 0;
+  cursor: pointer; list-style: none;
+}
+.visual-faq summary::-webkit-details-marker { display: none; }
+.visual-faq summary::marker { content: ""; }
+.visual-faq summary::before, .visual-faq summary::after {
+  content: ""; position: absolute; right: 2px; top: 50%; width: 12px; height: 1.5px;
+  background: currentColor; transform: rotate(0); transition: transform 180ms ease;
+}
+.visual-faq summary::after { transform: rotate(90deg); }
+.visual-faq details[open] summary::after { transform: rotate(0); }
+.visual-faq details p { padding: 0 28px 18px 0; font-size: 15px; line-height: 1.65; }
 .visual-faq a { text-decoration: underline; }
 .visual-home .team-invitation { margin: 48px 0 0; padding: 30px 0; border: 0; }
 .visual-home .team-invitation h2 { font-size: 23px; margin-bottom: 10px; }
@@ -245,42 +252,23 @@
 .visual-cta > .site-bud { display: block; width: 110px; height: 110px; margin: 0 auto 20px; }
 .visual-cta h2 { font-size: 40px; margin-bottom: 25px; }
 .visual-cta .button { font-size: 16px; }
-.visual-home.motion-enabled .source-conversation { animation: source-arrive 9s ease both infinite; }
-.visual-home.motion-enabled .source-brief { animation: source-arrive 9s .3s ease both infinite; }
-.visual-home.motion-enabled .source-design { animation: source-arrive 9s .65s ease both infinite; }
-.visual-home.motion-enabled .context-bridge img { animation: agent-attention 9s ease both infinite; }
-.visual-home.motion-enabled .context-answer { animation: answer-arrive 9s ease both infinite; }
-.visual-home.motion-enabled .bud-portrait > .site-bud { animation: feature-bud-breathe 6s ease-in-out infinite; }
-.visual-home.motion-enabled .bud-deliverable { animation: deliverable-arrive 7s ease both infinite; }
-.visual-home.motion-enabled .audio-wave > span { animation: wave-listening 1.7s var(--wave-delay) ease-in-out infinite alternate; }
-.visual-home.motion-enabled .meeting-note { animation: notes-arrive 8s ease both infinite; }
-.visual-home.motion-enabled .tool-source { animation: tool-arrive 8s ease both infinite; }
-.visual-home.motion-enabled .tool-source:nth-child(2) { animation-delay: .2s; }
-.visual-home.motion-enabled .tool-source:nth-child(3) { animation-delay: .4s; }
-.visual-home.motion-enabled .tool-source:nth-child(4) { animation-delay: .6s; }
-.visual-home.motion-enabled .connected-bud-note { animation: deliverable-arrive 8s ease both infinite; }
-.feature-scene *, .feature-scene *::before, .feature-scene *::after { animation-play-state: paused; }
-.feature-scene.is-playing *, .feature-scene.is-playing *::before, .feature-scene.is-playing *::after { animation-play-state: running; }
-.visual-home.motion-stopped .feature-scene * { animation: none !important; }
-@keyframes source-arrive {
-  0%, 4% { opacity: .45; transform: translateY(12px); }
-  13%, 89% { opacity: 1; transform: translateY(0); }
-  100% { opacity: .45; transform: translateY(-5px); }
+.visual-home.motion-enabled .has-entered .source-sheet,
+.visual-home.motion-enabled .has-entered .context-answer,
+.visual-home.motion-enabled .has-entered .meeting-note,
+.visual-home.motion-enabled .has-entered .tool-source,
+.visual-home.motion-enabled .has-entered .connected-bud-note {
+  animation: feature-enter 650ms cubic-bezier(.2,.65,.3,1) both;
 }
-@keyframes agent-attention {
-  0%, 10%, 85%, 100% { transform: scale(1); }
-  25%, 40% { transform: scale(1.12); }
-}
-@keyframes answer-arrive {
-  0%, 25% { opacity: .3; transform: translateY(10px); }
-  42%, 91% { opacity: 1; transform: translateY(0); }
-  100% { opacity: .3; }
-}
-@keyframes feature-bud-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-@keyframes deliverable-arrive { 0%, 15% { opacity: .4; transform: translateY(6px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
-@keyframes wave-listening { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
-@keyframes notes-arrive { 0%, 15% { opacity: .4; transform: translateY(12px); } 37%, 100% { opacity: 1; transform: translateY(0); } }
-@keyframes tool-arrive { 0%, 5% { transform: translateX(-7px); opacity: .4; } 23%, 100% { transform: translateX(0); opacity: 1; } }
+.visual-home.motion-enabled .has-entered .source-brief { animation-delay: 100ms; }
+.visual-home.motion-enabled .has-entered .source-design { animation-delay: 200ms; }
+.visual-home.motion-enabled .has-entered .context-answer { animation-delay: 250ms; }
+.visual-home.motion-enabled .bud-portrait > .site-bud { animation: feature-bud-breathe 7s ease-in-out infinite; }
+.visual-home.motion-enabled .audio-wave > span { animation: wave-listening 2s var(--wave-delay) ease-in-out infinite alternate; }
+.feature-scene *, .feature-scene *::before, .feature-scene *::after { animation-play-state: paused !important; }
+.feature-scene.is-playing *, .feature-scene.is-playing *::before, .feature-scene.is-playing *::after { animation-play-state: running !important; }
+@keyframes feature-enter { from { transform: translateY(6px); } to { transform: translateY(0); } }
+@keyframes feature-bud-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes wave-listening { from { transform: scaleY(.65); } to { transform: scaleY(1); } }
 @media(max-width: 1000px) {
   .visual-home { width: min(100% - 56px, 1160px); }
   .context-scene { padding: 38px 25px 65px; grid-template-columns: 1fr 70px 1fr; }
@@ -326,7 +314,6 @@
   .feature-copy { padding-bottom: 22px; }
   .feature-copy h2 { font-size: 32px; }
   .bud-scene, .notes-scene { min-height: 475px; }
-  .bud-role-tabs { gap: 28px; }
   .bud-portrait { height: 205px; }
   .bud-portrait > .site-bud { width: 175px; height: 175px; }
   .bud-output { margin: 0 22px; padding: 21px; }
@@ -360,7 +347,8 @@
   .connected-bud-note > img { width: 18px; height: 18px; }
   .connected-bud-note > p { font-size: 10px; }
   .workspace-peek { margin-top: 28px; }
-  .visual-faq { grid-template-columns: 1fr; gap: 12px; padding-top: 48px; }
+  .visual-faq { padding-top: 44px; }
+  .visual-faq h2 { font-size: 28px; text-align: left; margin-bottom: 16px; }
   .visual-faq summary { font-size: 16px; }
   .visual-home .team-invitation { align-items: flex-start; gap: 18px; margin-top: 32px; padding: 20px 0; }
   .visual-home .team-invitation h2 { font-size: 21px; }
