@@ -178,6 +178,9 @@ def asset_fingerprint(root):
             "preparation.js",
             "localization.js",
             "navigation-contrast.js",
+            "feature-scenes.css",
+            "feature-scenes.js",
+            "buds-motion.js",
         )
     ]
     paths.extend(sorted((static / "locales").glob("*.json")))

@@ -185,6 +185,9 @@ def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
         "preparation.js",
         "localization.js",
         "navigation-contrast.js",
+        "feature-scenes.css",
+        "feature-scenes.js",
+        "buds-motion.js",
     ):
         (static / name).write_text("fixture")
     (static / "locales/hi.json").write_text('{"Continue":"initial"}')
@@ -199,7 +202,10 @@ def test_locale_updates_and_new_catalogs_invalidate_browser_assets(tmp_path):
     fourth = asset_fingerprint(tmp_path)
     assert fourth != third
     (static / "navigation-contrast.js").write_text("updated contrast")
-    assert asset_fingerprint(tmp_path) != fourth
+    fifth = asset_fingerprint(tmp_path)
+    assert fifth != fourth
+    (static / "feature-scenes.css").write_text("updated layout")
+    assert asset_fingerprint(tmp_path) != fifth
 
 
 def test_every_navigation_choice_has_a_complete_static_catalog():
