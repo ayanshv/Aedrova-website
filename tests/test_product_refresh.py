@@ -46,7 +46,7 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
         assert 'class="team-member"' not in markup
 
 
-def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client):  # noqa: F811
+def test_capture_inventory_and_optional_workspace_preview(client):  # noqa: F811
     inventory = json.loads((STATIC / "product-captures.json").read_text())
     assert inventory["captured_at"] == "2026-10-26"
     captures = {item["file"]: item for item in inventory["captures"]}
@@ -61,7 +61,7 @@ def test_capture_inventory_matches_actual_files_and_all_home_ui_images(client): 
 
 
     assert {name for name, _ in ui_images} == {
-        name for name in captures if not name.startswith(("teammate-", "activity-"))
+        "workspace-light.png", "workspace-dark.png"
     }
     assert all(query == "?v=20261026" for _, query in ui_images)
     for name, _ in ui_images:

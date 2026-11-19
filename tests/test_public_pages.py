@@ -207,24 +207,21 @@ def test_city_video_supports_browser_range_loading(client):
     assert b"ftyp" in response.content[:32]
 
 
-def test_meeting_showcase_uses_real_captures_and_honest_availability(client):
+def test_feature_illustrations_preserve_permissions_and_release_disclosures(client):
     page = client.get("/").text
     assert 'id="meetings"' in page
-    assert "Implemented in the desktop preview" in page
+    assert 'class="notes-scene feature-scene"' in page
     assert "Public rollout pending" in page
-    assert "audio transcription requires current consent from every participant" in page
+    assert "Audio transcription requires current consent from every participant" in page
     assert "AI reuse is a separate choice" in page
     assert "does not give the agent automatic visual understanding" in page
-    for asset in (
-        "meetings-light.png",
-        "meetings-dark.png",
-        "devices-light.png",
-        "devices-dark.png",
-    ):
+    assert "Applying changes and publishing require approval" in page
+    assert "Illustrated workflow" in page
+    for asset in ("feature-scenes.css", "feature-scenes.js", "feature-icons/figma.svg"):
         assert asset in page
-        response = client.get("/static/" + asset)
-        assert response.status_code == 200
-        assert response.content.startswith(b"\x89PNG")
+        assert client.get("/static/" + asset).status_code == 200
+    assert 'role="tablist"' in page
+    assert 'data-build-step="review"' in page
     assert "Planned video calls" not in page
 
 
