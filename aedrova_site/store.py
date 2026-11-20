@@ -11,7 +11,7 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, event, inspect, text
 
 from aedrova_site import budgets, promotion
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY, PLAN_TIERS
 from aedrova_site.store_errors import BudgetDenied
 
 SCHEMA = [
@@ -466,7 +466,7 @@ class Store:
 
     def grant_early_access(self, user, workspace, plan="annual"):
         """After owner/admin authorization: a bounded gift, never a Stripe subscription."""
-        if plan not in {"monthly", "annual"}:
+        if plan not in LEGACY_PLAN_POLICY:
             raise Denied("Unknown early-access plan.")
         if not self.early_access_enabled or not promotion.status()["active"]:
             return False
@@ -484,7 +484,7 @@ class Store:
                     "start": promotion.STARTS_AT,
                     "end": promotion.ENDS_AT,
                     "amount": self.usage_policy[plan]["budget"],
-                    "concurrency": PLAN_POLICY[plan]["concurrency"],
+                    "concurrency": LEGACY_PLAN_POLICY[plan]["concurrency"],
                     "owner": user,
                 },
             )
@@ -510,7 +510,7 @@ class Store:
                     "start": promotion.STARTS_AT,
                     "end": promotion.ENDS_AT,
                     "amount": self.usage_policy[plan]["budget"],
-                    "concurrency": PLAN_POLICY[plan]["concurrency"],
+                    "concurrency": LEGACY_PLAN_POLICY[plan]["concurrency"],
                 },
             )
         return True
@@ -769,7 +769,7 @@ class Store:
                 reserved=CASE WHEN :reset=1 THEN 0 ELSE reserved END WHERE customer=:c"""),
                 {
                     "sub": subscription,
-                    "p": plan,
+                    "p": PLAN_TIERS.get(plan, plan),
                     "status": status,
                     "start": start,
                     "end": end,

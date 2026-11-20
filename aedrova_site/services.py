@@ -10,6 +10,7 @@ import stripe
 from sqlalchemy import text
 
 from aedrova_site import promotion
+from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY
 from aedrova_site.store import Denied
 
 
@@ -141,7 +142,7 @@ class Payments:
                         "Subspaces share their parent's team subscription. "
                         "No separate checkout was created."
                     )
-        if not config.checkout_enabled or plan not in config.plans:
+        if not config.checkout_enabled or plan not in PLAN_POLICY or plan not in config.plans:
             raise Denied("Paid beta checkout is being prepared. No payment has been taken.")
         approved = config.plans[plan]
         price = stripe.Price.retrieve(approved["price_id"], api_key=config.stripe_key)
@@ -234,7 +235,7 @@ class Payments:
             metadata={"workspace": workspace, "plan": plan},
             subscription_data={
                 "metadata": {"workspace": workspace, "plan": plan, "coverage": "entire_team"},
-                "description": "Aedrova Team · " + (workspace_name or workspace),
+                "description": f"Aedrova {PLAN_NAMES[plan]} · {workspace_name or workspace}",
             },
             custom_text={
                 "submit": {

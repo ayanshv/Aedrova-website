@@ -1,6 +1,6 @@
 """Approved retail catalogs and bounded internal provider-cost usage policies."""
 
-PLAN_POLICY = {
+LEGACY_PLAN_POLICY = {
     "monthly": {
         "amount_cents": 1000,
         "currency": "usd",
@@ -54,11 +54,44 @@ USAGE_POLICY = {
     },
 }
 
-PLAN_NAMES = {"free": "Free", "monthly": "Pro", "annual": "Team"}
+PLAN_NAMES = {
+    "free": "Free",
+    "monthly": "Pro",
+    "annual": "Power",
+    "pro_monthly": "Pro",
+    "pro_annual": "Pro",
+    "power_monthly": "Power",
+    "power_annual": "Power",
+}
 BUD_LIMITS = {"free": 1, "pro": 5, "team": 15}
 
+PLAN_TIERS = {
+    "pro_monthly": "monthly",
+    "pro_annual": "monthly",
+    "power_monthly": "annual",
+    "power_annual": "annual",
+}
+PLAN_POLICY = {
+    key: {
+        **LEGACY_PLAN_POLICY[PLAN_TIERS[key]],
+        "amount_cents": amount,
+        "interval": interval,
+        "allowance_microusd": USAGE_POLICY[PLAN_TIERS[key]]["budget"]
+        * (12 if interval == "year" else 1),
+    }
+    for key, amount, interval in (
+        ("pro_monthly", 1500, "month"),
+        ("pro_annual", 14400, "year"),
+        ("power_monthly", 3000, "month"),
+        ("power_annual", 28800, "year"),
+    )
+}
+SUBSCRIPTION_POLICY = {**LEGACY_PLAN_POLICY, **PLAN_POLICY}
 
 PUBLIC_PLAN_PRICES = {
-    "pro": {"monthly": 15, "annual": 120},
-    "team": {"monthly": 25, "annual": 250},
+    tier: {
+        cycle: PLAN_POLICY[f"{tier}_{cycle}"]["amount_cents"] // 100
+        for cycle in ("monthly", "annual")
+    }
+    for tier in ("pro", "power")
 }

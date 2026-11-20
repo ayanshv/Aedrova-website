@@ -10,7 +10,7 @@ from test_access_gateway import MODELS
 from aedrova_site import promotion
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.services import Payments
 from aedrova_site.store import Denied, Store
 

@@ -31,7 +31,7 @@ uv run --env-file .env.billing python -m scripts.setup_stripe --provision-test-p
 uv run --env-file .env.billing python -m scripts.listen_stripe
 ```
 
-The first command uses only test keys, creates/reuses $10/week and $49/month recurring
+The first command uses only test keys, creates/reuses Pro ($15/month or $144/year) and Power ($30/month or $288/year) recurring
 USD prices, and saves their IDs to ignored `work/stripe-plans.json`. It prepares a restricted
 portal (payment method, invoices, customer email/address and cancellation at period end;
 plan/quantity changes disabled), saving its configuration ID in `work/stripe-portal.json`.

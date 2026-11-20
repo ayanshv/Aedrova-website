@@ -57,8 +57,8 @@ def prepare(key, output):
 
 def preflight(config):
     require_live(config.stripe_key)
-    if config.stripe_test_mode or set(config.plans) != {"monthly", "annual"}:
-        raise ValueError("Configure both live plans and disable sandbox mode.")
+    if config.stripe_test_mode or not PLAN_POLICY.keys() <= config.plans.keys():
+        raise ValueError("Configure all four live billing options and disable sandbox mode.")
     account = stripe.Account.retrieve(api_key=config.stripe_key)
     if not account.get("charges_enabled") or not account.get("payouts_enabled"):
         raise ValueError("Complete Stripe business activation and payout setup.")

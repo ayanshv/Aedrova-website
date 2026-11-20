@@ -39,7 +39,7 @@ from aedrova_site.observability import (
     emit,
 )
 from aedrova_site.operations import monitor_spending
-from aedrova_site.policy import BUD_LIMITS, PLAN_POLICY, PUBLIC_PLAN_PRICES
+from aedrova_site.policy import BUD_LIMITS, PLAN_NAMES, PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store
@@ -392,6 +392,7 @@ def create_app(config=None):
                 "apple_login_enabled": config.apple_login_enabled,
                 "plan_policy": PLAN_POLICY,
                 "public_prices": PUBLIC_PLAN_PRICES,
+                "plan_names": PLAN_NAMES,
                 "bud_limits": BUD_LIMITS,
                 "usage_policy": store.usage_policy,
                 "free_enabled": config.free_enabled,
@@ -544,12 +545,13 @@ def create_app(config=None):
         except Denied:
             authenticated = False
         plan = request.query_params.get("plan", "")
+        plan = {"monthly": "pro_monthly", "annual": "power_annual"}.get(plan, plan)
         return page(
             request,
             "account",
             "Your workspace",
             authenticated=authenticated,
-            selected_plan=plan if plan in {"monthly", "annual"} else "",
+            selected_plan=plan if plan in PLAN_POLICY else "",
             plan_policy=PLAN_POLICY,
             usage_policy=store.usage_policy,
         )
@@ -642,6 +644,7 @@ def create_app(config=None):
             .rstrip("=")
         )
         plan = request.query_params.get("plan", "")
+        plan = {"monthly": "pro_monthly", "annual": "power_annual"}.get(plan, plan)
         bud_state = request.query_params.get("bud", "")
         if bud_state and not re.fullmatch(r"[A-Za-z0-9_-]{40,100}", bud_state):
             raise Denied("Invalid Bud authorization.")
@@ -652,7 +655,7 @@ def create_app(config=None):
             state,
             {
                 "verifier": verifier,
-                "plan": plan if plan in {"monthly", "annual"} else "",
+                "plan": plan if plan in PLAN_POLICY else "",
                 "dot": dot_state,
                 "bud": bud_state,
             },

@@ -1,11 +1,11 @@
 # Pricing and usage launch preparation
 
 Local implementation; checkout and Free activation remain disabled in waitlist mode.
-Public labels: Free, Pro ($10/month), Team ($200/year), Enterprise (Let’s Talk).
-Team adds two simultaneous workflows, larger context and longer execution limits.
+Public labels: Free, Pro ($15/month or $144/year), Power ($30/month or $288/year), Enterprise (Let’s Talk).
+Power adds two simultaneous workflows, larger context and longer execution limits.
 Public UI displays capacity and reset dates, never the internal provider-cost allocation.
 
-Internal initial monthly estimated API ceilings: Free $0.50, Pro $2, Team $4.
+Internal initial monthly estimated API ceilings: Free $0.50, Pro $2, Power $4.
 Request ceilings: 40 / 200 / 400. Company ceiling $100; combined Free pool $25.
 These are conservative launch assumptions, not invoiced-cost guarantees. Configure
 AEDROVA_USAGE_LIMITS, AEDROVA_COMPANY_BUDGET_MICROUSD and
@@ -20,8 +20,7 @@ Back up the private schema before deploying. PostgreSQL multi-worker validation 
 still required; local tests use SQLite. Do not run this migration in public Supabase tables.
 
 Production steps, before enabling checkout:
-1. Review the prices: Team $200/year exceeds twelve $10 Pro payments ($120),
-   although Team now includes more capacity. No annual-discount claim is made.
+1. Use the four approved paid options. Annual billing has the same monthly AI limits as monthly billing for each tier. Preserve legacy price IDs for existing subscriptions.
 2. Provision approved Stripe prices with scripts/setup_stripe_live.py in the intended
    live account; preserve existing subscriptions and migrate them explicitly.
 3. Configure the returned price IDs, live secret, signed webhook secret and billing

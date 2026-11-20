@@ -6,7 +6,7 @@ import time
 import pytest
 from cryptography.fernet import Fernet
 
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.store import Denied, Store
 
 

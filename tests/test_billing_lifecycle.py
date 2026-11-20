@@ -8,7 +8,7 @@ from sqlalchemy import text
 from test_billing import sign
 
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.services import Payments
 from aedrova_site.store import Denied, Store
 

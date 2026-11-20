@@ -12,7 +12,7 @@ from uuid import UUID
 from cryptography.fernet import Fernet
 from sqlalchemy.engine import make_url
 
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import PLAN_POLICY, PLAN_TIERS, SUBSCRIPTION_POLICY
 
 
 @dataclass
@@ -315,25 +315,22 @@ class Config:
         ):
             raise ValueError("Free activation requires a configured AI or speech service.")
         for name, plan in self.plans.items():
-            if name not in {"monthly", "annual"} or not plan.get("price_id", "").startswith(
+            if name not in SUBSCRIPTION_POLICY or not plan.get("price_id", "").startswith(
                 "price_"
             ):
-                raise ValueError("Use approved monthly/annual Stripe price identifiers.")
+                raise ValueError("Use approved Stripe plan and price identifiers.")
             for key in ("amount_cents", "allowance_microusd", "concurrency"):
                 if type(plan.get(key)) is not int or plan[key] <= 0:
                     raise ValueError(
                         "Plans require positive approved price, allowance and concurrency."
                     )
             expected_policy = {
-                **PLAN_POLICY[name],
-                "allowance_microusd": usage_policy[name]["budget"]
-                * (12 if name == "annual" else 1),
+                **SUBSCRIPTION_POLICY[name],
+                "allowance_microusd": usage_policy[PLAN_TIERS.get(name, name)]["budget"]
+                * (12 if SUBSCRIPTION_POLICY[name]["interval"] == "year" else 1),
             }
             if any(plan.get(key) != value for key, value in expected_policy.items()):
                 raise ValueError("Plan limits must match the published beta policy.")
-            expected = (1000, "month") if name == "monthly" else (20000, "year")
-            if (plan["amount_cents"], plan.get("interval")) != expected:
-                raise ValueError("Use the owner's approved $10/month and $200/year prices.")
             if plan.get("currency", "usd") != "usd":
                 raise ValueError("This beta checkout currently supports USD plans.")
         for provider, model in self.models.items():
@@ -383,7 +380,7 @@ class Config:
         billing_ready = (
             self.stripe_key
             and self.webhook_secret
-            and set(self.plans) == {"monthly", "annual"}
+            and PLAN_POLICY.keys() <= self.plans.keys()
             and self.encryption_key
         )
         public_ready = (
