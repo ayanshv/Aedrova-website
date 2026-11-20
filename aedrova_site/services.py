@@ -10,7 +10,7 @@ import stripe
 from sqlalchemy import text
 
 from aedrova_site import promotion
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY
 from aedrova_site.store import Denied
 
 
@@ -235,7 +235,7 @@ class Payments:
             metadata={"workspace": workspace, "plan": plan},
             subscription_data={
                 "metadata": {"workspace": workspace, "plan": plan, "coverage": "entire_team"},
-                "description": "Aedrova Team · " + (workspace_name or workspace),
+                "description": f"Aedrova {PLAN_NAMES[plan]} · {workspace_name or workspace}",
             },
             custom_text={
                 "submit": {
