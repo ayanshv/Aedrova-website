@@ -76,6 +76,7 @@ class Config:
     livekit_api_secret: str = field(default="", repr=False)
     stripe_test_mode: bool = False
     checkout_enabled: bool = False
+    personal_billing_enabled: bool = False
     gateway_enabled: bool = False
     ai_pilot_workspace: str = ""
     development_ai: bool = False
@@ -397,3 +398,9 @@ class Config:
                 "Checkout requires approved plans, persistent encryption, billing and "
                 "either explicit sandbox mode or every legal, release and gateway gate."
             )
+        if (
+            self.checkout_enabled
+            and not self.stripe_test_mode
+            and not self.personal_billing_enabled
+        ):
+            raise ValueError("Live checkout requires individual account billing.")

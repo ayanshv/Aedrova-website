@@ -178,7 +178,7 @@ if(form){
 const inquiry=$('#enterprise-form');if(inquiry)inquiry.addEventListener('submit',event=>{event.preventDefault();busy(inquiry.querySelector('button[type=submit]'),async()=>{const body=Object.fromEntries(new FormData(inquiry));await api('/api/inquiries',body);inquiry.hidden=true;$('#inquiry-success').hidden=false;$('#inquiry-success').tabIndex=-1;$('#inquiry-success').focus();});});
 if ($('#workspace')) {
   let selected = '', spaces = [], checkoutReady = false, testMode = false, earlyAccessActive = false;
-  let balanceRevision = 0;
+  let balanceRevision = 0, personalBilling = false;
   const select = $('#workspace'), status = $('#account-status'), planSelect = $('#billing-plan');
   let plan = storage.get('aedrova-plan', 'pro_monthly');
   if (![...planSelect.options].some(option => option.value === plan)) plan = 'pro_monthly';
@@ -189,7 +189,7 @@ if ($('#workspace')) {
     const address = new URL(location.href); address.searchParams.set('plan', plan);
     history.replaceState(null, '', address.href);
     $('#selected-plan').textContent = planSelect.selectedOptions[0].dataset.description +
-      ', renews until cancelled. One subscription covers your entire team.';
+      ', renews until cancelled.';
     $('#order-billing').textContent = planSelect.selectedOptions[0].dataset.interval === 'year' ? 'Annual' : 'Monthly';
     $('#order-price').textContent = planSelect.selectedOptions[0].dataset.description;
     $('#confirm-team-checkout').checked = false;
@@ -199,13 +199,28 @@ if ($('#workspace')) {
   renderPlan();
   planSelect.addEventListener('change', renderPlan);
   function checkoutKey(kind = plan) {
-    const key = 'aedrova-checkout-' + selected + '-' + kind;
+    const scope = personalBilling && kind !== 'ai_credits' ? 'account' : selected;
+    const key = 'aedrova-checkout-' + scope + '-' + kind;
     let value = storage.get(key);
     if (!value || value.expires < Date.now()) {
       value = {id: crypto.randomUUID(), expires: Date.now() + 29 * 60 * 1000};
       storage.set(key, value);
     }
     return value.id;
+  }
+  async function accountBilling() {
+    const message = $('#personal-billing-status');
+    const data = await api('/api/billing/account');
+    const active = data.status === 'active' && data.period_end * 1000 > Date.now();
+    message.textContent = active
+      ? 'Your ' + ({monthly:'Pro', annual:'Power'}[data.plan] || 'paid') + ' subscription is active.'
+      : 'Subscribe with your own Aedrova account.';
+    message.hidden = false;
+    $('#order-workspace').textContent = '';
+    $('#checkout').dataset.available = String(checkoutReady && !active);
+    $('#checkout').hidden = earlyAccessActive;
+    $('#portal').hidden = !data.has_billing || data.status === 'pending';
+    $('#portal').disabled = $('#portal').hidden;
   }
   async function balance() {
     const revision = ++balanceRevision;
@@ -215,8 +230,10 @@ if ($('#workspace')) {
     if (selected) address.searchParams.set('workspace', selected);
     else address.searchParams.delete('workspace');
     history.replaceState(null, '', address.href);
-    $('#checkout').disabled = true;
-    $('#portal').disabled = true;
+    if (!personalBilling) {
+      $('#checkout').disabled = true;
+      $('#portal').disabled = true;
+    }
     $('#topup').disabled = true;
     $('#balance').hidden = true;
     if (!selected) {
@@ -228,20 +245,24 @@ if ($('#workspace')) {
     const child = !!entry?.parent_id;
     $('#move-subspace-panel').hidden = !child || entry?.billing_role !== 'owner' || entry?.role !== 'owner';
     $('#confirm-space-move').checked = false;
-    $('#billing-controls').hidden = !canManage || child || earlyAccessActive;
-    $('#checkout').hidden = !canManage || child || earlyAccessActive;
+    if (!personalBilling) {
+      $('#billing-controls').hidden = !canManage || child || earlyAccessActive;
+      $('#checkout').hidden = !canManage || child || earlyAccessActive;
+      $('#portal').hidden = !canManage;
+      $('#order-workspace').textContent = entry?.name || 'Your workspace';
+      $('#confirm-team-checkout').checked = false;
+    }
     $('#activate-free').hidden = !canManage || child;
-    $('#portal').hidden = !canManage;
-    $('#order-workspace').textContent = entry?.name || 'Your workspace';
-    $('#confirm-team-checkout').checked = false;
     status.textContent = 'Checking this workspace…';
     const data = await api('/api/balance/' + encodeURIComponent(selected));
     if (revision !== balanceRevision) return;
     $('#balance').replaceChildren();
-    $('#portal').disabled = !canManage || !data.has_billing || ['no_plan', 'pending'].includes(data.status);
-    $('#checkout').disabled = true;
-    $('#checkout').dataset.available = String(canManage && !child && checkoutReady && !(data.status === 'active' && data.plan !== 'free'));
-    $('#topup').hidden = !canManage || child || $('#topup').dataset.enabled !== 'true';
+    if (!personalBilling) {
+      $('#portal').disabled = !canManage || !data.has_billing || ['no_plan', 'pending'].includes(data.status);
+      $('#checkout').disabled = true;
+      $('#checkout').dataset.available = String(canManage && !child && checkoutReady && !(data.status === 'active' && data.plan !== 'free'));
+    }
+    $('#topup').hidden = data.personal || !canManage || child || $('#topup').dataset.enabled !== 'true';
     $('#activate-free').disabled = $('#activate-free').dataset.enabled !== 'true' || !canManage || data.status === 'active';
     if (data.status === 'active') {
       const monthlyBudget = Math.max(1, data.monthly_budget || data.allowance);
@@ -253,14 +274,14 @@ if ($('#workspace')) {
       const reset = document.createElement('p');
       reset.textContent = 'Monthly reset: ' + new Date((data.reset_at || data.period_end) * 1000).toLocaleDateString() + ' · ' + (data.monthly_requests || 0) + '/' + (data.monthly_request_limit || 0) + ' model requests';
       $('#balance').append(reset);
-      if (data.five_hour_budget) { const rolling = document.createElement('p'); rolling.textContent = 'Shared five-hour capacity: ' + Math.max(0, Math.round(100 * (1 - data.five_hour_spent / data.five_hour_budget))) + '% available.'; $('#balance').append(rolling); }
-      if (data.usage_alerts?.length && canManage) { const alert = document.createElement('p'); alert.textContent = 'Your team has used ' + Math.max(...data.usage_alerts) + '% of its monthly AI capacity.'; $('#balance').append(alert); }
+      if (data.five_hour_budget) { const rolling = document.createElement('p'); rolling.textContent = 'Five-hour AI capacity: ' + Math.max(0, Math.round(100 * (1 - data.five_hour_spent / data.five_hour_budget))) + '% available.'; $('#balance').append(rolling); }
+      if (data.usage_alerts?.length && canManage) { const alert = document.createElement('p'); alert.textContent = 'AI usage has reached ' + Math.max(...data.usage_alerts) + '% of its monthly AI capacity.'; $('#balance').append(alert); }
       $('#balance').hidden = false;
       $('#topup').disabled = !canManage || data.plan === 'free';
       status.textContent = data.early_access ? 'Your team has limited early access until ' + new Date(data.early_access_ends_at * 1000).toLocaleString() + '. No payment or subscription was created. Plan usage limits apply.' : testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
-        'Your team’s ' + ({free:'Free',monthly:'Pro',annual:'Power',pro_monthly:'Pro',pro_annual:'Pro',power_monthly:'Power',power_annual:'Power'}[data.plan] || data.plan) + ' plan is active. One subscription covers your team. ' + (child ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the desktop app.');
+        (data.personal ? 'Your ' : 'This workspace’s ') + ({free:'Free',monthly:'Pro',annual:'Power',pro_monthly:'Pro',pro_annual:'Pro',power_monthly:'Power',power_annual:'Power'}[data.plan] || data.plan) + ' plan is active. ' + (child && !data.personal ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the desktop app.');
     } else {
-      status.textContent = !canManage ? 'Your workspace owner or admin manages the subscription.' :
+      status.textContent = !canManage ? 'This workspace has no AI plan available to you.' :
         checkoutReady ? 'Review your selected plan on Stripe before confirming. ' + (testMode ? 'Test payments only.' : '') :
         'Paid beta checkout is being prepared. No payment has been taken. Your workspace is ready for the desktop app.';
     }
@@ -269,6 +290,8 @@ if ($('#workspace')) {
     const session = await api('/api/session');
     earlyAccessActive=!!session.early_access_active;
     csrf = session.csrf; checkoutReady = session.checkout_enabled && !earlyAccessActive; testMode = session.stripe_test_mode;
+    personalBilling = !!session.personal_billing_enabled;
+    if (personalBilling) await accountBilling();
     if(session.early_access_active)$('#activate-free').textContent='Start free early access · no card';
     $('#topup').dataset.enabled = String(session.topup_enabled);
     $('#topup').hidden = !session.topup_enabled;
@@ -315,16 +338,19 @@ if ($('#workspace')) {
     return target.href;
   }
   $('#checkout').addEventListener('click', event => busy(event.currentTarget, async () => {
-    if (!$('#confirm-team-checkout').checked) throw new Error('Review and confirm your team’s order summary first.');
+    if (!$('#confirm-team-checkout').checked) throw new Error('Review and confirm your order summary first.');
     const prepare = async signal => {
-      const result = await api('/api/checkout', {workspace: selected, plan, request_id: checkoutKey()}, signal);
+      const body = {plan, request_id: checkoutKey()};
+      if (!personalBilling) body.workspace = selected;
+      const result = await api('/api/checkout', body, signal);
       return redirectStripe(result.url, 'checkout.stripe.com');
     };
     if (window.AedrovaPreparation) await window.AedrovaPreparation.checkout(prepare);
     else location.href = await prepare();
   }));
   $('#portal').addEventListener('click', event => busy(event.currentTarget, async () => {
-    const result = await api('/api/portal/' + encodeURIComponent(selected), {}); location.href = redirectStripe(result.url, 'billing.stripe.com');
+    const path = personalBilling ? '/api/billing/account/portal' : '/api/portal/' + encodeURIComponent(selected);
+    const result = await api(path, {}); location.href = redirectStripe(result.url, 'billing.stripe.com');
   }));
   $('#topup').addEventListener('click', event => busy(event.currentTarget, async () => {
     const result = await api('/api/topup', {workspace: selected, plan: 'ai_credits', request_id: checkoutKey('ai_credits')});
@@ -343,11 +369,12 @@ if ($('[data-checkout-return]')) {
     const reference = params.get('session_id');
     if (!reference) { status.textContent = 'Sign in to your account to view subscription status.'; button.hidden = true; return; }
     const data = await api('/api/checkout/status?session_id=' + encodeURIComponent(reference));
-    storage.set('aedrova-workspace', data.workspace);
-    const accountLink = $('#payment-account');
-    accountLink.href = '/account?workspace=' + encodeURIComponent(data.workspace);
+    if (data.workspace) {
+      storage.set('aedrova-workspace', data.workspace);
+      $('#payment-account').href = '/account?workspace=' + encodeURIComponent(data.workspace);
+    }
     if (data.billing_status === 'active') {
-      status.textContent = data.stripe_test_mode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' : 'Subscription confirmed. Your workspace is ready.';
+      status.textContent = data.stripe_test_mode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' : 'Your subscription is confirmed.';
       button.hidden = true;
     } else if (data.checkout_status === 'expired') {
       status.textContent = 'This checkout expired. Return to your account to start again.';

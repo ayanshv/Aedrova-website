@@ -10,7 +10,7 @@ from uuid import uuid4
 import httpx
 
 from aedrova_site.observability import emit
-from aedrova_site.store import Denied
+from aedrova_site.store import Denied, account_billing_key
 
 MODEL = {"id": "gpt-5.4-mini-2026-03-17", "input_rate": 750000, "output_rate": 4500000}
 INPUT_LIMIT, OUTPUT_LIMIT, TOOL_FEE = 128000, 2048, 10000
@@ -60,8 +60,11 @@ class Research:
                 run = self.store.run(run_token)
                 if run["user_id"] != user or run["workspace"] != workspace:
                     raise Denied("Research access belongs to another account or workspace.")
-                if run.get("billing_workspace") != context["billing_workspace"]:
+                if run.get("billing_workspace") not in {
+                    context["billing_workspace"], account_billing_key(user)
+                }:
                     raise Denied("Research billing access changed. Start a fresh request.")
+                run["workspace_billing_root"] = context["billing_workspace"]
             else:
                 owned = self.store.create_run(
                     user,

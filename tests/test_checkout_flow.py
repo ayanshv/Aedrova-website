@@ -12,7 +12,7 @@ from test_billing import sign
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
 from aedrova_site.policy import PLAN_POLICY
-from aedrova_site.store import Denied
+from aedrova_site.store import Denied, account_billing_key
 
 
 def sandbox(tmp_path, **overrides):
@@ -213,6 +213,127 @@ def test_return_page_never_grants_entitlement_and_rejects_foreign_session(client
     current["customer"] = "cus_a"
     current["livemode"] = True
     assert client.get("/api/checkout/status?session_id=cs_test_return0001").status_code == 403
+
+
+def test_individual_checkout_uses_signed_in_account_without_workspace_roles(client, monkeypatch):
+    state = client.app.state
+    state.config.personal_billing_enabled = True
+    account = account_billing_key("user-a")
+    state.store.customer(account, "cus_individual")
+    monkeypatch.setattr(state.identity, "require", lambda *a, **kw: pytest.fail("Workspace check"))
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        return {
+            "url": "https://checkout.stripe.com/c/pay/test",
+            "expires_at": kw["expires_at"],
+        }
+
+    monkeypatch.setattr("stripe.checkout.Session.create", create)
+    order = {"plan": "power_annual", "request_id": "personal-checkout-test"}
+    headers = {"x-csrf-token": "csrf"}
+    assert client.post("/api/checkout", json=order).status_code == 403
+    assert (
+        client.post(
+            "/api/checkout", json={**order, "workspace": "space-a"}, headers=headers
+        ).status_code
+        == 403
+    )
+    for _ in range(2):
+        assert client.post("/api/checkout", json=order, headers=headers).status_code == 200
+    assert len(calls) == 1
+    assert calls[0]["line_items"] == [{"price": "price_power_annual", "quantity": 1}]
+    assert calls[0]["customer"] == "cus_individual"
+    assert calls[0]["subscription_data"]["metadata"] == {
+        "workspace": account,
+        "plan": "power_annual",
+        "coverage": "individual",
+    }
+    assert "workspace=" not in calls[0]["cancel_url"]
+
+    checkout = {
+        "metadata": calls[0]["metadata"],
+        "customer": "cus_individual",
+        "mode": "subscription",
+        "livemode": False,
+        "payment_status": "paid",
+        "status": "complete",
+    }
+    monkeypatch.setattr("stripe.checkout.Session.retrieve", lambda *a, **kw: checkout)
+    response = client.get("/api/checkout/status?session_id=cs_test_individual0001")
+    assert response.status_code == 200
+    assert response.json()["billing_status"] == "pending"
+    assert "workspace" not in response.json()
+    monkeypatch.setattr(state.identity, "user", lambda token: {"id": "user-b"})
+    assert client.get("/api/checkout/status?session_id=cs_test_individual0001").status_code == 403
+    assert client.get("/api/billing/account").json() == {
+        "status": "no_plan",
+        "has_billing": False,
+    }
+    assert client.post("/api/billing/account/portal", json={}, headers=headers).status_code == 403
+
+
+def test_individual_paid_ai_is_shared_across_the_buyers_workspaces_only(client, monkeypatch):
+    state = client.app.state
+    state.config.personal_billing_enabled = True
+    store = state.store
+    account = account_billing_key("user-a")
+    store.customer(account, "cus_individual")
+    now = int(time.time())
+    subscription = {
+        "metadata": {"workspace": account, "plan": "pro_monthly", "coverage": "individual"},
+        "customer": "cus_individual",
+        "status": "active",
+        "latest_invoice": {"status": "paid"},
+        "items": {
+            "data": [
+                {
+                    "price": {"id": "price_pro_monthly"},
+                    "quantity": 1,
+                    "current_period_start": now - 60,
+                    "current_period_end": now + 30 * 24 * 3600,
+                }
+            ]
+        },
+    }
+    monkeypatch.setattr("stripe.Subscription.retrieve", lambda *a, **kw: subscription)
+
+    def deliver(identifier, kind):
+        payload = json.dumps(
+            {
+                "id": identifier,
+                "livemode": False,
+                "type": kind,
+                "data": {"object": {"id": "sub_individual", "subscription": "sub_individual"}},
+            }
+        ).encode()
+        return client.post(
+            "/stripe/webhook",
+            content=payload,
+            headers={"stripe-signature": sign(payload, "whsec_fixture")},
+        )
+
+    assert deliver("evt_personal_paid", "invoice.paid").status_code == 200
+    assert deliver("evt_personal_paid", "invoice.paid").status_code == 200
+    assert client.get("/api/billing/account").json()["status"] == "active"
+    assert client.get("/api/balance/space-a").json()["personal"] is True
+    assert store.member_balance("space-a", "user-b")["personal"] is False
+    run = store.run(store.create_run("user-a", "space-one", "codex", "personal-run-1")["token"])
+    assert run["workspace"] == "space-one" and run["billing_workspace"] == account
+    reservation, _ = store.reserve(run, "first-chat", 10_000)
+    store.settle(reservation, 10_000)
+    assert store.member_balance("space-two", "user-a")["monthly_spent"] == 10_000
+    with pytest.raises(Denied):
+        store.create_run("user-b", "space-one", "codex", "personal-run-2")
+    with pytest.raises(Denied, match="concurrent"):
+        store.create_run("user-a", "space-two", "codex", "personal-run-3")
+
+    subscription["status"] = "canceled"
+    assert deliver("evt_personal_canceled", "customer.subscription.deleted").status_code == 200
+    assert client.get("/api/billing/account").json()["status"] == "inactive"
+    with pytest.raises(Denied, match="not active"):
+        store.reserve(run, "second-chat", 10_000)
 
 
 @pytest.mark.parametrize("plan", list(PLAN_POLICY))

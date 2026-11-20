@@ -2,7 +2,7 @@
 
 Local implementation; checkout and Free activation remain disabled in waitlist mode.
 Public labels: Free, Pro ($15/month or $144/year), Power ($30/month or $288/year), Enterprise (Let’s Talk).
-Power adds two simultaneous workflows, larger context and longer execution limits.
+Paid subscriptions are per person and use an account-level billing scope. Power adds two simultaneous workflows, larger context and longer execution limits.
 Public UI displays capacity and reset dates, never the internal provider-cost allocation.
 
 Internal initial monthly estimated API ceilings: Free $0.50, Pro $2, Power $4.
@@ -27,7 +27,8 @@ Production steps, before enabling checkout:
    encryption key privately on the service. Never commit or paste secrets into chat.
 4. Validate checkout, renewal, cancellation, refunds and duplicate/out-of-order webhooks
    against the deployed private ledger. Existing sandbox products are not live products.
-5. Only after validation, enable checkout/gateway/Free activation and leave waitlist mode.
+5. Verify how personal subscriptions unlock shared workspace Bud capacity before offering higher Bud limits.
+6. Only after validation, enable individual billing, checkout, the gateway and Free activation and leave waitlist mode.
 
 Private usage report: uv run python -m scripts.report_ai_usage using the service's
 private environment. Reports provider/model/user/workspace costs and plan distribution.

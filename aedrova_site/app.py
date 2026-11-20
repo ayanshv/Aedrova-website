@@ -42,7 +42,7 @@ from aedrova_site.operations import monitor_spending
 from aedrova_site.policy import BUD_LIMITS, PLAN_NAMES, PLAN_POLICY, PUBLIC_PLAN_PRICES
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
-from aedrova_site.store import Denied, RateLimited, Store
+from aedrova_site.store import Denied, RateLimited, Store, account_billing_key
 from aedrova_site.team import TEAM_MEMBERS
 from aedrova_site.traffic_limits import TrafficLimits
 
@@ -71,6 +71,10 @@ class CheckoutBody(BaseModel):
     workspace: str = Field(min_length=1, max_length=100)
     plan: str
     request_id: str = Field(min_length=16, max_length=100)
+
+
+class SubscriptionCheckoutBody(CheckoutBody):
+    workspace: str = Field(default="", max_length=100)
 
 
 class RunBody(BaseModel):
@@ -388,6 +392,7 @@ def create_app(config=None):
                 "seo": discovery.metadata(config, request.url.path, title),
                 "stripe_test_mode": config.stripe_test_mode,
                 "checkout_enabled": config.checkout_enabled,
+                "personal_billing_enabled": config.personal_billing_enabled,
                 "waitlist_only": config.waitlist_only,
                 "apple_login_enabled": config.apple_login_enabled,
                 "plan_policy": PLAN_POLICY,
@@ -737,6 +742,7 @@ def create_app(config=None):
         return {
             "csrf": session["csrf"],
             "checkout_enabled": config.checkout_enabled,
+            "personal_billing_enabled": config.personal_billing_enabled,
             "topup_enabled": bool(config.checkout_enabled and config.topup_price_id),
             "stripe_test_mode": config.stripe_test_mode,
             "space_hierarchy_enabled": config.space_hierarchy_enabled,
@@ -807,10 +813,17 @@ def create_app(config=None):
 
     @app.get("/api/balance/{workspace}")
     def balance(request: Request, workspace: str):
-        context = identity.billing_context(auth(request), workspace)
+        token = auth(request)
+        context = identity.billing_context(token, workspace)
         try:
+            root = context["billing_workspace"]
+            capacity = (
+                store.member_balance(workspace, context["user_id"], root)
+                if config.personal_billing_enabled
+                else store.balance(root)
+            )
             return {
-                **store.balance(context["billing_workspace"]),
+                **capacity,
                 **context,
                 "coding_providers": [
                     {"provider": provider, "model": model["id"]}
@@ -847,9 +860,43 @@ def create_app(config=None):
             return store.balance(workspace)
         return store.activate_free(user["id"], workspace)
 
+    @app.get("/api/billing/account")
+    def account_billing(request: Request):
+        user = identity.user(auth(request))
+        if not config.personal_billing_enabled:
+            raise Denied("Individual account billing is being prepared.")
+        try:
+            return store.balance(account_billing_key(user["id"]))
+        except Denied:
+            return {"status": "no_plan", "has_billing": False}
+
+    @app.post("/api/billing/account/portal")
+    def account_portal(request: Request):
+        user = identity.user(auth(request, change=True))
+        if not config.personal_billing_enabled:
+            raise Denied("Individual account billing is being prepared.")
+        store.rate_limit("portal:" + user["id"], limit=10)
+        return {"url": payments.portal(account_billing_key(user["id"]))}
+
     @app.post("/api/checkout")
-    def checkout(request: Request, body: CheckoutBody):
+    def checkout(request: Request, body: SubscriptionCheckoutBody):
         token = auth(request, change=True)
+        if config.personal_billing_enabled:
+            if body.workspace:
+                raise Denied("Start checkout from your account billing section.")
+            user = identity.user(token)
+            store.rate_limit("checkout:" + user["id"], limit=10)
+            return {
+                "url": payments.checkout(
+                    account_billing_key(user["id"]),
+                    body.plan,
+                    body.request_id,
+                    owner=user["id"],
+                    owner_email=user.get("email", ""),
+                )
+            }
+        if not body.workspace:
+            raise Denied("Choose a workspace before opening test checkout.")
         context = identity.billing_context(token, body.workspace)
         if context["billing_workspace"] != body.workspace:
             raise Denied(
@@ -894,10 +941,20 @@ def create_app(config=None):
             raise HTTPException(400, "Invalid checkout reference.")
         if not config.stripe_key:
             raise Denied("Billing confirmation is not configured yet.")
-        identity.user(token)
+        user = identity.user(token)
         current = stripe.checkout.Session.retrieve(session_id, api_key=config.stripe_key)
-        workspace = current.get("metadata", {}).get("workspace", "")
-        identity.require(token, workspace)
+        metadata = current.get("metadata", {})
+        workspace = metadata.get("workspace", "")
+        personal = workspace.startswith("account:")
+        if personal:
+            if (
+                not config.personal_billing_enabled
+                or metadata.get("coverage") != "individual"
+                or workspace != account_billing_key(user["id"])
+            ):
+                raise Denied("Checkout does not belong to your account.")
+        else:
+            identity.require(token, workspace)
         with store.tx() as db:
             customer = db.execute(
                 text("SELECT customer FROM billing WHERE workspace=:w"), {"w": workspace}
@@ -912,7 +969,7 @@ def create_app(config=None):
             raise Denied("Checkout mode does not match this server.")
 
         return {
-            "workspace": workspace,
+            **({} if personal else {"workspace": workspace}),
             "payment_status": current.get("payment_status"),
             "checkout_status": current.get("status"),
             "billing_status": store.balance(workspace)["status"],
@@ -1253,7 +1310,7 @@ def create_app(config=None):
         store.session(run["token"], {"access_token": token}, lifetime=7200)
         return {
             **run,
-            "limits": store.run_limits({"workspace": context["billing_workspace"]}),
+            "limits": store.run_limits(store.run(run["token"])),
             "model": config.models[body.provider]["id"],
             "base_url": config.origin
             + "/gateway/"
