@@ -22,7 +22,7 @@ def test_countdown_price_switch_reload_and_exact_expiry(ui, clock):  # noqa: F81
         promotion.ENDS_AT - clock[0]
     )
     page.locator('[data-billing-choice="annual"]').click()
-    expect(page.locator(".regular-price:visible").first).to_contain_text("$120")
+    expect(page.locator(".regular-price:visible").first).to_contain_text("$144")
     expect(page.locator("[data-offer-price]:visible")).to_have_count(2)
     clock[0] += 86400
     page.reload()

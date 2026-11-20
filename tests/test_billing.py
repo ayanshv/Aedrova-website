@@ -12,7 +12,8 @@ from sqlalchemy import text
 
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
+from aedrova_site.policy import PLAN_POLICY as CHECKOUT_POLICY
 from aedrova_site.services import Payments
 from aedrova_site.store import Denied, Store
 
@@ -225,7 +226,9 @@ def test_checkout_rejects_price_mismatch_before_creating_session(store, monkeypa
     payments = Payments(
         Config(
             checkout_enabled=True,
-            plans={"monthly": {**PLAN_POLICY["monthly"], "price_id": "price_monthly"}},
+            plans={
+                "pro_monthly": {**CHECKOUT_POLICY["pro_monthly"], "price_id": "price_pro_monthly"}
+            },
         ),
         store,
     )
@@ -240,7 +243,7 @@ def test_checkout_rejects_price_mismatch_before_creating_session(store, monkeypa
     )
     monkeypatch.setattr("stripe.checkout.Session.create", lambda **k: pytest.fail("No charge"))
     with pytest.raises(Denied, match="price"):
-        payments.checkout("space-a", "monthly", "request")
+        payments.checkout("space-a", "pro_monthly", "request")
 
 
 def test_purchased_credits_are_explicit_idempotent_and_carry_over(store):
@@ -263,7 +266,6 @@ def test_purchased_credits_are_explicit_idempotent_and_carry_over(store):
         PLAN_POLICY["monthly"],
     )
     assert store.balance("space-a")["available"] == 4_000_000
-
 
 
 def test_pending_wallet_reservation_survives_period_renewal(store):
@@ -405,14 +407,14 @@ def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(sto
     store.customer("space-new", "cus_new")
     config = Config(
         checkout_enabled=True,
-        plans={"monthly": {**PLAN_POLICY["monthly"], "price_id": "price_monthly"}},
+        plans={"pro_monthly": {**CHECKOUT_POLICY["pro_monthly"], "price_id": "price_pro_monthly"}},
     )
     payments = Payments(config, store)
     monkeypatch.setattr(
         "stripe.Price.retrieve",
         lambda *a, **kw: {
             "active": True,
-            "unit_amount": 1000,
+            "unit_amount": 1500,
             "currency": "usd",
             "recurring": {"interval": "month", "interval_count": 1},
         },
@@ -430,15 +432,15 @@ def test_subscription_checkout_uses_reused_customer_and_fixed_approved_price(sto
         }
 
     monkeypatch.setattr("stripe.checkout.Session.create", create)
-    assert payments.checkout("space-new", "monthly", "request-00000001") == payments.checkout(
-        "space-new", "monthly", "request-00000001"
+    assert payments.checkout("space-new", "pro_monthly", "request-00000001") == payments.checkout(
+        "space-new", "pro_monthly", "request-00000001"
     )
     assert len(calls) == 1 and calls[0]["mode"] == "subscription"
     assert calls[0]["customer"] == "cus_new"
-    assert calls[0]["line_items"] == [{"price": "price_monthly", "quantity": 1}]
+    assert calls[0]["line_items"] == [{"price": "price_pro_monthly", "quantity": 1}]
     assert calls[0]["subscription_data"]["metadata"] == {
         "workspace": "space-new",
-        "plan": "monthly",
+        "plan": "pro_monthly",
         "coverage": "entire_team",
     }
     assert store.balance("space-new")["status"] == "pending"
@@ -454,7 +456,7 @@ def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
     config = Config(
         checkout_enabled=True,
         topup_price_id="price_credits",
-        plans={"monthly": {**PLAN_POLICY["monthly"], "price_id": "price_monthly"}},
+        plans={"pro_monthly": {**CHECKOUT_POLICY["pro_monthly"], "price_id": "price_pro_monthly"}},
     )
     store.customer("retry-new", "cus_retry")
     payments = Payments(config, store)
@@ -462,7 +464,7 @@ def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
         "stripe.Price.retrieve",
         lambda *a, **kw: {
             "active": True,
-            "unit_amount": 1000,
+            "unit_amount": 1000 if credit else 1500,
             "currency": "usd",
             "recurring": None if credit else {"interval": "month", "interval_count": 1},
         },
@@ -486,7 +488,7 @@ def test_checkout_network_retry_passes_identical_key_and_payload_to_stripe(
         if credit:
             return payments.topup("space-a", "retry-transaction-001")
         return payments.checkout(
-            "retry-new", "monthly", "retry-transaction-001", workspace_name=name
+            "retry-new", "pro_monthly", "retry-transaction-001", workspace_name=name
         )
 
     with pytest.raises(stripe.APIConnectionError):

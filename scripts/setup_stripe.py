@@ -8,7 +8,7 @@ import stripe
 
 from aedrova_site.budgets import policies
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY
+from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY, PLAN_TIERS
 
 
 def provision(config, output, *, live=False):
@@ -17,14 +17,15 @@ def provision(config, output, *, live=False):
     if not config.stripe_key.startswith(prefixes):
         mode = "live" if live else "test"
         raise ValueError(f"Only Stripe {mode} keys are accepted by this setup command.")
-    product = stripe.Product.create(
-        name="Aedrova Team — Workspace subscription",
-        description="One subscription covers the entire team workspace and its eligible "
-        "members. Additional member charges: $0.",
-        metadata={"application": "aedrova", "environment": environment},
-        idempotency_key=f"aedrova-{environment}-team-product-v3",
-        api_key=config.stripe_key,
-    )
+    products = {}
+    for tier in ("Pro", "Power"):
+        products[tier] = stripe.Product.create(
+            name=f"Aedrova {tier}",
+            description="One subscription covers the workspace and its eligible members.",
+            metadata={"application": "aedrova", "environment": environment},
+            idempotency_key=f"aedrova-{environment}-{tier.lower()}-product-v1",
+            api_key=config.stripe_key,
+        )
     stripe.Product.create(
         name="Aedrova Enterprise — Let’s Talk",
         description="Custom scope and AI budget agreed before purchase. Contact Aedrova.",
@@ -33,11 +34,13 @@ def provision(config, output, *, live=False):
         api_key=config.stripe_key,
     )
     plans = {}
+    usage_policy = policies(config.usage_limits)
     for name, price_policy in PLAN_POLICY.items():
+        tier = PLAN_NAMES[name]
         policy = {
             **price_policy,
-            "allowance_microusd": policies(config.usage_limits)[name]["budget"]
-            * (12 if name == "annual" else 1),
+            "allowance_microusd": usage_policy[PLAN_TIERS[name]]["budget"]
+            * (12 if price_policy["interval"] == "year" else 1),
         }
         lookup = "aedrova_" + environment + "_" + name + "_v2"
         found = stripe.Price.list(lookup_keys=[lookup], active=True, api_key=config.stripe_key)
@@ -45,7 +48,7 @@ def provision(config, output, *, live=False):
             price = found["data"][0]
         else:
             price = stripe.Price.create(
-                product=product["id"],
+                product=products[tier]["id"],
                 currency="usd",
                 unit_amount=policy["amount_cents"],
                 recurring={"interval": policy["interval"], "interval_count": 1},
@@ -62,7 +65,7 @@ def provision(config, output, *, live=False):
             raise ValueError("The existing price is not linked to an Aedrova product.")
         stripe.Product.modify(
             linked["id"],
-            name="Aedrova Team — Workspace subscription",
+            name=f"Aedrova {tier}",
             description=(
                 "One subscription covers the entire team workspace and its eligible "
                 "members. Additional member charges: $0."
@@ -73,7 +76,7 @@ def provision(config, output, *, live=False):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plans, indent=2) + "\n")
     output.chmod(0o600)
-    print(environment.capitalize() + " monthly/annual prices saved to " + str(output))
+    print(environment.capitalize() + " Pro and Power prices saved to " + str(output))
 
 
 def validate_price(price, policy, *, live=False):
@@ -87,7 +90,7 @@ def validate_price(price, policy, *, live=False):
         or recurring.get("interval_count") != 1
     ):
         raise ValueError(
-            "Stripe price differs from the approved mode, $10/month or $200/year plan."
+            "Stripe price differs from the approved mode, amount or billing interval."
         )
 
 

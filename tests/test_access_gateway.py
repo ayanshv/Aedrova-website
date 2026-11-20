@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from aedrova_site.app import create_app
 from aedrova_site.config import Config
 from aedrova_site.gateway import cost
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.store import Denied
 
 MODELS = {

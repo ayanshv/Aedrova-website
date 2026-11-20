@@ -84,7 +84,7 @@ def test_external_media_cannot_expand_script_or_connection_policy(client):
 
 def test_plan_links_keep_approved_prices_and_billing_choice(client):
     response = client.get("/plans")
-    for price in ("$15", "$120", "$25", "$250"):
+    for price in ("$15", "$144", "$30", "$288"):
         assert price in response.text
     targets = {attrs.get("href") for tag, attrs in Document(response.text).nodes if tag == "a"}
     assert "/plans?billing=monthly" in targets
@@ -102,7 +102,7 @@ def test_plan_links_keep_approved_prices_and_billing_choice(client):
 def test_signed_out_account_keeps_google_entry(client):
     response = client.get("/account?plan=monthly")
     assert "Continue with Google" in response.text
-    assert 'href="/auth/google?plan=monthly"' in response.text
+    assert 'href="/auth/google?plan=pro_monthly"' in response.text
     assert 'id="checkout"' not in response.text
 
 

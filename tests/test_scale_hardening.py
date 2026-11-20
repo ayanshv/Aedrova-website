@@ -17,7 +17,7 @@ from aedrova_site.app import create_app
 from aedrova_site.config import Config
 from aedrova_site.gateway import authorize_run
 from aedrova_site.observability import LOG, Admission
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.store import Denied, Store
 
 

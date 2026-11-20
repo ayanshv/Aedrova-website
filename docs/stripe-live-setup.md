@@ -1,7 +1,6 @@
-# Live Stripe preparation before M14 — October 3, 2026
+# Live Stripe preparation
 
-Local tooling is ready; the Stripe live account has NOT yet been configured or validated.
-The public website remains a waitlist, and no purchases or paid hosting changes were made.
+Keep public checkout gated while verifying the live Stripe account and configuration.
 No SQL is required for this preparation step. Existing sandbox credentials and records are preserved.
 
 ## Owner action now
@@ -22,10 +21,10 @@ No SQL is required for this preparation step. Existing sandbox credentials and r
 
 The setup command does not charge anyone, create checkout sessions, enable the site,
 change banking details, or create a webhook endpoint. It requires charges_enabled first.
-It creates $10/week and $49/month recurring USD prices, with separate live lookup keys and
-idempotency keys; validates prices before saving; creates a cancellation-at-period-end
-portal with plan/quantity changes disabled; uploads the original Aedrova checkout icon.
-Included allowances stay at $1/week and $10/month of provider usage with one active build.
+The launch catalog is Pro at $15/month or $144/year and Power at $30/month or $288/year. Free costs $0. Enterprise is contact only. Keep any existing legacy price IDs in the service configuration for renewal and cancellation events.
+
+The tool uses separate live lookup and idempotency keys and validates prices before saving. It creates a portal that supports cancellation at the end of the billing period with plan and quantity changes disabled. It also uploads the Aedrova checkout icon.
+Use the current budget limits and workflow capacity in [billing launch preparation](billing-launch.md). Confirm prices and AI allowances with the owner before enabling checkout.
 The enterprise Contact Us path has no Stripe subscription price.
 
 ## Developer workflow after owner setup
@@ -70,7 +69,7 @@ Read-only preflight (requires configured live plans, portal and signing-secret p
 uv run --env-file .env.billing.live python -m scripts.setup_stripe_live
 ```
 
-This checks charges/payouts enabled, both actual live prices, live active portal,
+This checks charges/payouts enabled, all four actual live prices, live active portal,
 and an enabled webhook URL with all supported events. It does NOT prove the signing
 secret matches; signed delivery must be verified separately after deployment. CLI
 failure output excludes upstream exception bodies and credentials.
@@ -82,25 +81,10 @@ and deployment acceptance are complete. Do not turn flags on to bypass missing r
 Opening public sales needs explicit owner authorization. Continue payment behavior tests
 in the sandbox; do not perform artificial live-card test purchases.
 
-## Render sleep resolution
+## Finance closeout before opening checkout
 
-Render Free web services sleep after 15 minutes without incoming requests. Upgrade this
-web service's compute (not the workspace subscription) to the lowest paid option,
-currently 0.5 CPU / 512 MB, $7/month. Additional bandwidth/build usage can incur charges.
-The Supabase database remains in use: no Render Postgres purchase is needed.
-
-Owner approval of recurring spend is pending. After approval:
-Render Dashboard → aedrova-website → Compute → select the $7/month paid 512 MB tier →
-Save/Apply; verify health and the public waitlist afterward. Update the Blueprint's
-`render.yaml` plan to the documented equivalent in the same change, preventing future
-Blueprint sync from resetting the service to Free. No paid resource is provisioned by
-this local preparation. No keep-alive workaround was added.
-
-## Verification
-
-243 website tests passed, including 12 new live-preparation/preflight checks. Ruff passes.
-No live Stripe operations, deployments, database mutations or purchases were performed.
-
-Sources: https://docs.stripe.com/get-started/account/set-up,
-https://docs.stripe.com/keys, https://render.com/docs/free,
-https://render.com/docs/compute-plans, https://render.com/pricing.
+- Review the legal operator, payout settings, statement descriptor, support contact, and tax treatment with the owner.
+- In Stripe test mode, verify upgrade, renewal, cancellation, and refunds. Check that the matching entitlement and balance appear exactly once in Aedrova, including after a duplicate or out-of-order webhook.
+- Verify the live destination can deliver a signed event without creating a live customer charge. Check that Stripe and Aedrova record the same event outcome.
+- Keep Stripe settlements separate from provider costs. Match invoices, fees, refunds and disputes to Stripe balance transactions and payouts. Compare estimated AI usage in the private Aedrova ledger with provider invoices, then review any unexplained difference.
+- Keep checkout gated until the account, prices, signed webhook and operating budget are verified and the owner approves opening sales.

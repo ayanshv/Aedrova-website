@@ -61,9 +61,9 @@ def client(tmp_path, monkeypatch):
             "active": True,
             "livemode": False,
             "currency": "usd",
-            "unit_amount": 20000 if identifier == "price_annual" else 1000,
+            "unit_amount": PLAN_POLICY[identifier.removeprefix("price_")]["amount_cents"],
             "recurring": {
-                "interval": "year" if identifier == "price_annual" else "month",
+                "interval": PLAN_POLICY[identifier.removeprefix("price_")]["interval"],
                 "interval_count": 1,
             },
         },
@@ -74,7 +74,7 @@ def client(tmp_path, monkeypatch):
     store.engine.dispose()
 
 
-def body(plan="monthly"):
+def body(plan="pro_monthly"):
     return {"workspace": "space-a", "plan": plan, "request_id": "checkout-request-00001"}
 
 
@@ -97,7 +97,13 @@ def test_test_keys_without_sandbox_cannot_open_checkout(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "plan,amount,interval", [("annual", 20000, "year"), ("monthly", 1000, "month")]
+    "plan,amount,interval",
+    [
+        ("pro_monthly", 1500, "month"),
+        ("pro_annual", 14400, "year"),
+        ("power_monthly", 3000, "month"),
+        ("power_annual", 28800, "year"),
+    ],
 )
 def test_plan_checkout_repeats_same_session_and_preserves_cancel_context(
     client, monkeypatch, plan, amount, interval
@@ -209,6 +215,7 @@ def test_return_page_never_grants_entitlement_and_rejects_foreign_session(client
     assert client.get("/api/checkout/status?session_id=cs_test_return0001").status_code == 403
 
 
+@pytest.mark.parametrize("plan", list(PLAN_POLICY))
 @pytest.mark.parametrize(
     "invoice, expected_status",
     [
@@ -219,17 +226,17 @@ def test_return_page_never_grants_entitlement_and_rejects_foreign_session(client
     ],
 )
 def test_signed_webhook_uses_paid_invoice_and_rejects_live_events(
-    client, monkeypatch, invoice, expected_status
+    client, monkeypatch, invoice, expected_status, plan
 ):
     current = {
-        "metadata": {"workspace": "space-a", "plan": "monthly"},
+        "metadata": {"workspace": "space-a", "plan": plan},
         "customer": "cus_a",
         "status": "active",
         "latest_invoice": invoice,
         "items": {
             "data": [
                 {
-                    "price": {"id": "price_monthly"},
+                    "price": {"id": "price_" + plan},
                     "quantity": 1,
                     "current_period_start": 100,
                     "current_period_end": int(time.time()) + 3600,
@@ -254,8 +261,10 @@ def test_signed_webhook_uses_paid_invoice_and_rejects_live_events(
         )
 
     assert send().status_code == 200 and send().status_code == 200
-    assert client.app.state.store.balance("space-a")["allowance"] == 2_000_000
-    assert client.app.state.store.balance("space-a")["status"] == expected_status
+    balance = client.app.state.store.balance("space-a")
+    assert balance["plan"] == ("monthly" if plan.startswith("pro_") else "annual")
+    assert balance["allowance"] == PLAN_POLICY[plan]["allowance_microusd"]
+    assert balance["status"] == expected_status
     event["livemode"] = True
     event["id"] = "evt_live"
     assert send().status_code == 400
@@ -263,14 +272,14 @@ def test_signed_webhook_uses_paid_invoice_and_rejects_live_events(
 
 
 def test_google_oauth_remembers_selected_plan_on_server(client, monkeypatch):
-    client.get("/auth/google?plan=annual", follow_redirects=False)
+    client.get("/auth/google?plan=power_annual", follow_redirects=False)
     state = client.cookies.get("aedrova_oauth")
-    assert client.app.state.store.session(state)["plan"] == "annual"
+    assert client.app.state.store.session(state)["plan"] == "power_annual"
     monkeypatch.setattr(
         client.app.state.identity, "request", lambda *a, **kw: {"access_token": "access"}
     )
     response = client.get("/auth/callback?code=test_code", follow_redirects=False)
-    assert response.headers["location"] == "/account?plan=annual"
+    assert response.headers["location"] == "/account?plan=power_annual"
 
 
 def test_subscription_failure_routes_to_management_instead_of_double_subscription(
@@ -281,11 +290,11 @@ def test_subscription_failure_routes_to_management_instead_of_double_subscriptio
         "evt_inactive",
         "cus_a",
         "sub_existing",
-        "monthly",
+        "pro_monthly",
         "inactive",
         100,
         int(time.time()) + 3600,
-        PLAN_POLICY["monthly"],
+        PLAN_POLICY["pro_monthly"],
     )
     monkeypatch.setattr("stripe.Subscription.retrieve", lambda *a, **kw: {"status": "past_due"})
     monkeypatch.setattr("stripe.checkout.Session.create", lambda **kw: pytest.fail("No duplicate"))
@@ -323,15 +332,15 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
     monkeypatch.setattr("stripe.Product.modify", lambda *a, **kw: {"id": "prod_fixture"})
 
     def listing(**kw):
-        if "annual" in kw["lookup_keys"][0]:
+        if "power_annual" in kw["lookup_keys"][0]:
             return {
                 "data": [
                     {
-                        "id": "price_annual",
+                        "id": "price_power_annual",
                         "product": "prod_fixture",
                         "livemode": False,
                         "active": True,
-                        "unit_amount": 20000,
+                        "unit_amount": 28800,
                         "currency": "usd",
                         "recurring": {"interval": "year", "interval_count": 1},
                     }
@@ -344,7 +353,7 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
     def create(**kw):
         calls.append(kw)
         return {
-            "id": "price_monthly",
+            "id": "price_pro_monthly",
             "product": "prod_fixture",
             "livemode": False,
             "active": True,
@@ -357,8 +366,8 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
     output = tmp_path / "plans.json"
     provision(Config(stripe_key="sk_test_fixture"), output)
     data = json.loads(output.read_text())
-    assert data["annual"]["price_id"] == "price_annual"
-    assert data["monthly"]["amount_cents"] == 1000 and len(calls) == 1
+    assert data["power_annual"]["price_id"] == "price_power_annual"
+    assert data["pro_monthly"]["amount_cents"] == 1500 and len(calls) == 3
     assert calls[0]["recurring"] == {"interval": "month", "interval_count": 1}
     with pytest.raises(ValueError, match="Only Stripe test"):
         provision(Config(stripe_key="sk_live_fixture"), output)

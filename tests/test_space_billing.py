@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import text
 
 from aedrova_site import budgets
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 from aedrova_site.store import Denied, Store
 
 

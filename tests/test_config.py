@@ -6,7 +6,7 @@ import json
 import pytest
 
 from aedrova_site.config import Config
-from aedrova_site.policy import PLAN_POLICY
+from aedrova_site.policy import LEGACY_PLAN_POLICY as PLAN_POLICY
 
 
 def test_owner_approved_policy_cannot_be_silently_changed():

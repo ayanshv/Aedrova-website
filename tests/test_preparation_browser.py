@@ -136,7 +136,7 @@ def test_failed_preload_has_direct_exit_and_escape_returns_focus(ui):
     expect(page.locator("#wizard-skip")).to_be_focused()
 
 
-def begin_checkout(page, plan="monthly"):
+def begin_checkout(page, plan="pro_monthly"):
     page.goto("https://aedrova.test/account")
     expect(page.locator("#account-status")).to_contain_text("Review your selected plan")
     page.locator("#billing-plan").select_option(plan)
@@ -144,7 +144,7 @@ def begin_checkout(page, plan="monthly"):
     page.locator("#checkout").click()
 
 
-@pytest.mark.parametrize("plan", ["monthly", "annual"])
+@pytest.mark.parametrize("plan", ["pro_monthly", "pro_annual", "power_monthly", "power_annual"])
 def test_checkout_waits_for_actual_response_then_navigates(ui, plan):
     page, held, mode, _ = ui
     mode["hold"] = "/api/checkout"

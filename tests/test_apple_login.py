@@ -34,7 +34,7 @@ def test_apple_uses_existing_pkce_state_cookie_and_limit(tmp_path):
         assert "HttpOnly" in response.headers["set-cookie"]
         assert "SameSite=lax" in response.headers["set-cookie"]
         state = app.state.store.session(client.cookies["aedrova_oauth"])
-        assert state["plan"] == "annual"
+        assert state["plan"] == "power_annual"
         for _ in range(9):
             assert client.get("/auth/google", follow_redirects=False).status_code == 303
         assert client.get("/auth/apple", follow_redirects=False).status_code == 429
