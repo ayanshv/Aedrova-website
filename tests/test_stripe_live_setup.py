@@ -51,7 +51,7 @@ def test_provision_live_namespaced_and_private(tmp_path, monkeypatch):
             calls.append(kw)
             or {
                 "data": [
-                    price(kw["lookup_keys"][0].removeprefix("aedrova_live_").removesuffix("_v2"))
+                    price(kw["lookup_keys"][0].removeprefix("aedrova_live_").removesuffix("_v3"))
                 ]
             }
         ),

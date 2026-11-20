@@ -23,7 +23,7 @@ No-JavaScript responses also use current server state.
 Pro and Power: legible subtle strikethrough on regular price and large $0.00.
 Monthly/annual switch preserved. Pro 3 teammate icons, Team 5. Free and Enterprise
 unchanged. Public catalog remains Pro $15/month or $144/year and Power $30/month or
-$288/year, all per team. These are planned rates, not a claim of prior paid sales.
+$288/year, all per person. These are planned rates, not a claim of prior paid sales.
 Terms disclose the shared deadline, late-join limit, plan caps, waitlist restriction,
 no card/subscription/automatic charge, and fallback to Free where available.
 

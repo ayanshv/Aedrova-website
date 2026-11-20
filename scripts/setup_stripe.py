@@ -17,13 +17,16 @@ def provision(config, output, *, live=False):
     if not config.stripe_key.startswith(prefixes):
         mode = "live" if live else "test"
         raise ValueError(f"Only Stripe {mode} keys are accepted by this setup command.")
+    individual_metadata = {
+        "application": "aedrova", "environment": environment, "coverage": "individual"
+    }
     products = {}
     for tier in ("Pro", "Power"):
         products[tier] = stripe.Product.create(
             name=f"Aedrova {tier}",
-            description="One subscription covers the workspace and its eligible members.",
-            metadata={"application": "aedrova", "environment": environment},
-            idempotency_key=f"aedrova-{environment}-{tier.lower()}-product-v1",
+            description="Subscription for one Aedrova account.",
+            metadata=individual_metadata,
+            idempotency_key=f"aedrova-{environment}-{tier.lower()}-individual-product-v3",
             api_key=config.stripe_key,
         )
     stripe.Product.create(
@@ -42,7 +45,7 @@ def provision(config, output, *, live=False):
             "allowance_microusd": usage_policy[PLAN_TIERS[name]]["budget"]
             * (12 if price_policy["interval"] == "year" else 1),
         }
-        lookup = "aedrova_" + environment + "_" + name + "_v2"
+        lookup = "aedrova_" + environment + "_" + name + "_v3"
         found = stripe.Price.list(lookup_keys=[lookup], active=True, api_key=config.stripe_key)
         if found["data"]:
             price = found["data"][0]
@@ -53,9 +56,9 @@ def provision(config, output, *, live=False):
                 unit_amount=policy["amount_cents"],
                 recurring={"interval": policy["interval"], "interval_count": 1},
                 lookup_key=lookup,
-                nickname="Aedrova " + PLAN_NAMES[name] + " — per team",
-                metadata={"application": "aedrova", "environment": environment},
-                idempotency_key="aedrova-" + environment + "-price-" + name + "-v2",
+                nickname="Aedrova " + PLAN_NAMES[name] + " · per person",
+                metadata=individual_metadata,
+                idempotency_key="aedrova-" + environment + "-price-" + name + "-v3",
                 api_key=config.stripe_key,
             )
         validate_price(price, policy, live=live)
@@ -66,10 +69,7 @@ def provision(config, output, *, live=False):
         stripe.Product.modify(
             linked["id"],
             name=f"Aedrova {tier}",
-            description=(
-                "One subscription covers the entire team workspace and its eligible "
-                "members. Additional member charges: $0."
-            ),
+            description="Subscription for one Aedrova account.",
             api_key=config.stripe_key,
         )
         plans[name] = {**policy, "price_id": price["id"]}

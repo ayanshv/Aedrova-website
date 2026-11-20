@@ -144,6 +144,26 @@ def begin_checkout(page, plan="pro_monthly"):
     page.locator("#checkout").click()
 
 
+def test_individual_checkout_opens_before_creating_a_workspace(ui, client):  # noqa: F811
+    page, held, mode, _ = ui
+    client.app.state.config.personal_billing_enabled = True
+    client.app.state.identity.workspaces = lambda token: []
+    mode["hold"] = "/api/checkout"
+    page.goto("https://aedrova.test/account")
+    expect(page.locator("#personal-billing-status")).to_contain_text("your own Aedrova account")
+    page.locator("#billing-plan").select_option("power_annual")
+    expect(page.locator("#order-price")).to_contain_text("$288/year per person")
+    page.locator("#confirm-team-checkout").check()
+    page.locator("#checkout").click()
+    expect(page.locator("#preparation")).to_be_visible()
+    assert len(held) == 1
+    checkout = held.pop()
+    assert checkout.request.post_data_json["plan"] == "power_annual"
+    assert "workspace" not in checkout.request.post_data_json
+    checkout.fulfill(status=200, json={"url": mode["stripe_url"]})
+    expect(page).to_have_url(mode["stripe_url"])
+
+
 @pytest.mark.parametrize("plan", ["pro_monthly", "pro_annual", "power_monthly", "power_annual"])
 def test_checkout_waits_for_actual_response_then_navigates(ui, plan):
     page, held, mode, _ = ui

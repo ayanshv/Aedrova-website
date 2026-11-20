@@ -33,7 +33,7 @@
     const checkout = kind === 'checkout';
     title.textContent = checkout ? 'Getting your team’s order ready' : 'Bringing your setup together';
     copy.textContent = checkout
-      ? 'One subscription for your team. You’ll review everything on Stripe before paying.'
+      ? 'Review your plan, renewal terms and any taxes on Stripe before paying.'
       : 'A space for your people, your tools, and what comes next.';
     const labels = checkout
       ? ['Your team’s selection', 'Preparing secure checkout', 'Opening Stripe for your review']

@@ -1,4 +1,4 @@
-"""Pricing interactions preserve waitlist gates and per-workspace coverage."""
+"""Pricing interactions preserve waitlist gates and per-person rates."""
 
 from pathlib import Path
 
@@ -14,8 +14,6 @@ def test_billing_toggle_prices_icons_and_responsive_layout(ui):  # noqa: F811
     page.get_by_role("button", name="Essential only", exact=True).click()
     pro = page.locator(".plan").filter(has=page.get_by_role("heading", name="Pro", exact=True))
     team = page.locator(".plan").filter(has=page.get_by_role("heading", name="Power", exact=True))
-    expect(pro.locator(".team-visual svg")).to_have_count(3)
-    expect(team.locator(".team-visual svg")).to_have_count(5)
     expect(pro.locator(".price > [data-price-interval]:visible")).to_contain_text("$15")
     expect(team.locator(".price > [data-price-interval]:visible")).to_contain_text("$30")
     annual = page.locator('[data-billing-choice="annual"]')
@@ -24,6 +22,13 @@ def test_billing_toggle_prices_icons_and_responsive_layout(ui):  # noqa: F811
     expect(annual).to_have_attribute("aria-current", "true")
     expect(pro.locator(".price > [data-price-interval]:visible")).to_contain_text("$144")
     expect(team.locator(".price > [data-price-interval]:visible")).to_contain_text("$288")
+    expect(pro.locator(".annual-equivalent")).to_have_text(
+        "Equivalent to $12/month per person, billed annually"
+    )
+    expect(team.locator(".annual-equivalent")).to_have_text(
+        "Equivalent to $24/month per person, billed annually"
+    )
+    expect(page.get_by_role("link", name="Let’s Talk ↗")).to_have_attribute("href", "/enterprise")
     expect(pro.locator(".price > [data-price-interval]:visible")).not_to_contain_text("$15")
     expect(pro.locator("a.button")).to_have_attribute("href", "/account?plan=pro_annual")
     expect(team.locator("a.button")).to_have_attribute("href", "/account?plan=power_annual")

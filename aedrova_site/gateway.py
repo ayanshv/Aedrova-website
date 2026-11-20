@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import Response, StreamingResponse
 
 from aedrova_site.observability import emit
-from aedrova_site.store import Denied
+from aedrova_site.store import Denied, account_billing_key
 
 
 def cost(usage, model):
@@ -113,7 +113,10 @@ async def authorize_run(request: Request, provider, config, store, identity):
     )
     if not config.managed_ai_for(context["billing_workspace"]):
         raise Denied("AI pilot access requires an independent workspace.")
-    run["billing_workspace"] = context["billing_workspace"]
+    if run.get("billing_workspace") == account_billing_key(user["id"]):
+        run["workspace_billing_root"] = context["billing_workspace"]
+    else:
+        run["billing_workspace"] = context["billing_workspace"]
     await asyncio.to_thread(store.rate_limit, "inference:" + run["id"], limit=120)
     return run
 

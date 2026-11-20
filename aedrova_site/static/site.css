@@ -287,10 +287,6 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 
 .plan .price{min-height:190px;display:flex;flex-wrap:wrap;align-items:baseline;align-content:flex-start;gap:8px}
 .plan .price small{font-size:16px;white-space:normal}
-.team-coverage{letter-spacing:normal;display:block;width:100%;font-size:15px;line-height:1.5;font-weight:500;color:var(--text);margin-top:12px}
-.team-visual{letter-spacing:normal;display:flex;align-items:center;margin-top:12px;width:100%;font-size:12px;line-height:1.5;color:var(--muted)}
-.team-visual>span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e4eaf7;color:#3d5e9f;border:2px solid var(--surface);margin-right:-7px}
-.team-visual b{margin-left:16px;font-weight:500}
 .team-order{padding:24px;background:var(--surface);border:1px solid var(--edge);border-radius:18px;margin:20px 0}
 .team-order dl{display:grid;grid-template-columns:1fr 1.4fr;gap:12px;font-size:15px}
 .team-order dd{margin:0;font-weight:600}.team-order dt{color:var(--muted)}
@@ -298,7 +294,7 @@ html[data-theme="dark"] .meeting-image-light{display:none!important}
 .checkout-consent input{width:18px;height:18px;flex-shrink:0;margin-top:3px}
 @media(max-width:650px){.plan .price{min-height:0}.team-order{padding:18px}.team-order dl{grid-template-columns:1fr}.team-order dd{margin-bottom:10px}}
 
-.team-visual svg{width:20px;height:20px;fill:currentColor}.team-order h3{margin:0;font-size:24px;letter-spacing:normal}
+.team-order h3{margin:0;font-size:24px;letter-spacing:normal}
 
 
 .bud-anchor{position:relative;isolation:isolate}
@@ -387,7 +383,6 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .billing-switch a[aria-current="true"]{background:var(--text);color:var(--surface)}
 .billing-switch a:focus-visible{outline:2px solid #007aff;outline-offset:3px}
 [data-price-interval][hidden]{display:none!important}
-.team-visual>span{flex-shrink:0}
 
 
 .early-access-offer{max-width:690px;margin:0 auto 30px;text-align:center;padding:22px 24px;border:1px solid var(--edge);border-radius:20px;background:var(--surface)}

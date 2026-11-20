@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from aedrova_site import promotion
 from aedrova_site.policy import PLAN_NAMES, PLAN_POLICY
-from aedrova_site.store import Denied
+from aedrova_site.store import Denied, account_billing_key
 
 
 class Identity:
@@ -131,11 +131,14 @@ class Payments:
 
     def checkout(self, workspace, plan, request_id, *, owner="", workspace_name="", owner_email=""):
         config = self.config
+        personal = bool(owner and workspace == account_billing_key(owner))
+        if config.personal_billing_enabled != personal:
+            raise Denied("Checkout does not match the configured billing model.")
         if promotion.status()["active"] and (
             config.early_access_enabled or (config.checkout_enabled and not config.stripe_test_mode)
         ):
             raise Denied("Limited early access is free. No paid subscription was created.")
-        if owner:
+        if owner and not personal:
             with self.store.tx() as db:
                 if self.store.billing_root(db, workspace, owner) != workspace:
                     raise Denied(
@@ -145,6 +148,7 @@ class Payments:
         if not config.checkout_enabled or plan not in PLAN_POLICY or plan not in config.plans:
             raise Denied("Paid beta checkout is being prepared. No payment has been taken.")
         approved = config.plans[plan]
+        coverage = "individual" if personal else "entire_team"
         price = stripe.Price.retrieve(approved["price_id"], api_key=config.stripe_key)
         if (
             not price.get("active")
@@ -163,9 +167,10 @@ class Payments:
             row = self.store.customer(workspace, existing)
         else:
             customer = stripe.Customer.create(
-                name=workspace_name or "Aedrova team workspace",
+                name=workspace_name
+                or ("Aedrova account" if personal else "Aedrova team workspace"),
                 **({"email": owner_email} if owner_email else {}),
-                metadata={"workspace": workspace, "coverage": "entire_team"},
+                metadata={"workspace": workspace, "coverage": coverage},
                 idempotency_key="aedrova-customer-" + workspace,
                 api_key=config.stripe_key,
             )
@@ -232,14 +237,18 @@ class Payments:
             customer=row["customer"],
             line_items=[{"price": approved["price_id"], "quantity": 1}],
             client_reference_id=workspace,
-            metadata={"workspace": workspace, "plan": plan},
+            metadata={"workspace": workspace, "plan": plan, "coverage": coverage},
             subscription_data={
-                "metadata": {"workspace": workspace, "plan": plan, "coverage": "entire_team"},
-                "description": f"Aedrova {PLAN_NAMES[plan]} · {workspace_name or workspace}",
+                "metadata": {"workspace": workspace, "plan": plan, "coverage": coverage},
+                "description": (
+                    f"Aedrova {PLAN_NAMES[plan]} · Individual subscription" if personal
+                    else f"Aedrova {PLAN_NAMES[plan]} · {workspace_name or workspace}"
+                ),
             },
             custom_text={
                 "submit": {
-                    "message": "One subscription covers "
+                    "message": "This subscription is for your Aedrova account." if personal else
+                    "One subscription covers "
                     + (workspace_name or "your entire team")
                     + ". Additional member charges: $0."
                 }
@@ -247,7 +256,9 @@ class Payments:
             success_url=config.origin + "/welcome?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=config.origin
             + "/account?"
-            + urlencode({"cancelled": "1", "workspace": workspace, "plan": plan}),
+            + urlencode({
+                "cancelled": "1", "plan": plan, **({} if personal else {"workspace": workspace})
+            }),
             expires_at=prior["expires"] if prior else checkout_expiry,
             allow_promotion_codes=False,
             idempotency_key="aedrova-checkout-" + identifier,
@@ -437,7 +448,10 @@ class Payments:
             raise Denied("Free has no payment subscription to manage.")
         result = stripe.billing_portal.Session.create(
             customer=customer,
-            return_url=self.config.origin + "/account?" + urlencode({"workspace": workspace}),
+            return_url=self.config.origin + "/account" + (
+                "" if workspace.startswith("account:")
+                else "?" + urlencode({"workspace": workspace})
+            ),
             api_key=self.config.stripe_key,
             **(
                 {"configuration": self.config.stripe_portal_configuration}
@@ -484,6 +498,10 @@ class Payments:
             subscription, expand=["latest_invoice"], api_key=self.config.stripe_key
         )
         metadata = current.get("metadata", {})
+        if metadata.get("workspace", "").startswith("account:") and (
+            metadata.get("coverage") != "individual" or not self.config.personal_billing_enabled
+        ):
+            raise Denied("Subscription does not match individual account billing.")
         plan = metadata.get("plan")
         if plan not in self.config.plans:
             raise Denied("Subscription uses an unknown plan.")

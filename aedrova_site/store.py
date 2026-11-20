@@ -81,6 +81,11 @@ def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def account_billing_key(user):
+    # Keep account scopes distinct from workspace UUIDs and opaque outside the ledger.
+    return "account:" + digest(user)
+
+
 class Denied(ValueError):
     pass
 
@@ -611,6 +616,18 @@ class Store:
 
         return suggested or workspace
 
+    def billing_scope(self, db, workspace, user, suggested=None):
+        root = self.billing_root(db, workspace, user, suggested)
+        account = account_billing_key(user)
+        paid = db.scalar(
+            text(
+                "SELECT 1 FROM billing WHERE workspace=:w AND status='active' "
+                "AND subscription IS NOT NULL AND subscription<>'' AND period_end>:now"
+            ),
+            {"w": account, "now": int(time.time())},
+        )
+        return account if paid else root
+
     def run_limits(self, run):
         with self.tx(write=False) as db:
             plan = db.execute(
@@ -729,6 +746,11 @@ class Store:
                     "credit_reserved",
                 )
             }
+
+    def member_balance(self, workspace, user, suggested=None):
+        with self.tx() as db:
+            scope = self.billing_scope(db, workspace, user, suggested)
+        return {**self.balance(scope), "personal": scope == account_billing_key(user)}
 
     def subscription(
         self, event_id, customer, subscription, plan, status, start, end, approved, *, recheck=None
@@ -854,7 +876,7 @@ class Store:
         run_id, token = secrets.token_urlsafe(24), secrets.token_urlsafe(48)
         with self.tx() as db:
             origin = workspace
-            workspace = self.billing_root(db, origin, user, billing_workspace)
+            workspace = self.billing_scope(db, origin, user, billing_workspace)
             if self.engine.dialect.name == "postgresql":
                 db.execute(
                     text("SELECT pg_advisory_xact_lock(hashtextextended(:u,1))"), {"u": user}
@@ -959,9 +981,13 @@ class Store:
         identifier = digest(run["id"] + request_hash)
         with self.tx() as db:
             budgets.lock(db)
-            workspace = self.billing_root(
-                db, run["workspace"], run["user_id"], run.get("billing_workspace")
+            account = account_billing_key(run["user_id"])
+            personal = run.get("billing_workspace") == account
+            root = self.billing_root(
+                db, run["workspace"], run["user_id"],
+                run.get("workspace_billing_root") if personal else run.get("billing_workspace"),
             )
+            workspace = account if personal else root
             row = self.refresh_free(db, self.billing_lock(db, workspace))
             fresh = (
                 db.execute(text("SELECT state,expires FROM runs WHERE id=:id"), {"id": run["id"]})

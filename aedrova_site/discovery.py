@@ -35,10 +35,10 @@ PUBLIC_PAGES = {
     "/": ("Aedrova | The workspace for your team and tools", DESCRIPTION),
     "/product": ("What is Aedrova? AI workspace, Buds and team building", DESCRIPTION),
     "/plans": (
-        "Aedrova plans | One subscription for your team",
+        "Aedrova plans | Free, Pro, Power and Enterprise",
         (
-            "Explore Aedrova's intended Free, Pro, Team and Enterprise workspace plans. One "
-            "paid subscription covers the team; current availability is shown on the page."
+            "Compare Free, Pro, Power and Enterprise. Pro and Power are priced per person, "
+            "with monthly and annual billing."
         ),
     ),
     "/waitlist": (
