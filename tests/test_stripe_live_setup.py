@@ -61,12 +61,13 @@ def test_provision_live_namespaced_and_private(tmp_path, monkeypatch):
         lambda *a, **kw: {"id": "prod_live", "metadata": {"application": "aedrova"}},
     )
     monkeypatch.setattr("stripe.Product.modify", lambda *a, **kw: {"id": "prod_live"})
+    monkeypatch.setattr("stripe.Price.modify", lambda *a, **kw: None)
     target = tmp_path / "plans.json"
     provision(Config(stripe_key="sk_live_fixture"), target, live=True)
     assert any(call.get("metadata", {}).get("contact_only") == "true" for call in calls)
     assert json.loads(target.read_text())["pro_monthly"]["amount_cents"] == 1500
     assert target.stat().st_mode & 0o777 == 0o600
-    assert calls[0]["metadata"]["environment"] == "live"
+    assert all(call["metadata"]["environment"] == "live" for call in calls if "metadata" in call)
     assert all("aedrova_live_" in call["lookup_keys"][0] for call in calls if "lookup_keys" in call)
 
 

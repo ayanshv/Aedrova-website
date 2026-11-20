@@ -213,7 +213,7 @@ if ($('#workspace')) {
     const data = await api('/api/billing/account');
     const active = data.status === 'active' && data.period_end * 1000 > Date.now();
     message.textContent = active
-      ? 'Your ' + ({monthly:'Pro', annual:'Power'}[data.plan] || 'paid') + ' subscription is active.'
+      ? 'Your ' + ({monthly:'Pro', annual:'Teams'}[data.plan] || 'paid') + ' subscription is active.'
       : 'Subscribe with your own Aedrova account.';
     message.hidden = false;
     $('#order-workspace').textContent = '';
@@ -279,7 +279,7 @@ if ($('#workspace')) {
       $('#balance').hidden = false;
       $('#topup').disabled = !canManage || data.plan === 'free';
       status.textContent = data.early_access ? 'Your team has limited early access until ' + new Date(data.early_access_ends_at * 1000).toLocaleString() + '. No payment or subscription was created. Plan usage limits apply.' : testMode ? 'Test subscription confirmed. Paid AI remains disabled in this sandbox.' :
-        (data.personal ? 'Your ' : 'This workspace’s ') + ({free:'Free',monthly:'Pro',annual:'Power',pro_monthly:'Pro',pro_annual:'Pro',power_monthly:'Power',power_annual:'Power'}[data.plan] || data.plan) + ' plan is active. ' + (child && !data.personal ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the desktop app.');
+        (data.personal ? 'Your ' : 'This workspace’s ') + ({free:'Free',monthly:'Pro',annual:'Teams',pro_monthly:'Pro',pro_annual:'Pro',power_monthly:'Teams',power_annual:'Teams'}[data.plan] || data.plan) + ' plan is active. ' + (child && !data.personal ? 'Shared with ' + (data.billing_name || 'your parent Space') + '. ' : '') + (data.available <= (data.monthly_budget || data.allowance) * 0.1 ? 'Your AI allowance is nearly used. Review your plan or wait for the monthly reset. Human chat stays available.' : 'Run your builds from the desktop app.');
     } else {
       status.textContent = !canManage ? 'This workspace has no AI plan available to you.' :
         checkoutReady ? 'Review your selected plan on Stripe before confirming. ' + (testMode ? 'Test payments only.' : '') :

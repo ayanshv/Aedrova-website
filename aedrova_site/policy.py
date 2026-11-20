@@ -57,11 +57,11 @@ USAGE_POLICY = {
 PLAN_NAMES = {
     "free": "Free",
     "monthly": "Pro",
-    "annual": "Power",
+    "annual": "Teams",
     "pro_monthly": "Pro",
     "pro_annual": "Pro",
-    "power_monthly": "Power",
-    "power_annual": "Power",
+    "power_monthly": "Teams",
+    "power_annual": "Teams",
 }
 BUD_LIMITS = {"free": 1, "pro": 5, "team": 15}
 

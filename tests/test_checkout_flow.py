@@ -451,6 +451,10 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
         lambda *a, **kw: {"id": "prod_fixture", "metadata": {"application": "aedrova"}},
     )
     monkeypatch.setattr("stripe.Product.modify", lambda *a, **kw: {"id": "prod_fixture"})
+    renames = []
+    monkeypatch.setattr(
+        "stripe.Price.modify", lambda identifier, **kw: renames.append((identifier, kw["nickname"]))
+    )
 
     def listing(**kw):
         if "power_annual" in kw["lookup_keys"][0]:
@@ -490,5 +494,6 @@ def test_provisioner_only_creates_approved_test_prices_and_reuses_lookup(tmp_pat
     assert data["power_annual"]["price_id"] == "price_power_annual"
     assert data["pro_monthly"]["amount_cents"] == 1500 and len(calls) == 3
     assert calls[0]["recurring"] == {"interval": "month", "interval_count": 1}
+    assert renames == [("price_power_annual", "Aedrova Teams · per person")]
     with pytest.raises(ValueError, match="Only Stripe test"):
         provision(Config(stripe_key="sk_live_fixture"), output)
