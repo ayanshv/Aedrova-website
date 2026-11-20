@@ -1,11 +1,11 @@
 # Pricing and usage launch preparation
 
 Local implementation; checkout and Free activation remain disabled in waitlist mode.
-Public labels: Free, Pro ($15/month or $144/year), Power ($30/month or $288/year), Enterprise (Let’s Talk).
-Paid subscriptions are per person and use an account-level billing scope. Power adds two simultaneous workflows, larger context and longer execution limits.
+Public labels: Free, Pro ($15/month or $144/year), Teams ($30/month or $288/year), Enterprise (Let’s Talk).
+Paid subscriptions are per person and use an account-level billing scope. The Teams plan adds two simultaneous workflows, larger context and longer execution limits.
 Public UI displays capacity and reset dates, never the internal provider-cost allocation.
 
-Internal initial monthly estimated API ceilings: Free $0.50, Pro $2, Power $4.
+Internal initial monthly estimated API ceilings: Free $0.50, Pro $2, Teams $4.
 Request ceilings: 40 / 200 / 400. Company ceiling $100; combined Free pool $25.
 These are conservative launch assumptions, not invoiced-cost guarantees. Configure
 AEDROVA_USAGE_LIMITS, AEDROVA_COMPANY_BUDGET_MICROUSD and

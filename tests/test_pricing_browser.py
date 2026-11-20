@@ -13,7 +13,7 @@ def test_billing_toggle_prices_icons_and_responsive_layout(ui):  # noqa: F811
     page.goto("https://aedrova.test/plans")
     page.get_by_role("button", name="Essential only", exact=True).click()
     pro = page.locator(".plan").filter(has=page.get_by_role("heading", name="Pro", exact=True))
-    team = page.locator(".plan").filter(has=page.get_by_role("heading", name="Power", exact=True))
+    team = page.locator(".plan").filter(has=page.get_by_role("heading", name="Teams", exact=True))
     expect(pro.locator(".price > [data-price-interval]:visible")).to_contain_text("$15")
     expect(team.locator(".price > [data-price-interval]:visible")).to_contain_text("$30")
     annual = page.locator('[data-billing-choice="annual"]')

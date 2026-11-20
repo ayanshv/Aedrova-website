@@ -21,7 +21,7 @@ No SQL is required for this preparation step. Existing sandbox credentials and r
 
 The setup command does not charge anyone, create checkout sessions, enable the site,
 change banking details, or create a webhook endpoint. It requires charges_enabled first.
-Each person subscribes using their own Aedrova account. The launch catalog is Pro at $15/month or $144/year and Power at $30/month or $288/year. Free costs $0. Enterprise is contact only. Keep any existing legacy price IDs in the service configuration for renewal and cancellation events.
+Each person subscribes using their own Aedrova account. The launch catalog is Pro at $15/month or $144/year and Teams at $30/month or $288/year. Free costs $0. Enterprise is contact only. Keep any existing legacy price IDs in the service configuration for renewal and cancellation events.
 
 The tool uses separate live lookup and idempotency keys and validates prices before saving. It creates a portal that supports cancellation at the end of the billing period with plan and quantity changes disabled. It also uploads the Aedrova checkout icon.
 Use the current budget limits and workflow capacity in [billing launch preparation](billing-launch.md). Confirm prices and AI allowances with the owner before enabling checkout.
