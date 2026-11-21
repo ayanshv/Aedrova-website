@@ -238,7 +238,7 @@ def test_support_and_policy_links_are_public_and_consistent(client):
     for path in ("/privacy", "/terms", "/support"):
         response = client.get(path)
         assert response.status_code == 200
-        assert "tel:+14086345254" in response.text
+        assert "tel:" not in response.text
         assert "contact@aedrova.com" in response.text
         assert "October 21, 2026" in response.text
         assert "Business name: Aedrova." in response.text

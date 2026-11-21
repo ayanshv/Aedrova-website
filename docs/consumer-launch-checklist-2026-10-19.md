@@ -48,7 +48,7 @@ closed until the actual operator and applicable consumer obligations are finaliz
 15. Keyboard: skip link now explicitly targets focusable main; tested actual mobile
     keyboard focus and Enter for storage controls. Existing menu Escape/focus trap,
     modal focus/reduced motion preserved; no positive tabindex added.
-16. Business details: brand contact@aedrova.com and (408) 634-5254 displayed. Actual
+16. Business details: contact@aedrova.com is the public support address. Actual
     legal operator, authorized business address and jurisdiction remain placeholders
     by owner's prior instruction. These are unresolved commercial-launch gates.
 17. Children: under-13 use prohibited under current policy; explicit waitlist

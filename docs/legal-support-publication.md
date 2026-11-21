@@ -1,6 +1,6 @@
 # Privacy, terms and support publication — October 11, 2026
 
-Owner authorized page replacement, public support phone (408) 634-5254, GitHub
+Owner authorized page replacement, the then-current support contact, GitHub
 push/merge as needed, and entering all three URLs in Stripe then Save.
 
 URLs: https://aedrova.com/privacy, https://aedrova.com/terms,
