@@ -60,7 +60,7 @@ def test_trust_destinations_and_local_anchors_work_without_opening_checkout(clie
                 assert anchor in parsed[target].ids, href
     assert "one-click automated erase/export" in client.get("/data-controls").text
     assert "not a live uptime monitor" in client.get("/security").text
-    assert "(408) 634-5254" in client.get("/support").text
+    assert "tel:" not in client.get("/support").text
 
 
 def test_verified_waitlist_removal_preserves_auth_and_other_registrations(client):

@@ -323,7 +323,15 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .footer-columns h2{font:600 14px var(--serif);letter-spacing:0;margin:0 0 6px;color:var(--text)}
 .footer-columns a,.footer-columns .storage-settings{font-size:13px;line-height:1.5;color:var(--muted)}
 .footer-columns a:hover,.footer-columns .storage-settings:hover{color:var(--text)}
-.footer-bottom{grid-column:1/-1;display:flex;justify-content:space-between;gap:20px;padding-top:24px;border-top:1px solid var(--edge);font-size:12px;color:var(--muted)}
+.footer-bottom{grid-column:1/-1;display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"copyright email social";align-items:center;gap:8px 20px;padding-top:16px;border-top:1px solid var(--edge);font-size:12px;color:var(--muted)}
+.footer-copyright{grid-area:copyright}
+.footer-email{grid-area:email;justify-self:start}
+.footer-social{grid-area:social;display:flex;gap:2px;justify-self:end}
+.footer-social a{display:grid;place-items:center;width:44px;height:44px;border-radius:8px}
+.footer-social a:hover,.footer-social a:focus-visible{background:var(--soft)}
+.footer-social img{display:block;width:20px;height:20px;object-fit:contain}
+.footer-social .footer-social-dark,:root[data-theme=dark] .footer-social img:not(.footer-social-dark){display:none}
+:root[data-theme=dark] .footer-social .footer-social-dark{display:block}
 .policy-table-wrap{overflow-x:auto;margin:28px 0}
 .policy-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.6;min-width:480px}
 .policy-table caption{text-align:left;margin-bottom:12px;font-weight:600}
@@ -331,7 +339,7 @@ footer.trust-footer{display:grid;grid-template-columns:minmax(180px,1fr) 3fr;gap
 .policy-document ol,.policy-document ul{padding-left:24px;line-height:1.85}
 .policy-document li{margin-bottom:10px}
 @media(max-width:960px){footer.trust-footer{grid-template-columns:1fr;gap:32px}}
-@media(max-width:600px){.footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 20px}.footer-bottom{flex-direction:column}}
+@media(max-width:600px){.footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 20px}.footer-bottom{grid-template-columns:1fr auto;grid-template-areas:"copyright social" "email social";column-gap:12px}}
 
 
 .policy-contents{margin:24px 0 34px;padding:18px 20px;background:var(--surface);border:1px solid var(--edge);border-radius:12px}

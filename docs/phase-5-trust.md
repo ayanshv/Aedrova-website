@@ -29,7 +29,7 @@ jurisdiction, signed processing agreement, backup schedule or legal safe harbor.
 
 /privacy and /terms, /support, /data-controls, /subprocessors,
 /cookies, /acceptable-use, /security. Contact remains contact@aedrova.com and
-(408) 634-5254. Waitlist mode and payment/download gates stay unchanged. Desktop
+[former number removed]. Waitlist mode and payment/download gates stay unchanged. Desktop
 Settings links to /data-controls; no new authority or destructive UI is introduced.
 
 ## Actual data inventory and retention boundaries

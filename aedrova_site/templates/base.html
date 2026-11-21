@@ -60,7 +60,20 @@
 <div><h2>Trust</h2><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/refunds">Refund policy</a><a href="/acceptable-use">Acceptable use</a><a href="/subprocessors">Service providers</a><a href="/cookies">Cookies & storage</a><button class="text-link storage-settings" type="button" data-storage-settings>Storage choices</button></div>
 <div><h2>Support</h2><a href="/support">Contact us</a><a href="/security">Security reporting</a><a href="/data-controls#requests">Privacy requests</a><a href="/security#availability">Beta availability</a></div>
 </nav>
-<div class="footer-bottom"><span>© 2026 Aedrova. All rights reserved.</span><a href="mailto:contact@aedrova.com">contact@aedrova.com</a></div>
+<div class="footer-bottom">
+  <span class="footer-copyright">© 2026 Aedrova. All rights reserved.</span>
+  <a class="footer-email" href="mailto:contact@aedrova.com">contact@aedrova.com</a>
+  <nav class="footer-social" aria-label="Aedrova social profiles">
+    <a href="https://www.linkedin.com/company/aedrova-inc/" aria-label="Aedrova on LinkedIn">
+      <img src="/static/linkedin-black.png" alt="" width="20" height="20" loading="lazy">
+      <img class="footer-social-dark" src="/static/linkedin-white.png" alt="" width="20" height="20" loading="lazy">
+    </a>
+    <a href="https://www.instagram.com/aedrova_inc/" aria-label="Aedrova on Instagram">
+      <img src="/static/instagram-black.svg" alt="" width="20" height="20" loading="lazy">
+      <img class="footer-social-dark" src="/static/instagram-white.svg" alt="" width="20" height="20" loading="lazy">
+    </a>
+  </nav>
+</div>
 </footer>
 {% if request.url.path in ["/onboarding", "/account"] %}{% include "preparation.html" %}{% endif %}
 <aside id="storage-notice" class="storage-notice" aria-labelledby="storage-title" hidden>
