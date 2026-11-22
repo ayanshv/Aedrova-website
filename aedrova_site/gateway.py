@@ -53,6 +53,35 @@ def cost(usage, model):
     )
 
 
+WEB_SEARCH_CALLS = 5
+WEB_SEARCH_MICROUSD = 10_000  # OpenAI bills hosted web search per call, outside token rates.
+
+
+def searches(result, streaming):
+    """Completed hosted web searches in a provider response, never more than the cap."""
+    count = 0
+    try:
+        if streaming:
+            for line in bytes(result).decode("utf-8", errors="replace").splitlines():
+                if line.startswith("data: ") and '"web_search_call"' in line:
+                    event = json.loads(line[6:])
+                    item = event.get("item") if isinstance(event, dict) else None
+                    if (
+                        event.get("type") == "response.output_item.done"
+                        and isinstance(item, dict)
+                        and item.get("type") == "web_search_call"
+                    ):
+                        count += 1
+        else:
+            output = json.loads(result).get("output", [])
+            count = sum(
+                1 for item in output if isinstance(item, dict) and item["type"] == "web_search_call"
+            )
+    except (ValueError, KeyError, AttributeError, TypeError):
+        return WEB_SEARCH_CALLS
+    return min(count, WEB_SEARCH_CALLS)
+
+
 def usage_from_events(data, provider):
     usage, completed = {}, False
     for line in data.decode("utf-8", errors="replace").splitlines():
@@ -203,12 +232,29 @@ async def inference(request: Request, provider, config, store, identity, *, comp
     if len(body.get("tools", [])) > limits["tools"]:
         raise Denied("This request exceeds your plan’s tool-definition limit.")
     model = config.models[provider]
+    searching = False
     if provider == "codex":
         key, output_key = config.openai_key, "max_output_tokens"
         url = "https://api.openai.com/v1/responses"
         headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
-        if any(tool.get("type") not in {"function", "custom"} for tool in body.get("tools", [])):
+        if any(
+            tool.get("type") not in {"function", "custom", "web_search"}
+            for tool in body.get("tools", [])
+        ):
             raise Denied("Hosted tools are not included in this beta gateway.")
+        searching = any(tool.get("type") == "web_search" for tool in body.get("tools", []))
+        if searching:
+            # Only provider-hosted search, with a fixed size and call cap set by this service.
+            body["tools"] = [
+                {"type": "web_search", "search_context_size": "low"}
+                if tool.get("type") == "web_search"
+                else tool
+                for tool in body["tools"]
+            ]
+            limit = body.get("max_tool_calls")
+            body["max_tool_calls"] = min(
+                limit if type(limit) is int and limit > 0 else WEB_SEARCH_CALLS, WEB_SEARCH_CALLS
+            )
         body["store"] = False
         if body.get("previous_response_id") or body.get("background"):
             raise Denied("Managed builds require inline, stateless requests.")
@@ -278,6 +324,8 @@ async def inference(request: Request, provider, config, store, identity, *, comp
         )
         / 1_000_000
     )
+    if searching:
+        reserve += WEB_SEARCH_CALLS * WEB_SEARCH_MICROUSD
     fingerprint = (b"compact:" if compact else b"response:") + encoded
     identifier, cached = await asyncio.to_thread(
         store.reserve, run, hashlib.sha256(fingerprint).hexdigest(), reserve, model
@@ -340,7 +388,14 @@ async def inference(request: Request, provider, config, store, identity, *, comp
             await asyncio.to_thread(
                 store.settle,
                 identifier,
-                cost(usage, model) if complete else None,
+                (
+                    (cost(usage, model) or 0)
+                    + searches(result, streaming) * WEB_SEARCH_MICROUSD
+                    if searching and cost(usage, model) is not None
+                    else cost(usage, model)
+                )
+                if complete
+                else None,
                 bytes(result) if complete else None,
                 usage,
             )

@@ -18,10 +18,27 @@ LEGACY_PLAN_POLICY = {
 }
 
 
+# Provider-cost allowances in micro-USD, sized from the price charged for each plan.
+#
+# Three ceilings apply together. `five_hour_budget` and `weekly_budget` are rolling windows
+# that pause AI work when reached; `budget` is a monthly backstop that keeps the worst case
+# profitable. Chat, files and meetings never consume these. The tiers are named "monthly"
+# (Pro) and "annual" (Teams) for historical reasons; both bill monthly or yearly.
+#
+# Basis (provider cost per 1M tokens for gpt-5.3-codex at a typical coding mix of 92% input,
+# 75% of it cached, and 8% output: about $1.64 blended):
+#   Pro   $12/mo on the annual plan, $11.63 after Stripe. Weekly $2.00 -> 1.2M tokens,
+#         5 hours $0.80 -> 487k tokens. Worst case (every week at the cap) costs $8.67/mo:
+#         25% margin on the annual plan, 39% on monthly. At 35% use, about 74%.
+#   Teams $24/mo on the annual plan, $23.28 after Stripe. Weekly $4.00 -> 2.4M tokens,
+#         5 hours $1.60 -> 974k tokens. Worst case $17.33/mo: 25% margin. At 35% use, ~74%.
+#   Free  weekly $0.15 -> 91k tokens; 5 hours $0.10 -> 61k tokens, inside the shared free pool.
+# Recompute these if a model rate or a plan price changes.
 USAGE_POLICY = {
     "free": {
         "budget": 500_000,
-        "five_hour_budget": 500_000,
+        "weekly_budget": 150_000,
+        "five_hour_budget": 100_000,
         "requests": 40,
         "input_tokens": 32_000,
         "output_tokens": 2048,
@@ -31,8 +48,9 @@ USAGE_POLICY = {
         "tool_calls": 32,
     },
     "monthly": {
-        "budget": 2_000_000,
-        "five_hour_budget": 2_000_000,
+        "budget": 8_700_000,
+        "weekly_budget": 2_000_000,
+        "five_hour_budget": 800_000,
         "requests": 200,
         "input_tokens": 96_000,
         "output_tokens": 8192,
@@ -42,8 +60,9 @@ USAGE_POLICY = {
         "tool_calls": 200,
     },
     "annual": {
-        "budget": 4_000_000,
-        "five_hour_budget": 4_000_000,
+        "budget": 17_400_000,
+        "weekly_budget": 4_000_000,
+        "five_hour_budget": 1_600_000,
         "requests": 400,
         "input_tokens": 128_000,
         "output_tokens": 8192,

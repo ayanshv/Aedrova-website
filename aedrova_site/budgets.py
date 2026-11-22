@@ -40,7 +40,8 @@ def totals(db, scope, period):
     row = (
         db.execute(
             text("""SELECT COALESCE(SUM(CASE WHEN actual IS NULL THEN amount
-        ELSE actual END),0) AS used, COUNT(*) AS requests
+        ELSE actual END),0) AS used, COALESCE(SUM(actual),0) AS settled,
+        COUNT(*) AS requests
         FROM budget_reservations b WHERE scope=:scope AND
         (CASE WHEN :scope LIKE 'workspace:%' THEN EXISTS
         (SELECT 1 FROM inference i WHERE i.id=b.id AND i.created>=:period)
@@ -75,6 +76,12 @@ def reserve(store, db, row, identifier, amount, base):
         raise BudgetDenied(
             "Shared five-hour AI capacity reached. Work pauses until capacity "
             "returns; human chat remains available."
+        )
+    weekly = policy.get("weekly_budget") if policy else None
+    if weekly and rolling(db, row["workspace"], WEEK) + base > weekly:
+        raise BudgetDenied(
+            "Weekly AI allowance reached. Work resumes as earlier usage ages out; "
+            "human chat remains available. No provider request or automatic charge was made."
         )
     for scope, ceiling, requests in scopes(store, row):
         scope_period = billing_month(row)[0] if scope.startswith("workspace:") else period
@@ -128,7 +135,12 @@ def billing_month(row):
     )
 
 
-def rolling(db, workspace):
+FIVE_HOURS = 5 * 3600
+WEEK = 7 * 24 * 3600
+
+
+def rolling(db, workspace, seconds=FIVE_HOURS):
+    """Provider cost used by one billing space within the last `seconds`."""
     import time
 
     used = db.execute(
@@ -136,6 +148,19 @@ def rolling(db, workspace):
         WHEN i.actual<i.base_reserved THEN i.actual ELSE i.base_reserved END),0) FROM inference i
         JOIN inference_attribution a ON a.id=i.id
         WHERE a.billing_workspace=:w AND i.created>:since"""),
-        {"w": workspace, "since": int(time.time()) - 18000},
+        {"w": workspace, "since": int(time.time()) - seconds},
     ).scalar()
     return used
+
+
+def window_reset(db, workspace, seconds):
+    """When the oldest usage in the window ages out, or 0 when the window is empty."""
+    import time
+
+    oldest = db.execute(
+        text("""SELECT MIN(i.created) FROM inference i
+        JOIN inference_attribution a ON a.id=i.id
+        WHERE a.billing_workspace=:w AND i.created>:since"""),
+        {"w": workspace, "since": int(time.time()) - seconds},
+    ).scalar()
+    return int(oldest) + seconds if oldest else 0

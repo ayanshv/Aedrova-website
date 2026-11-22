@@ -196,7 +196,8 @@ def test_waitlist_ai_pilot_only_funds_and_runs_in_the_configured_workspace(tmp_p
     [
         [],
         {"tools": ["bad"]},
-        {"tools": [{"type": "web_search"}]},
+        {"tools": [{"type": "code_interpreter"}]},
+        {"tools": [{"type": "web_search_preview"}]},
         {"input": [{"type": "input_image", "image_url": "https://example.invalid"}]},
         {"previous_response_id": "resp_external"},
         {"background": True},
@@ -712,3 +713,28 @@ def test_malformed_top_level_tool_type_fails_before_provider(
         headers={"Authorization": "Bearer " + access["token"]},
     )
     assert response.status_code == 403 and not calls
+
+
+def test_hosted_web_search_is_capped_reserved_and_charged_per_search(client, monkeypatch):
+    access = begin(client)
+    data = (
+        b'data: {"type":"response.output_item.done","item":{"type":"web_search_call"}}\n\n'
+        b"data: "
+        b'{"type":"response.completed","response":{"usage":{"inpu'
+        b't_tokens":100,"output_tokens":10}}}\n\n'
+    )
+    requests = upstream(monkeypatch, data)
+    body = {
+        "stream": True,
+        "input": "latest release notes",
+        "max_tool_calls": 500,
+        "tools": [{"type": "web_search", "search_context_size": "high", "x": 1}],
+    }
+    headers = {"Authorization": "Bearer " + access["token"]}
+    response = client.post("/gateway/codex/v1/responses", json=body, headers=headers)
+    assert response.status_code == 200
+    forwarded = json.loads(requests[0][1]["content"])
+    assert forwarded["tools"] == [{"type": "web_search", "search_context_size": "low"}]
+    assert forwarded["max_tool_calls"] == 5
+    assert client.app.state.store.balance("space-a")["spent"] == 315 + 10_000
+    assert client.app.state.store.balance("space-a")["reserved"] == 0
