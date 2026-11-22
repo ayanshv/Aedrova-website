@@ -13,17 +13,19 @@
 <header class="bud-connection-header"><a class="wordmark" href="/" aria-label="Aedrova home"><img src="/static/brand.png" alt="" width="28" height="28">{% include "brand-wordmark.svg" %}</a><button class="theme-toggle" aria-label="Change color theme">◐</button></header>
 <main class="bud-connection-main">
 <section class="bud-connection-card" aria-labelledby="connection-title">
-<p class="eyebrow">YOUR BUD’S TOOLKIT</p>
 <div class="connected-bud look-{{ look }}" role="img" aria-label="{{ bud_name }} Bud"></div>
 <div class="connection-check" aria-label="{{ 'Account authorized' if selecting else 'Connection verified' }}">✓</div>
 <h1 id="connection-title">{{ provider }} is {{ 'authorized' if selecting else 'connected' }}</h1>
 {% if selecting %}
-<p class="connection-lead">One last choice for <strong>{{ bud_name }}</strong>.</p>
-<div class="connection-detail">{{ 'Choose your Buffer organization' if publishing else 'Choose what your Bud can read' }}</div>
-<p class="connection-return">Return to Aedrova to select your workspace resource.<br>You can close this tab.</p>
+<p class="connection-lead">{{ 'Choose your Buffer organization' if publishing else 'Choose what your Bud can read' }} in Aedrova.</p>
+<p class="connection-return">You can close this tab.</p>
+{% elif publishing %}
+<p class="connection-lead"><strong>{{ bud_name }}</strong> {{ capability }}</p>
+<div class="connection-detail">Caption access is optional. Every post needs approval.</div>
+<p class="connection-return">Return to Aedrova to finish setup. You can close this tab.</p>
 {% else %}
 <p class="connection-lead"><strong>{{ bud_name }}</strong> {{ capability }}</p>
-<div class="connection-detail"><span class="connection-dot" aria-hidden="true"></span>{{ 'Post access · Each publication needs approval' if publishing else 'Verified access · Read-only' }}</div>
+<div class="connection-detail"><span class="connection-dot" aria-hidden="true"></span>Verified access · Read-only</div>
 <p class="connection-return">Return to Aedrova and mention <strong>@{{ bud_name }}</strong> to get started.<br>Your Bud updates automatically. You can close this tab.</p>
 {% endif %}
 <span class="connection-footnote">You control its access. Disconnect anytime in your Bud’s settings.</span>

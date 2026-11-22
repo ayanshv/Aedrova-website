@@ -7,10 +7,7 @@ from fastapi.templating import Jinja2Templates
 from aedrova_site.bud_providers import CATALOG
 
 COPY = {
-    "buffer": (
-        "is linked to your Buffer organization. "
-        "Choose channels in Social; every post needs your approval."
-    ),
+    "buffer": ("is linked to Buffer. Choose profiles in Social."),
     "github": "can now read your repository, issues, pull requests and deployments.",
     "supabase": (
         "can now check your project’s health and region. Database rows and keys stay private."

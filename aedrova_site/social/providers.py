@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 
 import httpx
 
+from aedrova_site.credential_patterns import credential_rules
 from aedrova_site.store import Denied
 
 
@@ -68,7 +69,6 @@ class BufferAdapter:
     @staticmethod
     def disconnect_provider():
 
-
         return "Remove Aedrova from Buffer's connected apps to revoke the provider grant."
 
     def token(self, client_id, client_secret, redirect, *, code=None, verifier=None, refresh=None):
@@ -109,7 +109,6 @@ class BufferAdapter:
         except Denied:
             raise
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
-
             raise Denied("Needs authorization") from None
 
     @staticmethod
@@ -209,6 +208,50 @@ class BufferAdapter:
             )
         return result
 
+    def recent_published_posts(self, token, organization, channels):
+        data = self.query(
+            token,
+            """query RecentPublishedPosts($input: PostsInput!) {
+              posts(first: 10, input: $input) {
+                edges { node { id channelId status text } }
+              }
+            }""",
+            {
+                "input": {
+                    "organizationId": organization,
+                    "filter": {"status": ["sent"], "channelIds": sorted(channels)},
+                    "sort": [
+                        {"field": "dueAt", "direction": "desc"},
+                        {"field": "createdAt", "direction": "desc"},
+                    ],
+                }
+            },
+        )
+        posts = data.get("posts")
+        edges = posts.get("edges") if isinstance(posts, dict) else None
+        if not isinstance(edges, list) or len(edges) > 10:
+            raise Denied("Buffer returned unsupported post history.")
+        records = []
+        for edge in edges:
+            post = edge.get("node") if isinstance(edge, dict) else None
+            channel = self.identifier(post, "channelId")
+            if channel not in channels or post.get("status") != "sent":
+                raise Denied("Buffer returned a post outside the selected published history.")
+            caption = post.get("text")
+            if not isinstance(caption, str):
+                raise Denied("Buffer returned unsupported post text.")
+            if credential_rules(caption.encode()):
+                raise Denied("Buffer returned a caption that appears to contain credentials.")
+            records.append(
+                {
+                    "id": self.identifier(post, "id"),
+                    "channel": channel,
+                    "platform": channels[channel],
+                    "caption": caption[:2000],
+                }
+            )
+        return records
+
     @staticmethod
     def post_status(value):
         return (
@@ -231,7 +274,6 @@ class BufferAdapter:
             mode="customScheduled" if post.get("due_at") else "shareNow",
         )
         if post.get("platform") == "instagram":
-
             payload["metadata"] = {
                 "instagram": {
                     "type": "reel" if any(a["kind"] == "video" for a in post["assets"]) else "post",

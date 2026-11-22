@@ -50,6 +50,7 @@ class Config:
     buffer_bud_client_id: str = ""
     buffer_bud_client_secret: str = field(default="", repr=False)
     social_publishing_enabled: bool = False
+    buffer_primary_social: bool = False
     notion_bud_client_id: str = ""
     notion_bud_client_secret: str = field(default="", repr=False)
     supabase_bud_client_id: str = ""
@@ -124,6 +125,16 @@ class Config:
         return config
 
     def validate(self):
+        if self.buffer_primary_social and not (
+            self.dots_enabled
+            and self.social_publishing_enabled
+            and self.origin.startswith("https://")
+            and self.buffer_bud_client_id
+            and self.buffer_bud_client_secret
+        ):
+            raise ValueError(
+                "Configure Buffer account sign-in before switching the social catalog."
+            )
         for name, minimum, maximum in (
             ("db_pool_size", 1, 50),
             ("db_max_overflow", 0, 50),
@@ -165,7 +176,6 @@ class Config:
         }:
             raise ValueError("Choose development, staging or production environment.")
         if self.deployment_environment == "staging":
-
             if not self.production or not self.supabase_database:
                 raise ValueError("Staging requires HTTPS and a separate Supabase database.")
             if urlparse(self.supabase_url).hostname == "cpelagtufyocepnqcqqd.supabase.co":

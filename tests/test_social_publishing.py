@@ -78,6 +78,21 @@ def social(request):
                     }
                 },
             )
+        if "RecentPublishedPosts" in query:
+            assert payload["variables"]["input"]["filter"] == {
+                "status": ["sent"],
+                "channelIds": ["channel-1"],
+            }
+            if options.get("deselect_during_read"):
+                with dots.store.tx() as db:
+                    db.execute(text("DELETE FROM social_channels"))
+            post = {
+                "id": "post-fixture",
+                "channelId": options.get("history_channel", "channel-1"),
+                "status": options.get("history_status", "sent"),
+                "text": options.get("history_caption", "Our previously published caption."),
+            }
+            return httpx.Response(200, json={"data": {"posts": {"edges": [{"node": post}]}}})
         if "createPost" in query:
             if options.get("publish_timeout"):
                 raise httpx.ReadTimeout("fixture timeout")
@@ -112,6 +127,7 @@ def social(request):
     oauth = BudOAuth(connections, transport=transport)
     connections.oauth = oauth
     service = SocialService(connections, adapter=BufferAdapter(transport=transport))
+    connections.social = service
     grant = connections.connect(
         "session",
         dot["workspace_id"],
@@ -132,7 +148,7 @@ def social(request):
     connections.close()
 
 
-def select(social):
+def select(social, *, use_for_context=False):
     service, dot, _, connection, _, _ = social
     service.select(
         "session",
@@ -141,8 +157,83 @@ def select(social):
             dot=dot["id"],
             connection=connection,
             channels=["channel-1"],
+            use_for_context=use_for_context,
         ),
     )
+
+
+def test_buffer_context_is_opt_in_and_preserves_evidence_scope(social):
+    service, dot, user, grant, seen, _ = social
+    connections = service.connections
+    tool = grant + ".recent_published_posts"
+    args = ("session", dot["workspace_id"], dot["id"], tool)
+    select(social)
+    before = len(seen)
+    with pytest.raises(Denied, match="Enable published captions"):
+        connections.execute(*args)
+    assert len(seen) == before
+    select(social, use_for_context=True)
+    result = connections.execute(*args)
+    assert result["records"][0]["caption"] == "Our previously published caption."
+    assert result["untrusted"]
+    assert tool == result["connection_id"] + "." + result["tool"]
+    assert connections.listing(dot, user)[0]["version"] == result["connection_version"]
+    select(social)
+    assert connections.listing(dot, user)[0]["version"] != result["connection_version"]
+    with pytest.raises(Denied, match="Enable published captions"):
+        connections.execute(*args)
+
+
+@pytest.mark.parametrize("option", ["history_channel", "history_status", "deselect_during_read"])
+def test_buffer_withholds_out_of_scope_or_revoked_history(social, option):
+    service, dot, _, grant, _, options = social
+    select(social, use_for_context=True)
+    options[option] = {"history_channel": "other", "history_status": "draft"}.get(option, True)
+    with pytest.raises(Denied, match="outside|disconnected"):
+        service.connections.execute(
+            "session", dot["workspace_id"], dot["id"], grant + ".recent_published_posts"
+        )
+
+
+def test_buffer_withholds_sensitive_caption_without_disabling_social(social):
+    service, dot, _, grant, _, options = social
+    select(social, use_for_context=True)
+    options["history_caption"] = "sk-ant-" + "a" * 30
+    with pytest.raises(Denied, match="contain credentials"):
+        service.connections.execute(
+            "session", dot["workspace_id"], dot["id"], grant + ".recent_published_posts"
+        )
+    assert service.channels("session", dot["workspace_id"], dot["id"])["channels"][0]["selected"]
+
+
+def test_buffer_primary_catalog_requires_configured_oauth(social):
+    service, _, _, _, _, _ = social
+    config = service.dots.config
+    assert service.connections.shows_in_catalog("instagram")
+    config.buffer_primary_social = True
+    config.validate()
+    for provider in ("instagram", "tiktok"):
+        assert not service.connections.shows_in_catalog(provider)
+        assert "through Buffer" in service.connections.oauth.setup_hint(provider)
+    assert service.connections.shows_in_catalog("buffer")
+    config.buffer_bud_client_secret = ""
+    with pytest.raises(ValueError, match="Configure Buffer account sign-in"):
+        config.validate()
+
+
+def test_direct_social_grant_remains_readable_after_catalog_switch(social, monkeypatch):
+    service, dot, _, _, _, _ = social
+    connections = service.connections
+    monkeypatch.setattr(
+        connections.providers["instagram"], "execute", lambda *args, **kwargs: {"records": []}
+    )
+    args = ("session", dot["workspace_id"], dot["id"])
+    grant = connections.connect(*args, "instagram", "123456789", "legacy-fixture-only", 24)
+    service.dots.config.buffer_primary_social = True
+    with pytest.raises(Denied, match="through Buffer"):
+        connections.connect(*args, "instagram", "234567891", "legacy-fixture-only", 24)
+    history = connections.execute(*args, grant["id"] + ".posts")
+    assert history["provider"] == "instagram"
 
 
 def draft(social, **changes):
