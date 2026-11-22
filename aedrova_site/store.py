@@ -683,15 +683,18 @@ class Store:
                 if row["plan"] == "free" or promotion.is_grant(row):
                     row["available"] = min(row["available"], *remaining[2:])
                 row["monthly_budget"] = self.usage_policy[row["plan"]]["budget"]
-                row["monthly_spent"] = budgets.totals(db, "workspace:" + workspace, period)["used"]
-                row["monthly_requests"] = budgets.totals(db, "workspace:" + workspace, period)[
-                    "requests"
-                ]
+                monthly = budgets.totals(db, "workspace:" + workspace, period)
+                row["monthly_spent"] = monthly["used"]
+                row["monthly_settled"] = monthly["settled"]
+                row["monthly_pending"] = monthly["used"] - monthly["settled"]
+                row["monthly_requests"] = monthly["requests"]
                 row["monthly_request_limit"] = self.usage_policy[row["plan"]]["requests"]
             else:
                 row.update(
                     monthly_budget=row["allowance"],
                     monthly_spent=row["spent"],
+                    monthly_settled=row["spent"],
+                    monthly_pending=row["reserved"],
                     monthly_requests=0,
                     monthly_request_limit=120,
                 )
@@ -699,6 +702,20 @@ class Store:
                 "five_hour_budget", row.get("monthly_budget", row["allowance"])
             )
             row["five_hour_spent"] = budgets.rolling(db, workspace)
+            row["five_hour_reset_at"] = budgets.window_reset(db, workspace, budgets.FIVE_HOURS)
+            row["weekly_budget"] = self.usage_policy.get(row["plan"], {}).get("weekly_budget", 0)
+            row["weekly_spent"] = budgets.rolling(db, workspace, budgets.WEEK)
+            row["weekly_reset_at"] = budgets.window_reset(db, workspace, budgets.WEEK)
+            if row["weekly_budget"]:
+                row["available"] = min(
+                    row["available"],
+                    max(0, row["weekly_budget"] - row["weekly_spent"])
+                    + (
+                        max(0, wallet["balance"] - wallet["reserved"])
+                        if row["plan"] != "free"
+                        else 0
+                    ),
+                )
             row["available"] = min(
                 row["available"],
                 max(0, row["five_hour_budget"] - row["five_hour_spent"])
@@ -707,7 +724,7 @@ class Store:
             row["usage_alerts"] = []
             if row.get("monthly_budget", 0):
                 for threshold in self.alert_thresholds:
-                    if row.get("monthly_spent", 0) * 100 >= row["monthly_budget"] * threshold:
+                    if row["monthly_settled"] * 100 >= row["monthly_budget"] * threshold:
                         row["usage_alerts"].append(threshold)
                         db.execute(
                             text(
@@ -728,10 +745,16 @@ class Store:
                     "early_access_ends_at",
                     "five_hour_budget",
                     "five_hour_spent",
+                    "five_hour_reset_at",
+                    "weekly_budget",
+                    "weekly_spent",
+                    "weekly_reset_at",
                     "usage_alerts",
                     "reset_at",
                     "monthly_budget",
                     "monthly_spent",
+                    "monthly_settled",
+                    "monthly_pending",
                     "monthly_requests",
                     "monthly_request_limit",
                     "plan",
