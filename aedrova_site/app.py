@@ -9,7 +9,7 @@ import secrets
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Literal, cast
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode
 from uuid import UUID
 
 import stripe
@@ -23,7 +23,7 @@ from pydantic import Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from aedrova_site import discovery, promotion
+from aedrova_site import beta_gate, discovery, promotion
 from aedrova_site.boundaries import BodyLimit, ResponseHeaders
 from aedrova_site.communications import unsubscribe
 from aedrova_site.config import Config
@@ -383,6 +383,11 @@ def create_app(config=None):
 
     install_apple_revocation(app, store, identity, auth)
 
+    def beta_unlocked(request):
+        return bool(config.beta_password) and beta_gate.valid(
+            config.beta_password, request.cookies.get(beta_gate.COOKIE, "")
+        )
+
     def page(request, name, title, **context):
         return templates.TemplateResponse(
             request=request,
@@ -403,6 +408,9 @@ def create_app(config=None):
                 "free_enabled": config.free_enabled,
                 "promotion": promotion.status(),
                 "early_access_enabled": config.early_access_enabled,
+                "beta_gate": bool(config.beta_password),
+                "beta_unlocked": beta_unlocked(request),
+                "beta_error": request.query_params.get("beta") == "wrong",
                 "asset_version": asset_version,
                 "team_members": TEAM_MEMBERS,
                 **context,
@@ -567,9 +575,39 @@ def create_app(config=None):
             return RedirectResponse("/waitlist", status_code=303)
         return page(request, "welcome", "Welcome to what’s next")
 
+    @app.post("/beta/unlock")
+    async def beta_unlock(request: Request):
+        if not config.beta_password:
+            raise HTTPException(404, "Not found.")
+        if request.headers.get("origin") != config.origin:
+            raise HTTPException(403, "Open this from the Aedrova website.")
+        store.rate_limit(
+            "beta-unlock:" + (request.client.host if request.client else "unknown"),
+            limit=30,
+            seconds=3600,
+        )
+        attempt = parse_qs((await request.body())[:2000].decode("utf-8", "ignore")).get(
+            "password", [""]
+        )[0]
+        if not beta_gate.matches(config.beta_password, attempt):
+            return RedirectResponse("/plans?beta=wrong#beta", status_code=303)
+        result = RedirectResponse("/download", status_code=303)
+        result.set_cookie(
+            beta_gate.COOKIE,
+            beta_gate.issue(config.beta_password),
+            httponly=True,
+            secure=config.production or config.origin.startswith("https://"),
+            samesite="lax",
+            max_age=beta_gate.LIFETIME,
+            path="/",
+        )
+        return result
+
     @app.get("/download")
     def download(request: Request):
-        if config.waitlist_only:
+        if config.beta_password and not beta_unlocked(request):
+            return RedirectResponse("/plans#beta", status_code=303)
+        if config.waitlist_only and not config.beta_password:
             return RedirectResponse("/waitlist", status_code=303)
         return page(
             request, "download", "Download Aedrova for Mac and Windows",
@@ -1024,7 +1062,9 @@ def create_app(config=None):
         return {"ok": True, "reference": identifier}
 
     @app.get("/api/download")
-    def release_download():
+    def release_download(request: Request):
+        if config.beta_password and not beta_unlocked(request):
+            raise HTTPException(403, "Enter the beta password on the plans page first.")
         path = Path(config.download_path)
         if not config.release_ready or not path.is_file() or path.suffix != ".dmg":
             raise HTTPException(503, "The verified installer is not available yet.")
