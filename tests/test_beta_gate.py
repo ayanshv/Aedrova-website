@@ -63,6 +63,16 @@ def test_the_right_password_opens_the_download_with_a_signed_cookie(tmp_path):
         assert c.get("/api/download").status_code == 503  # unlocked; no verified installer yet
 
 
+def test_browsers_that_send_a_null_origin_can_still_unlock(tmp_path):
+    with client(tmp_path) as c:
+        for origin in ("null", None):
+            headers = {"content-type": "application/x-www-form-urlencoded"}
+            if origin:
+                headers["origin"] = origin
+            right = c.post("/beta/unlock", content=f"password={PASSWORD}", headers=headers)
+            assert right.status_code == 303 and right.headers["location"] == "/download"
+
+
 def test_forged_expired_and_cross_site_attempts_fail(tmp_path):
     with client(tmp_path) as c:
         c.cookies.set(beta_gate.COOKIE, "9999999999.deadbeef")
