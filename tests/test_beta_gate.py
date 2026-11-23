@@ -88,3 +88,19 @@ def test_changing_the_password_signs_everyone_out():
 def test_a_short_password_is_refused():
     with pytest.raises(ValueError, match="at least 12"):
         Config(beta_password="short").validate()
+
+
+def test_the_gate_works_while_the_site_is_in_waitlist_mode(tmp_path):
+    app = create_app(
+        Config(
+            database=f"sqlite:///{tmp_path / 'wait.sqlite'}",
+            beta_password=PASSWORD,
+            origin=ORIGIN,
+            waitlist_only=True,
+        )
+    )
+    with TestClient(app, follow_redirects=False) as c:
+        assert "Part of the Beta?" in c.get("/plans").text
+        assert c.get("/download").headers["location"] == "/plans#beta"
+        assert unlock(c, PASSWORD).headers["location"] == "/download"
+        assert c.get("/download").status_code == 200
