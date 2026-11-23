@@ -8,6 +8,9 @@ from aedrova_site import promotion
 from aedrova_site.policy import USAGE_POLICY
 from aedrova_site.store_errors import BudgetDenied
 
+FIVE_HOURS = 5 * 3600
+WEEK = 7 * 24 * 3600
+
 
 def policies(overrides):
     result = {name: dict(policy) for name, policy in USAGE_POLICY.items()}
@@ -67,18 +70,44 @@ def scopes(store, row):
     return result
 
 
+def inflight(db, workspace, seconds=FIVE_HOURS):
+    """Requests in this billing space that are reserved but not yet settled."""
+    import time
+
+    return db.execute(
+        text("""SELECT COUNT(*) FROM inference i
+        JOIN inference_attribution a ON a.id=i.id
+        WHERE a.billing_workspace=:w AND i.created>:since AND i.actual IS NULL"""),
+        {"w": workspace, "since": int(time.time()) - seconds},
+    ).scalar()
+
+
+def window_blocked(db, workspace, seconds, budget, base):
+    """True when a rolling window cannot take another request.
+
+    A window pauses work when it is full, which is what the usage meter shows. A request's
+    worst-case hold (its input bound, its full output and any hosted searches) can be larger
+    than a small window by itself, so a lone request is judged on what has been used. Only when
+    other requests are still in flight is the hold counted, so parallel work cannot overspend.
+    """
+    used = rolling(db, workspace, seconds)
+    if used >= budget:
+        return True
+    return inflight(db, workspace, seconds) > 0 and used + base > budget
+
+
 def reserve(store, db, row, identifier, amount, base):
     period, _ = month()
     policy = store.usage_policy.get(row["plan"])
-    if policy and rolling(db, row["workspace"]) + base > policy.get(
-        "five_hour_budget", policy["budget"]
+    if policy and window_blocked(
+        db, row["workspace"], FIVE_HOURS, policy.get("five_hour_budget", policy["budget"]), base
     ):
         raise BudgetDenied(
             "Shared five-hour AI capacity reached. Work pauses until capacity "
             "returns; human chat remains available."
         )
     weekly = policy.get("weekly_budget") if policy else None
-    if weekly and rolling(db, row["workspace"], WEEK) + base > weekly:
+    if weekly and window_blocked(db, row["workspace"], WEEK, weekly, base):
         raise BudgetDenied(
             "Weekly AI allowance reached. Work resumes as earlier usage ages out; "
             "human chat remains available. No provider request or automatic charge was made."
@@ -133,10 +162,6 @@ def billing_month(row):
     return int(boundary(offset).timestamp()), min(
         int(boundary(offset + 1).timestamp()), row["period_end"]
     )
-
-
-FIVE_HOURS = 5 * 3600
-WEEK = 7 * 24 * 3600
 
 
 def rolling(db, workspace, seconds=FIVE_HOURS):

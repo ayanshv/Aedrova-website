@@ -89,13 +89,13 @@ def pro(ledger):
 def test_five_hour_window_pauses_work_before_the_week_is_used(ledger):
     run = pro(ledger)
     five = USAGE_POLICY["monthly"]["five_hour_budget"]
-    identifier, _ = ledger.reserve(run, "burst", five - 1)
-    ledger.settle(identifier, five - 1, b"done")
+    identifier, _ = ledger.reserve(run, "burst", five)
+    ledger.settle(identifier, five, b"done")
     with pytest.raises(Denied, match="five-hour"):
         ledger.reserve(run, "more", 2)
     balance = ledger.balance("one")
-    assert balance["five_hour_spent"] == five - 1
-    assert balance["weekly_spent"] == five - 1
+    assert balance["five_hour_spent"] == five
+    assert balance["weekly_spent"] == five
     assert balance["five_hour_reset_at"] > time.time()
 
 
@@ -118,8 +118,15 @@ def test_weekly_window_pauses_work_after_five_hour_capacity_returns(ledger, monk
         ledger.settle(identifier, five, b"done")
         ledger.end_run(run["id"], "owner")
         clock["now"] += 6 * 3600  # the five-hour window has cleared
+    last = fresh("last")
+    remainder = weekly - sessions * five
+    if remainder:
+        identifier, _ = ledger.reserve(last, "remainder", remainder)
+        ledger.settle(identifier, remainder, b"done")
+        clock["now"] += 6 * 3600
+        last = fresh("last-after")
     with pytest.raises(Denied, match="Weekly AI allowance"):
-        ledger.reserve(fresh("last"), "one-too-many", weekly - sessions * five + 1)
+        ledger.reserve(last, "one-too-many", 1)
     balance = ledger.balance("one")
     assert balance["weekly_budget"] == weekly
     assert balance["weekly_reset_at"] > clock["now"] - 6 * 3600
@@ -136,3 +143,25 @@ def test_usage_ages_out_after_a_week(ledger, monkeypatch):
     clock["now"] = start + 8 * 86400
     assert ledger.balance("one")["weekly_spent"] == 0
     assert budgets.window_reset(ledger.engine.connect(), "one", budgets.WEEK) == 0
+
+
+def test_a_worst_case_reservation_larger_than_the_window_does_not_block_an_empty_window(ledger):
+    """The meter said 91% left but a request was refused: its worst-case hold (input bound,
+    full output and five hosted searches) was bigger than the whole five-hour window."""
+    run = pro(ledger)
+    five = USAGE_POLICY["monthly"]["five_hour_budget"]
+    identifier, _ = ledger.reserve(run, "big-hold", five + 50_000)
+    ledger.settle(identifier, 20_000, b"done")  # what it really cost
+    balance = ledger.balance("one")
+    assert balance["five_hour_spent"] == 20_000
+    identifier, _ = ledger.reserve(run, "next", five + 50_000)  # still 97% left: allowed
+    ledger.settle(identifier, 5_000, b"done")
+
+
+def test_the_window_pauses_work_only_when_the_meter_reaches_zero(ledger):
+    run = pro(ledger)
+    five = USAGE_POLICY["monthly"]["five_hour_budget"]
+    identifier, _ = ledger.reserve(run, "fill", five)
+    ledger.settle(identifier, five, b"done")
+    with pytest.raises(Denied, match="five-hour"):
+        ledger.reserve(run, "after", 1)

@@ -76,8 +76,9 @@ def test_parallel_subspaces_cannot_overspend_rolling_capacity(ledger):
 
 def test_rolling_expiry_releases_capacity_without_monthly_reset(ledger):
     run = access(ledger, "child")
-    identifier, _ = ledger.reserve(run, "one", 900_000)
-    ledger.settle(identifier, 900_000, b"ok")
+    full = ledger.balance("root")["five_hour_budget"]
+    identifier, _ = ledger.reserve(run, "one", full)
+    ledger.settle(identifier, full, b"ok")
     with pytest.raises(Denied, match="five-hour"):
         ledger.reserve(run, "two", 200_000)
     with ledger.tx() as db:

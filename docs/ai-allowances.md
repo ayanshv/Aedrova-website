@@ -33,3 +33,13 @@ Balance responses add `weekly_budget`, `weekly_spent`, `weekly_reset_at` and
 `five_hour_reset_at`. The desktop app reads them and falls back to monthly fields for older
 servers. The gateway also accepts the hosted `web_search` tool, capped at five searches per
 request and billed at $0.01 each on top of tokens.
+
+## How a request is checked against the windows (November 22, 2026)
+
+A rolling window (five hours or a week) pauses AI work when it is **full**, which is what the
+usage meter shows. A request's worst-case hold (its input bound, its full output and up to
+five hosted searches at about $0.01 each) can be bigger than a small window on its own, for
+example the free plan's five-hour window of $0.10. So a request that arrives alone is judged on
+what has already been used. While other requests are still in flight, their holds and this
+one's are counted together, so parallel work cannot overspend a window. The monthly allowance
+still counts the whole hold, which keeps the worst case inside the margin in this document.
