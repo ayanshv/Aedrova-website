@@ -308,7 +308,13 @@ def create_app(config=None):
 
     @app.middleware("http")
     async def boundaries(request, call_next):
-        if request.headers.get("origin") and request.headers["origin"] != config.origin:
+        # The beta form can arrive with "Origin: null": this site sends no referrer, and some
+        # browsers then omit the origin. That route checks the origin itself.
+        if (
+            request.headers.get("origin")
+            and request.headers["origin"] != config.origin
+            and request.url.path != "/beta/unlock"
+        ):
             return JSONResponse({"error": "This origin is not allowed."}, status_code=403)
         try:
             if int(request.headers.get("content-length", "0")) > 8 * 1024 * 1024:
@@ -580,7 +586,7 @@ def create_app(config=None):
     async def beta_unlock(request: Request):
         if not config.beta_password:
             raise HTTPException(404, "Not found.")
-        if request.headers.get("origin") != config.origin:
+        if request.headers.get("origin", "null") not in {config.origin, "null"}:
             raise HTTPException(403, "Open this from the Aedrova website.")
         store.rate_limit(
             "beta-unlock:" + (request.client.host if request.client else "unknown"),

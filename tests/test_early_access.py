@@ -138,17 +138,17 @@ def test_disabled_by_default_and_cannot_bypass_waitlist():
         Config(early_access_enabled=True, free_enabled=True, waitlist_only=True).validate()
 
 
-def test_promotion_uses_server_window_not_query_or_browser_time(tmp_path, clock):
+def test_plans_page_shows_no_early_access_gift(tmp_path, clock):
     app = create_app(Config(database=f"sqlite:///{tmp_path / 'public.sqlite'}", waitlist_only=True))
     with TestClient(app) as client:
-        page = client.get("/plans?days=999&now=0").text
-        assert "data-offer-price>$0.00" in page
-        assert promotion.ENDS_LABEL in page
-        assert "website is still accepting waitlist" in page
-        clock[0] = promotion.ENDS_AT
-        expired = client.get("/plans?days=999&now=0").text
-        assert "data-offer-price>$0.00" not in expired
-        assert 'class="plans early-access-active"' not in expired
+        for moment in (promotion.STARTS_AT + 60, promotion.ENDS_AT):
+            clock[0] = moment
+            page = client.get("/plans?days=999&now=0").text
+            assert "data-early-access" not in page
+            assert "data-offer-price" not in page
+            assert "On us" not in page
+            assert "early-access-active" not in page
+            assert "data-regular-note" in page
     app.state.store.engine.dispose()
 
 
