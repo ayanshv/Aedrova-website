@@ -789,7 +789,7 @@ def create_app(config=None):
             },
         )
         if config.early_access_enabled:
-            store.grant_early_access(user["id"], workspace)
+            store.grant_early_access(user["id"], workspace, config.early_access_plan)
         return {"id": workspace}
 
     @app.post("/api/subspaces/{workspace}/move")
@@ -825,6 +825,12 @@ def create_app(config=None):
             return {
                 **capacity,
                 **context,
+                # A Free space whose owner can be upgraded to the early-access allowance.
+                "early_access_available": bool(
+                    config.early_access_enabled
+                    and promotion.status()["active"]
+                    and capacity.get("plan") == "free"
+                ),
                 "coding_providers": [
                     {"provider": provider, "model": model["id"]}
                     for provider, model in config.models.items()
@@ -856,7 +862,7 @@ def create_app(config=None):
         user = identity.require(token, workspace, billing=True)
         store.rate_limit("free:" + user["id"], limit=5)
         if config.early_access_enabled and promotion.status()["active"]:
-            store.grant_early_access(user["id"], workspace)
+            store.grant_early_access(user["id"], workspace, config.early_access_plan)
             return store.balance(workspace)
         return store.activate_free(user["id"], workspace)
 

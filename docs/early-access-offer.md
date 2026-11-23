@@ -81,3 +81,19 @@ workspace authorization, post-expiry Free activation/concurrency, no paid checko
 public clock-sync rate limit/no account data, no-JS expiry, browser clock spoofing,
 server resync/reload and in-place countdown expiry. Desktop/mobile screenshots
 reviewed. Ruff, diff and release-secret scan checks passed.
+
+## Private beta settings (November 23, 2026)
+
+For an invited, free beta, enable the existing gift and cap its total cost. Environment values
+on the service that testers use:
+
+- `AEDROVA_EARLY_ACCESS_ENABLED=true` (needs `AEDROVA_FREE_ENABLED=true`, waitlist mode off).
+- `AEDROVA_EARLY_ACCESS_PLAN=monthly` for Pro-sized allowances ($0.80 per five hours, $2 per
+  week per workspace), or `annual` for Teams-sized ($1.60 and $4). The default is `annual`.
+- `AEDROVA_FREE_POOL_MICROUSD=100000000`: the most all gifted workspaces together may cost,
+  here $100. Gifted usage stops at this total.
+- `AEDROVA_COMPANY_BUDGET_MICROUSD=150000000`: the overall ceiling, kept above the pool.
+
+New workspaces get the gift when they are created. An existing Free workspace is upgraded the
+next time its owner's app checks it (`early_access_available` in the balance response), without
+a card or a subscription. The window still ends on the fixed date above.

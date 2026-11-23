@@ -224,3 +224,22 @@ def test_public_clock_sync_is_bounded_and_does_not_activate_access(tmp_path, clo
         assert limited.status_code == 429
         assert int(limited.headers["retry-after"]) > 0
     app.state.store.engine.dispose()
+
+
+def test_the_beta_can_grant_the_smaller_pro_sized_allowance(ledger):
+    ledger.activate_free("owner", "ws")  # an ordinary Free space, as testers have today
+    before = ledger.balance("ws")
+    assert before["plan"] == "free"
+    assert ledger.grant_early_access("owner", "ws", "monthly")  # upgrade, no card, no Stripe
+    balance = ledger.balance("ws")
+    assert balance["five_hour_budget"] == ledger.usage_policy["monthly"]["five_hour_budget"]
+    assert balance["five_hour_budget"] > before["five_hour_budget"]
+    assert balance["weekly_budget"] == ledger.usage_policy["monthly"]["weekly_budget"]
+    assert balance["early_access"] and balance["plan"] == "monthly"
+
+
+def test_the_early_access_plan_must_be_pro_or_teams_sized():
+    assert Config().early_access_plan == "annual"
+    Config(early_access_plan="monthly").validate()
+    with pytest.raises(ValueError, match="Early access plan"):
+        Config(early_access_plan="enterprise").validate()

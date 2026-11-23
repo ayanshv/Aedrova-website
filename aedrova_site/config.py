@@ -88,6 +88,8 @@ class Config:
     budget_alert_thresholds: str = "75,90"
     free_enabled: bool = False
     early_access_enabled: bool = False
+    # Allowances early-access gifts use: "monthly" is Pro-sized, "annual" is Teams-sized.
+    early_access_plan: str = "annual"
     plans: dict = field(default_factory=dict)
     models: dict = field(default_factory=dict)
     download_path: str = ""
@@ -319,6 +321,10 @@ class Config:
         usage_policy = policies(self.usage_limits)
         if min(self.company_budget_microusd, self.free_pool_microusd) <= 0:
             raise ValueError("Company and Free pool budgets must be positive.")
+        if self.early_access_plan not in ("monthly", "annual"):
+            raise ValueError(
+                "Early access plan must be monthly (Pro-sized) or annual (Teams-sized)."
+            )
         if self.early_access_enabled and (not self.free_enabled or self.waitlist_only):
             raise ValueError("Early access requires enabled Free access outside waitlist mode.")
         if self.free_enabled and not (
@@ -326,9 +332,7 @@ class Config:
         ):
             raise ValueError("Free activation requires a configured AI or speech service.")
         for name, plan in self.plans.items():
-            if name not in SUBSCRIPTION_POLICY or not plan.get("price_id", "").startswith(
-                "price_"
-            ):
+            if name not in SUBSCRIPTION_POLICY or not plan.get("price_id", "").startswith("price_"):
                 raise ValueError("Use approved Stripe plan and price identifiers.")
             for key in ("amount_cents", "allowance_microusd", "concurrency"):
                 if type(plan.get(key)) is not int or plan[key] <= 0:
