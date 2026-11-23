@@ -93,6 +93,8 @@ class Config:
     download_sha256: str = ""
     release_ready: bool = False
     legal_ready: bool = False
+    # Shared password for the invited beta download. Empty keeps downloads ungated.
+    beta_password: str = field(default="", repr=False)
 
     def managed_ai_for(self, workspace):
         return self.gateway_enabled and (
@@ -124,6 +126,8 @@ class Config:
         return config
 
     def validate(self):
+        if self.beta_password and len(self.beta_password) < 12:
+            raise ValueError("The beta password needs at least 12 characters.")
         for name, minimum, maximum in (
             ("db_pool_size", 1, 50),
             ("db_max_overflow", 0, 50),

@@ -726,3 +726,5 @@ input[type=checkbox]:disabled{opacity:.5;cursor:default}
 @media (max-width: 620px) { .nav .brand-name { height: calc(19px * var(--wordmark-canvas-scale)); } }
 
 .annual-equivalent{display:block;font-size:14px;font-weight:400;color:var(--muted);letter-spacing:normal;line-height:1.5;margin-top:6px}
+
+.beta-gate{max-width:380px;margin:10px auto 60px;padding:0 24px;text-align:center}.beta-gate h2{font-size:34px;margin-bottom:18px}.beta-gate form{display:grid;gap:12px}.beta-gate .form-label{margin:0;text-align:left}.beta-gate .button{width:100%;justify-content:center}.beta-gate .notice{margin:6px 0 0}

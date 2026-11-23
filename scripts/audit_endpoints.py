@@ -64,7 +64,7 @@ def classification(path):
         return "signed-provider-webhook"
     if path in OAUTH:
         return "oauth-state-pkce-browser-proof"
-    if path in {"/api/waitlist", "/api/inquiries", "/api/unsubscribe"}:
+    if path in {"/api/waitlist", "/api/inquiries", "/api/unsubscribe", "/beta/unlock"}:
         return "public-bounded-submission"
     if path.startswith("/gateway/"):
         return "scoped-build-token-and-entitlement"
