@@ -2,7 +2,7 @@
 
 import json
 import re
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from uuid import UUID
 
 import httpx
@@ -46,9 +46,9 @@ CATALOG = {
     "notion": (
         "Notion",
         "Design & knowledge",
-        "An explicitly shared page and its immediate blocks",
+        "An explicitly shared page, its nested blocks and its first sub-pages",
         "page UUID",
-        {"page": "Page content"},
+        {"page": "Page content", "workspace": "Shared pages"},
     ),
     "stripe": (
         "Stripe",
@@ -86,6 +86,104 @@ CATALOG = {
         {"project": "Project", "deployments": "Deployments"},
     ),
 }
+
+
+NOTION_VERSION = "2026-03-11"
+NOTION_PREFIXES = {
+    "heading_1": "# ",
+    "heading_2": "## ",
+    "heading_3": "### ",
+    "bulleted_list_item": "- ",
+    "numbered_list_item": "1. ",
+    "quote": "> ",
+    "callout": "Note: ",
+    "toggle": "> ",
+}
+
+
+def notion_text(items):
+    return "".join(str(t.get("plain_text", "")) for t in items if isinstance(t, dict))
+
+
+def notion_title(page):
+    properties = page.get("properties", {})
+    return (
+        next(
+            (
+                notion_text(v.get("title", []))
+                for v in properties.values()
+                if isinstance(v, dict) and v.get("type") == "title"
+            ),
+            "",
+        )[:300]
+        or "Untitled page"
+    )
+
+
+def notion_line(block):
+    """One readable line for a block. Unknown block types contribute nothing."""
+    kind = block.get("type")
+    data = block.get(kind, {}) if isinstance(kind, str) else {}
+    if not isinstance(data, dict):
+        return ""
+    if kind == "child_page":
+        return "[Page] " + str(data.get("title", ""))[:200]
+    if kind == "child_database":
+        return "[Database, not read] " + str(data.get("title", ""))[:200]
+    if kind == "divider":
+        return "---"
+    if kind == "table_row":
+        return " | ".join(
+            notion_text(cell) for cell in data.get("cells", []) if isinstance(cell, list)
+        )
+    if kind in {"bookmark", "link_preview", "embed"}:
+        return str(data.get("url", ""))[:300]
+    if kind == "equation":
+        return str(data.get("expression", ""))[:300]
+    text = notion_text(data.get("rich_text", []))
+    if not text:
+        return ""
+    if kind == "to_do":
+        return ("[x] " if data.get("checked") else "[ ] ") + text
+    if kind == "code":
+        return "```" + str(data.get("language", "")) + "\n" + text + "\n```"
+    return NOTION_PREFIXES.get(kind, "") + text
+
+
+def notion_blocks(get, headers, block_id, state, depth=0):
+    """Read a page's blocks with pagination and nesting, inside fixed request/block budgets."""
+    lines, pages, cursor = [], [], None
+    while state["requests"] > 0 and state["blocks"] > 0:
+        state["requests"] -= 1
+        url = "https://api.notion.com/v1/blocks/" + block_id + "/children?page_size=100"
+        if cursor:
+            url += "&start_cursor=" + quote(cursor, safe="")
+        data = get(url, headers=headers)
+        for block in data.get("results", []):
+            if state["blocks"] <= 0:
+                break
+            state["blocks"] -= 1
+            line = notion_line(block)
+            if line:
+                lines.append("  " * depth + line)
+            try:
+                identifier = str(UUID(str(block.get("id", ""))))
+            except ValueError:
+                continue
+            if block.get("type") == "child_page":
+                title = str(block.get("child_page", {}).get("title", ""))[:200] or "Untitled page"
+                pages.append((identifier, title))
+            elif (
+                block.get("has_children")
+                and depth < 3
+                and block.get("type") not in {"child_database", "unsupported"}
+            ):
+                inner, _ = notion_blocks(get, headers, identifier, state, depth + 1)
+                lines.extend(inner)
+        cursor = data.get("next_cursor")
+        if not data.get("has_more") or not isinstance(cursor, str) or not cursor:
+            break
+    return lines, pages
 
 
 def descriptor(key):
@@ -152,7 +250,6 @@ class ReadProvider:
 
     def request(self, token, url, *, headers=None, body=None, list_response=False):
         try:
-
             with self.client.stream(
                 "POST" if body is not None else "GET",
                 url,
@@ -206,36 +303,58 @@ class ReadProvider:
         source = ""
         coverage = "Bounded resource snapshot; no complete-history claim"
         if self.key == "notion":
-            headers = {"Authorization": "Bearer " + token, "Notion-Version": "2026-03-11"}
-            page = get("https://api.notion.com/v1/pages/" + resource, headers=headers)
-            if page.get("id", "").replace("-", "") != resource.replace("-", ""):
-                raise Denied("Notion returned a different page.")
-            blocks = get(
-                "https://api.notion.com/v1/blocks/" + resource + "/children?page_size=20",
-                headers=headers,
-            )
-
-            def text(items):
-                return "".join(str(t.get("plain_text", "")) for t in items if isinstance(t, dict))[
-                    :2000
-                ]
-
-            records = {
-                "title": [
-                    text(v.get("title", []))
-                    for v in page.get("properties", {}).values()
-                    if isinstance(v, dict) and v.get("type") == "title"
-                ],
-                "blocks": [
-                    {
-                        "type": b.get("type"),
-                        "text": text(b.get(b.get("type"), {}).get("rich_text", [])),
-                    }
-                    for b in blocks.get("results", [])[:20]
-                ],
-            }
-            source = "https://www.notion.so/" + resource.replace("-", "")
-            coverage = "Up to 20 immediate blocks; nested blocks and pagination not included"
+            headers = {"Authorization": "Bearer " + token, "Notion-Version": NOTION_VERSION}
+            if tool == "workspace":
+                found = get(
+                    "https://api.notion.com/v1/search",
+                    headers=headers,
+                    body={
+                        "page_size": 25,
+                        "filter": {"property": "object", "value": "page"},
+                        "sort": {"direction": "descending", "timestamp": "last_edited_time"},
+                    },
+                )
+                records = {
+                    "pages": [
+                        {
+                            "title": notion_title(page),
+                            "id": str(page.get("id", ""))[:40],
+                            "last_edited": str(page.get("last_edited_time", ""))[:30],
+                        }
+                        for page in found.get("results", [])[:25]
+                        if isinstance(page, dict)
+                        and not (page.get("archived") or page.get("in_trash"))
+                    ]
+                }
+                source = "https://www.notion.so/"
+                coverage = "The 25 most recently edited pages shared with Aedrova; titles only"
+            else:
+                page = get("https://api.notion.com/v1/pages/" + resource, headers=headers)
+                if page.get("id", "").replace("-", "") != resource.replace("-", ""):
+                    raise Denied("Notion returned a different page.")
+                state = {"requests": 18, "blocks": 300}
+                lines, sub_pages = notion_blocks(get, headers, resource, state)
+                children = []
+                for identifier, title in sub_pages[:5]:
+                    if state["requests"] < 3:
+                        break
+                    state["requests"] -= 3
+                    inner, _ = notion_blocks(
+                        get, headers, identifier, {"requests": 3, "blocks": 80}, 0
+                    )
+                    children.append({"title": title, "text": "\n".join(inner)[:5000]})
+                text = "\n".join(lines)
+                records = {
+                    "title": [notion_title(page)],
+                    "text": text[:20000],
+                    "sub_pages": children,
+                    "truncated": len(text) > 20000 or state["blocks"] <= 0 or len(sub_pages) > 5,
+                }
+                source = "https://www.notion.so/" + resource.replace("-", "")
+                coverage = (
+                    "Up to 300 blocks nested three levels deep and the first 5 sub-pages; "
+                    "databases, images and files are not read"
+                )
         elif self.key == "figma":
             row = get(
                 "https://api.figma.com/v1/files/" + resource + "?depth=2",
