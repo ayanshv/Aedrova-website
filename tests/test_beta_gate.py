@@ -88,3 +88,38 @@ def test_changing_the_password_signs_everyone_out():
 def test_a_short_password_is_refused():
     with pytest.raises(ValueError, match="at least 12"):
         Config(beta_password="short").validate()
+
+
+R2 = {
+    "r2_endpoint": "https://abc123.r2.cloudflarestorage.com",
+    "r2_bucket": "aedrova-beta",
+    "r2_access_key_id": "test-access-id",
+    "r2_secret_access_key": "test-secret-value",
+}
+
+
+def r2_client(tmp_path, **overrides):
+    settings = {**R2, "beta_password": PASSWORD, **overrides}
+    app = create_app(
+        Config(database=f"sqlite:///{tmp_path / 'r2.sqlite'}", origin=ORIGIN, **settings)
+    )
+    return TestClient(app, follow_redirects=False)
+
+
+def test_signed_installer_link_needs_the_password_and_expires_quickly(tmp_path):
+    with r2_client(tmp_path) as c:
+        assert c.get("/api/download").status_code == 403
+        assert unlock(c, PASSWORD).status_code == 303
+        response = c.get("/api/download")
+        assert response.status_code == 302
+        link = response.headers["location"]
+        assert link.startswith("https://abc123.r2.cloudflarestorage.com/aedrova-beta/Aedrova.dmg?")
+        assert "X-Amz-Expires=300" in link and "X-Amz-Signature=" in link
+        assert "test-secret-value" not in link
+        assert response.headers["cache-control"] == "no-store"
+        assert "/api/download" in c.get("/download").text
+
+
+def test_no_installer_link_without_the_beta_password(tmp_path):
+    with r2_client(tmp_path, beta_password="") as c:
+        assert c.get("/api/download").status_code == 503

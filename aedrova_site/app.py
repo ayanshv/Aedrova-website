@@ -40,6 +40,7 @@ from aedrova_site.observability import (
 )
 from aedrova_site.operations import monitor_spending
 from aedrova_site.policy import BUD_LIMITS, PLAN_NAMES, PLAN_POLICY, PUBLIC_PLAN_PRICES
+from aedrova_site.r2 import presigned_get
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store, account_billing_key
@@ -611,7 +612,7 @@ def create_app(config=None):
             return RedirectResponse("/waitlist", status_code=303)
         return page(
             request, "download", "Download Aedrova for Mac and Windows",
-            release_ready=config.release_ready,
+            release_ready=config.release_ready or config.beta_download_ready,
         )
 
     @app.get("/enterprise")
@@ -1071,6 +1072,19 @@ def create_app(config=None):
     def release_download(request: Request):
         if config.beta_password and not beta_unlocked(request):
             raise HTTPException(403, "Enter the beta password on the plans page first.")
+        if config.beta_download_ready:
+            return RedirectResponse(
+                presigned_get(
+                    config.r2_endpoint,
+                    config.r2_bucket,
+                    "Aedrova.dmg",
+                    config.r2_access_key_id,
+                    config.r2_secret_access_key,
+                    filename="Aedrova.dmg",
+                ),
+                status_code=302,
+                headers={"Cache-Control": "no-store"},
+            )
         path = Path(config.download_path)
         if not config.release_ready or not path.is_file() or path.suffix != ".dmg":
             raise HTTPException(503, "The verified installer is not available yet.")

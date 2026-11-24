@@ -98,6 +98,22 @@ class Config:
     legal_ready: bool = False
     # Shared password for the invited beta download. Empty keeps downloads ungated.
     beta_password: str = field(default="", repr=False)
+    # Private Cloudflare R2 bucket holding the beta installer; links are signed and short-lived.
+    r2_endpoint: str = ""
+    r2_bucket: str = ""
+    r2_access_key_id: str = field(default="", repr=False)
+    r2_secret_access_key: str = field(default="", repr=False)
+
+    @property
+    def beta_download_ready(self):
+        """Only the password-gated beta serves the R2 installer, never an open download."""
+        return bool(
+            self.beta_password
+            and self.r2_endpoint.startswith("https://")
+            and self.r2_bucket
+            and self.r2_access_key_id
+            and self.r2_secret_access_key
+        )
 
     def managed_ai_for(self, workspace):
         return self.gateway_enabled and (
