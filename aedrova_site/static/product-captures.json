@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-10-26",
+  "captured_at": "2026-11-24",
   "source": "Current Aedrova desktop source; Qt widget captures",
   "data": "Synthetic demonstration data; no provider, device or production access",
   "captures": [
@@ -30,8 +30,8 @@
     {
       "file": "workspace-dark.png",
       "width": 1800,
-      "height": 1129,
-      "sha256": "a4c00d69d23573ed389bb8f5d6c035d7610ec697f6692822672a3ada366f4b21"
+      "height": 1130,
+      "sha256": "5bb01907206c64680b137b1af495afff60314d447ddd2b1857558e18c86006e5"
     },
     {
       "file": "meetings-light.png",
@@ -72,8 +72,8 @@
     {
       "file": "workspace-light.png",
       "width": 1800,
-      "height": 1129,
-      "sha256": "6088516b61e3a4daad8c654328b5903d2c3a105e97076b07c91f9c995ac321ae"
+      "height": 1130,
+      "sha256": "0ba75cc0a1960a79b6d009896eceb022383f9471f069a2c3d91bc7e9e3c6bd08"
     },
     {
       "file": "thread-dark.png",

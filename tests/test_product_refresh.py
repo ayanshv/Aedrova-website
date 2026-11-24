@@ -48,7 +48,7 @@ def test_team_is_server_rendered_on_dedicated_page(client):  # noqa: F811
 
 def test_capture_inventory_and_optional_workspace_preview(client):  # noqa: F811
     inventory = json.loads((STATIC / "product-captures.json").read_text())
-    assert inventory["captured_at"] == "2026-10-26"
+    assert inventory["captured_at"] == "2026-11-24"
     captures = {item["file"]: item for item in inventory["captures"]}
     assert len(captures) == 24
     for name, item in captures.items():
@@ -63,6 +63,6 @@ def test_capture_inventory_and_optional_workspace_preview(client):  # noqa: F811
     assert {name for name, _ in ui_images} == {
         "workspace-light.png", "workspace-dark.png"
     }
-    assert all(query == "?v=20261026" for _, query in ui_images)
+    assert all(query == "?v=20261124" for _, query in ui_images)
     for name, _ in ui_images:
         assert client.get("/static/" + name).status_code == 200
