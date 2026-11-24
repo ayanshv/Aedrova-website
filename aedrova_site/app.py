@@ -619,6 +619,7 @@ def create_app(config=None):
         return page(
             request, "download", "Download Aedrova for Mac and Windows",
             release_ready=config.release_ready or config.beta_download_ready,
+            beta_windows=config.beta_download_ready,
         )
 
     @app.get("/enterprise")
@@ -1096,6 +1097,25 @@ def create_app(config=None):
             raise HTTPException(503, "The verified installer is not available yet.")
         return FileResponse(
             path, filename="Aedrova.dmg", media_type="application/x-apple-diskimage"
+        )
+
+    @app.get("/api/download/windows")
+    def windows_download(request: Request):
+        if not beta_unlocked(request):
+            raise HTTPException(403, "Enter the beta password on the plans page first.")
+        if not config.beta_download_ready:
+            raise HTTPException(503, "The Windows installer is not available yet.")
+        return RedirectResponse(
+            presigned_get(
+                config.r2_endpoint,
+                config.r2_bucket,
+                "Aedrova-windows.zip",
+                config.r2_access_key_id,
+                config.r2_secret_access_key,
+                filename="Aedrova-windows.zip",
+            ),
+            status_code=302,
+            headers={"Cache-Control": "no-store"},
         )
 
     @app.get("/api/release")

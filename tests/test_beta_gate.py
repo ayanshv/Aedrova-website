@@ -133,3 +133,14 @@ def test_signed_installer_link_needs_the_password_and_expires_quickly(tmp_path):
 def test_no_installer_link_without_the_beta_password(tmp_path):
     with r2_client(tmp_path, beta_password="") as c:
         assert c.get("/api/download").status_code == 503
+
+
+def test_windows_beta_link_is_gated_and_signed(tmp_path):
+    with r2_client(tmp_path) as c:
+        assert c.get("/api/download/windows").status_code == 403
+        assert unlock(c, PASSWORD).status_code == 303
+        link = c.get("/api/download/windows").headers["location"]
+        assert "/aedrova-beta/Aedrova-windows.zip?" in link and "X-Amz-Signature=" in link
+        assert "Download for Windows" in c.get("/download").text
+    with r2_client(tmp_path, beta_password="") as c:
+        assert c.get("/api/download/windows").status_code == 403
