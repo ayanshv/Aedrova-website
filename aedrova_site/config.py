@@ -37,6 +37,11 @@ class Config:
     stripe_icon_file: str = ""
     topup_price_id: str = ""
     webhook_secret: str = field(default="", repr=False)
+    push_webhook_secret: str = field(default="", repr=False)
+    apns_key: str = field(default="", repr=False)
+    apns_key_id: str = ""
+    apns_team_id: str = ""
+    apns_topic: str = "com.aedrova.desktop"
     openai_key: str = field(default="", repr=False)
     anthropic_key: str = field(default="", repr=False)
     dots_enabled: bool = False
@@ -126,6 +131,8 @@ class Config:
         return config
 
     def validate(self):
+        if self.push_webhook_secret and len(self.push_webhook_secret) < 32:
+            raise ValueError("The push webhook secret needs at least 32 characters.")
         if self.beta_password and len(self.beta_password) < 12:
             raise ValueError("The beta password needs at least 12 characters.")
         for name, minimum, maximum in (
