@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlencode
 from uuid import UUID
 
 import stripe
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -40,6 +40,7 @@ from aedrova_site.observability import (
 )
 from aedrova_site.operations import monitor_spending
 from aedrova_site.policy import BUD_LIMITS, PLAN_NAMES, PLAN_POLICY, PUBLIC_PLAN_PRICES
+from aedrova_site.push import PostgresPushData, PushSender
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store, account_billing_key
@@ -221,6 +222,13 @@ def create_app(config=None):
     asset_version = asset_fingerprint(ROOT)
     database_events(store.engine)
     payments = Payments(config, store)
+    push = PushSender(
+        data=PostgresPushData(store),
+        key=config.apns_key,
+        key_id=config.apns_key_id,
+        team_id=config.apns_team_id,
+        topic=config.apns_topic,
+    )
     templates = Jinja2Templates(directory=ROOT / "templates")
     leases = MeetingLeases(store, require_external=config.production)
     speech = SpeechService(config, store)
@@ -1036,6 +1044,22 @@ def create_app(config=None):
         workspace = context["billing_workspace"]
         identity.require(token, workspace, billing=True)
         return {"url": payments.portal(workspace)}
+
+    class PushAnnouncement(PydanticBaseModel):
+        notification_id: int = Field(ge=1)
+
+    @app.post("/internal/push")
+    async def push_notification(
+        announcement: PushAnnouncement, request: Request, background: BackgroundTasks
+    ):
+        expected = config.push_webhook_secret
+        if not expected or not push.configured:
+            raise HTTPException(404)
+        supplied = request.headers.get("authorization", "")
+        if not secrets.compare_digest(supplied.encode(), f"Bearer {expected}".encode()):
+            raise HTTPException(403)
+        background.add_task(push.deliver, announcement.notification_id)
+        return {"accepted": True}
 
     @app.post("/stripe/webhook")
     async def webhook(request: Request):

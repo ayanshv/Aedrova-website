@@ -30,6 +30,16 @@ services:
         sync: false
       - key: AEDROVA_ENCRYPTION_KEY
         sync: false
+      - key: AEDROVA_APNS_KEY
+        sync: false
+      - key: AEDROVA_APNS_KEY_ID
+        sync: false
+      - key: AEDROVA_APNS_TEAM_ID
+        sync: false
+      - key: AEDROVA_APNS_TOPIC
+        value: com.aedrova.desktop
+      - key: AEDROVA_PUSH_WEBHOOK_SECRET
+        sync: false
       - key: AEDROVA_CHECKOUT_ENABLED
         value: "false"
       - key: AEDROVA_GATEWAY_ENABLED

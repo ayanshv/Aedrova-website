@@ -134,3 +134,12 @@ def test_separate_staging_project_uses_its_own_restricted_role():
 def test_staging_rejects_production_data_origins_money_and_bypass(changes):
     with pytest.raises(ValueError):
         staging_config(**changes).validate()
+
+
+def test_a_short_push_webhook_secret_is_refused():
+    import pytest
+
+    from aedrova_site.config import Config
+
+    with pytest.raises(ValueError, match="push webhook secret"):
+        Config(push_webhook_secret="short").validate()

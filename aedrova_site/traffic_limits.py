@@ -19,7 +19,7 @@ def policy(path, method):
         return "health", 120, 60
     if path.startswith("/static/"):
         return "assets", 1200, 60
-    if path == "/stripe/webhook":
+    if path in {"/stripe/webhook", "/internal/push"}:
         return "webhook", 600, 60
     if method not in {"GET", "HEAD", "OPTIONS"}:
         return "write", 180, 60

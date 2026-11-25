@@ -45,7 +45,7 @@ PUBLIC = {
     "/api/download",
     "/api/release",
 }
-SIGNED = {"/stripe/webhook", "/dots/github/events"}
+SIGNED = {"/stripe/webhook", "/dots/github/events", "/internal/push"}
 OAUTH = {
     "/auth/google",
     "/auth/apple",
