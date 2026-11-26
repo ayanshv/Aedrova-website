@@ -38,6 +38,8 @@ services:
         sync: false
       - key: AEDROVA_APNS_TOPIC
         value: com.aedrova.desktop
+      - key: AEDROVA_FCM_SERVICE_ACCOUNT
+        sync: false
       - key: AEDROVA_PUSH_WEBHOOK_SECRET
         sync: false
       - key: AEDROVA_CHECKOUT_ENABLED

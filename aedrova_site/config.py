@@ -42,6 +42,7 @@ class Config:
     apns_key_id: str = ""
     apns_team_id: str = ""
     apns_topic: str = "com.aedrova.desktop"
+    fcm_service_account: str = field(default="", repr=False)
     openai_key: str = field(default="", repr=False)
     anthropic_key: str = field(default="", repr=False)
     dots_enabled: bool = False

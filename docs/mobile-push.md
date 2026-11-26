@@ -1,4 +1,4 @@
-# iPhone push notifications
+# iPhone and Android push notifications
 
 New chat activity can notify a person's iPhone. Apple only delivers a push to a build signed
 with the app's push capability, so this stays off until the owner completes the steps below.
@@ -44,6 +44,25 @@ Sent you a message".
    Never paste the secret or the key into chat, a commit, or a ticket.
 6. Build the iPhone app with a profile that includes the push capability, install it on a real
    iPhone, and turn on **Settings → Notifications → Push notifications**.
+
+## Android
+
+Android phones use Firebase Cloud Messaging. The same alerts are sent, naming the person and
+place and never the message. The app stays quiet until the owner completes these steps.
+
+1. In the Firebase console, create a project (or use an existing one) and add an **Android
+   app** with the package name `com.aedrova.mobile`. Copy its **project ID**, **project
+   number**, **app ID** and **web API key** from Project settings. They are not secrets.
+2. In Project settings → Service accounts, generate a new private key for the Firebase Admin
+   service account. Download the JSON once. Never paste it into chat, a commit or a ticket.
+3. In Render for this service, set `AEDROVA_FCM_SERVICE_ACCOUNT` to the whole JSON file (or the
+   same file in base64).
+4. Apply `supabase/migrations/202611260001_android_push.sql`, staging first. It adds a platform
+   to each stored device and lets the sender tell phones apart. Run it after the iPhone migration.
+5. In the Android project, put the four Firebase values in `firebase.properties` (see its
+   README), then build. Without them the app does not ask for notification permission.
+
+Phones Google reports as unregistered are removed, as with Apple.
 
 ## Turning it off
 

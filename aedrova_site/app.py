@@ -40,7 +40,7 @@ from aedrova_site.observability import (
 )
 from aedrova_site.operations import monitor_spending
 from aedrova_site.policy import BUD_LIMITS, PLAN_NAMES, PLAN_POLICY, PUBLIC_PLAN_PRICES
-from aedrova_site.push import PostgresPushData, PushSender
+from aedrova_site.push import FcmSender, PostgresPushData, PushSender
 from aedrova_site.services import Identity, Payments, random_token
 from aedrova_site.speech import DictationService, SpeechService
 from aedrova_site.store import Denied, RateLimited, Store, account_billing_key
@@ -228,6 +228,7 @@ def create_app(config=None):
         key_id=config.apns_key_id,
         team_id=config.apns_team_id,
         topic=config.apns_topic,
+        fcm=FcmSender(config.fcm_service_account),
     )
     templates = Jinja2Templates(directory=ROOT / "templates")
     leases = MeetingLeases(store, require_external=config.production)
