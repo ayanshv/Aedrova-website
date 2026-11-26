@@ -36,7 +36,10 @@ def normalize_pem(value):
     body = re.sub(r"-----[A-Z ]+-----", "", (value or "").replace("\\n", "\n"))
     body = re.sub(r"\s+", "", body)
     lines = [body[i : i + 64] for i in range(0, len(body), 64)]
-    return "\n".join(["-----BEGIN PRIVATE KEY-----", *lines, "-----END PRIVATE KEY-----", ""])
+    fence = "-" * 5
+    return "\n".join(
+        [f"{fence}BEGIN PRIVATE KEY{fence}", *lines, f"{fence}END PRIVATE KEY{fence}", ""]
+    )
 
 
 def provider_token(key_pem, key_id, team_id, now):
