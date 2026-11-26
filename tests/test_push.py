@@ -38,14 +38,10 @@ class FakeData:
     def __init__(self, devices):
         self._devices, self.forgotten = devices, []
 
-    def notification(self, identifier):
-        return dict(NOTE) if identifier == 7 else None
-
-    def devices(self, user):
-        return list(self._devices)
-
-    def unseen(self, user):
-        return 3
+    def delivery(self, identifier):
+        if identifier != 7:
+            return None
+        return {**NOTE, "devices": list(self._devices), "unseen": 3}
 
     def forget(self, token):
         self.forgotten.append(token)
