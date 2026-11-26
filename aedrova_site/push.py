@@ -67,59 +67,17 @@ class PostgresPushData:
     def __init__(self, store):
         self.store = store
 
-    def notification(self, identifier):
+    def delivery(self, identifier):
+        """One notification with its recipient's devices and unseen count, or None."""
         with self.store.tx(write=False) as db:
-            row = (
-                db.execute(
-                    text(
-                        """SELECT n.id, n.user_id::text AS user_id, n.kind,
-                        m.channel_id::text AS channel, m.id::text AS message,
-                        m.parent_id::text AS parent, c.workspace_id::text AS workspace,
-                        c.name AS channel_name, c.kind AS channel_kind,
-                        COALESCE(u.raw_user_meta_data->>'full_name', 'Someone') AS sender
-                        FROM public.chat_notifications n
-                        JOIN public.messages m ON m.id = n.message_id
-                        JOIN public.channels c ON c.id = m.channel_id
-                        LEFT JOIN auth.users u ON u.id = m.sender_id
-                        WHERE n.id = :id AND m.unsent_at IS NULL"""
-                    ),
-                    {"id": identifier},
-                )
-                .mappings()
-                .first()
-            )
+            row = db.execute(
+                text("SELECT public.push_delivery(:id)"), {"id": identifier}
+            ).scalar()
         return dict(row) if row else None
-
-    def devices(self, user):
-        with self.store.tx(write=False) as db:
-            rows = db.execute(
-                text(
-                    "SELECT token, environment FROM aedrova_private.push_devices "
-                    "WHERE user_id = CAST(:user AS uuid)"
-                ),
-                {"user": user},
-            ).all()
-        return [{"token": r[0], "environment": r[1]} for r in rows]
-
-    def unseen(self, user):
-        with self.store.tx(write=False) as db:
-            return int(
-                db.execute(
-                    text(
-                        "SELECT count(*) FROM public.chat_notifications "
-                        "WHERE user_id = CAST(:user AS uuid) AND seen_at IS NULL"
-                    ),
-                    {"user": user},
-                ).scalar()
-                or 0
-            )
 
     def forget(self, token):
         with self.store.tx() as db:
-            db.execute(
-                text("DELETE FROM aedrova_private.push_devices WHERE token = :token"),
-                {"token": token},
-            )
+            db.execute(text("SELECT public.push_forget_device(:token)"), {"token": token})
 
 
 class PushSender:
@@ -164,13 +122,13 @@ class PushSender:
         """Sends one notification to every device its recipient has registered."""
         if not self.configured:
             return 0
-        note = await asyncio.to_thread(self.data.notification, identifier)
+        note = await asyncio.to_thread(self.data.delivery, identifier)
         if not note:
             return 0
-        devices = await asyncio.to_thread(self.data.devices, note["user_id"])
+        devices = note["devices"]
         if not devices:
             return 0
-        badge = await asyncio.to_thread(self.data.unseen, note["user_id"])
+        badge = note["unseen"]
         body = json.dumps(self.payload(note, badge), separators=(",", ":"))
         client = self.client or httpx.AsyncClient(http2=True, timeout=10)
         sent = 0
