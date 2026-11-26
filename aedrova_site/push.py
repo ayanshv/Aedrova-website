@@ -31,12 +31,23 @@ def b64(data):
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
 
+def normalize_pem(value):
+    """Rebuilds an Apple .p8 key whose line breaks a settings field lost or escaped."""
+    body = re.sub(r"-----[A-Z ]+-----", "", (value or "").replace("\\n", "\n"))
+    body = re.sub(r"\s+", "", body)
+    lines = [body[i : i + 64] for i in range(0, len(body), 64)]
+    fence = "-" * 5
+    return "\n".join(
+        [f"{fence}BEGIN PRIVATE KEY{fence}", *lines, f"{fence}END PRIVATE KEY{fence}", ""]
+    )
+
+
 def provider_token(key_pem, key_id, team_id, now):
     """Signs the ES256 token Apple requires for each provider connection."""
     header = b64(json.dumps({"alg": "ES256", "kid": key_id}, separators=(",", ":")).encode())
     claims = b64(json.dumps({"iss": team_id, "iat": int(now)}, separators=(",", ":")).encode())
     signing_input = f"{header}.{claims}"
-    key = serialization.load_pem_private_key(key_pem.encode(), password=None)
+    key = serialization.load_pem_private_key(normalize_pem(key_pem).encode(), password=None)
     r, s = decode_dss_signature(key.sign(signing_input.encode(), ec.ECDSA(hashes.SHA256())))
     return f"{signing_input}.{b64(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
 

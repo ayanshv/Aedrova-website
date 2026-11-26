@@ -186,3 +186,13 @@ def test_webhook_is_hidden_until_configured_and_requires_the_shared_secret(tmp_p
         accepted = client.post("/internal/push", json={"notification_id": 7}, headers=good)
         assert accepted.status_code == 200 and accepted.json() == {"accepted": True}
     assert delivered == [7]
+
+
+def test_provider_token_accepts_keys_with_lost_line_breaks():
+    text = PEM if isinstance(PEM, str) else PEM.decode()
+    one_line = text.replace("\n", " ")
+    escaped = text.replace("\n", "\\n")
+    bare = "".join(line for line in text.splitlines() if not line.startswith("-----"))
+    for variant in (text, one_line, escaped, bare):
+        token = provider_token(variant, "KEY1234567", "TEAM123456", 1000)
+        assert token.count(".") == 2
